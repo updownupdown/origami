@@ -1,5 +1,6 @@
 import type { CompiledModel } from '../engine/types';
 import type { FoldViewer } from './viewer';
+import { runAt, sheetRuns, type SheetRun } from '../lib/sheets';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -89,6 +90,7 @@ export class StepControls {
   private opts: StepControlsOptions;
   private one: KnobSlider;
   private all: KnobSlider;
+  private runs: SheetRun[] = [];
 
   constructor(opts: StepControlsOptions = {}) {
     this.opts = opts;
@@ -118,6 +120,31 @@ export class StepControls {
     this.viewer = viewer;
     const N = this.count;
     $('sl-all').querySelector('.ticks')!.innerHTML = model.steps.slice(1).map((_, i) => `<i style="left:${((i + 1) / N) * 100}%"></i>`).join('');
+    this.runs = sheetRuns(model);
+    this.renderSheets();
+  }
+
+  /** Draws the sheet runs under the all-steps bar (multi-sheet models only). Call again when colours change. */
+  renderSheets() {
+    const bar = $('sheet-bar'), m = this.model;
+    bar.hidden = !this.runs.length;
+    if (!m || !this.runs.length) { bar.innerHTML = ''; return; }
+    const N = this.count;
+    const col = (id: string) => this.viewer?.colors[id]?.front ?? m.sheets.find((s) => s.id === id)?.front ?? '#999';
+    bar.innerHTML = this.runs.map((r, k) => {
+      const left = (r.start / N) * 100, width = ((r.end - r.start + 1) / N) * 100;
+      const style = r.sheet ? `--run:${col(r.sheet)}` : `--c1:${col(m.sheets[0].id)};--c2:${col(m.sheets[1].id)}`;
+      const steps = r.start === r.end ? `step ${r.start + 1}` : `steps ${r.start + 1} to ${r.end + 1}`;
+      return `<button class="run${r.sheet ? '' : ' asm'}" data-k="${k}" style="left:${left}%;width:${width}%;${style}" title="${r.label}: ${steps}" aria-label="${r.label}, ${steps}"><i></i><span>${r.label}</span></button>`;
+    }).join('');
+    bar.querySelectorAll<HTMLButtonElement>('.run').forEach((b) => b.addEventListener('click', () => this.go(this.runs[Number(b.dataset.k)].start)));
+    this.markRun(this.cur);
+  }
+
+  private markRun(i: number) {
+    if (!this.runs.length) return;
+    const r = runAt(this.runs, i);
+    $('sheet-bar').querySelectorAll('.run').forEach((b, k) => b.classList.toggle('now', this.runs[k] === r && i < this.count));
   }
 
   /** Viewer frame callback: keeps both sliders in step with the animation. */
@@ -128,11 +155,19 @@ export class StepControls {
 
   private label(i: number) {
     const m = this.model!, N = this.count, finished = i >= N;
-    $('step-label').textContent = finished ? 'Finished' : `${m.steps[i].group ? `${m.steps[i].group} · ` : ''}Step ${i + 1} of ${N}`;
+    // Multi-sheet models name the sheet (or "Assemble") and count steps within it as well as overall.
+    const run = !finished && this.runs.length ? runAt(this.runs, i) : undefined;
+    const where = run ? `${run.label} ${i - run.start + 1}/${run.end - run.start + 1} · ` : '';
+    $('step-label').textContent = finished ? 'Finished' : `${where}${m.steps[i].group ? `${m.steps[i].group} · ` : ''}Step ${i + 1} of ${N}`;
+    this.markRun(i);
     $('step-text').textContent = finished ? m.finish.text : m.steps[i].text;
     const tip = $('step-tip');
-    tip.hidden = finished || !m.steps[i].tip;
-    tip.textContent = finished ? '' : m.steps[i].tip ?? '';
+    // First step on a new sheet: say which sheet to pick up.
+    const sh = run && run.sheet && i === run.start && i > 0 ? m.sheets.find((s) => s.id === run.sheet) : undefined;
+    const pick = sh ? `New sheet: ${sh.name}, ${sh.w === sh.h ? `${sh.w} cm square` : `${sh.w} × ${sh.h} cm`}.` : '';
+    const tipText = finished ? '' : [pick, m.steps[i].tip ?? ''].filter(Boolean).join(' ');
+    tip.hidden = !tipText;
+    tip.textContent = tipText;
     ($('btn-prev') as HTMLButtonElement).disabled = i === 0;
     ($('btn-next') as HTMLButtonElement).disabled = finished;
     const seg = $('sl-all').querySelector<HTMLElement>('.seg')!;

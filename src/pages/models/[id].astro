@@ -142,6 +142,9 @@ const desc = `${entry.title}: ${DIFFICULTY[entry.difficulty]} origami, ${entry.s
   #steplist li .th { width: 100%; aspect-ratio: 1; border-radius: 10px; background: var(--paper); overflow: hidden; display: block; }
   #steplist li .th svg { width: 100%; height: 100%; }
   #steplist li .tx { font-size: 14px; line-height: 1.35; }
+  #steplist li.runhead { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; padding-top: 6px; }
+  #steplist li.runhead i { width: 14px; height: 14px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
+  #steplist li.runhead small { font-weight: 400; color: var(--ink-soft); font-size: 13px; }
   #steplist li .grp { display: block; font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; }
   #steplist li.fin .th { display: grid; place-items: center; font-size: 40px; color: var(--valley); }
   .flat { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; }

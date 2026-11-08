@@ -2,6 +2,7 @@ import type { CompiledModel } from '../engine/types';
 import { creasePatternSvg, stepSvg } from '../engine/svg';
 import { FoldViewer, type Colors } from './viewer';
 import { StepControls } from './step-controls';
+import { sheetRuns } from '../lib/sheets';
 
 const base = (window as any).__BASE__ as string;
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -61,10 +62,19 @@ export async function initModelPage() {
     if (listBuilt) return;
     listBuilt = true;
     let lastGroup = '';
+    // Multi-sheet models: a heading with the sheet's colour before each run of steps on one sheet.
+    const runs = sheetRuns(model);
+    const head = (i: number) => {
+      const r = runs.find((x) => x.start === i);
+      if (!r) return '';
+      const c = r.sheet ? colors[r.sheet]?.front : 'var(--ink-soft)';
+      const n = r.end - r.start + 1;
+      return `<li class="runhead"><i style="background:${c}"></i>${esc(r.label)}<small>${n === 1 ? 'step' : 'steps'} ${r.start + 1}${n > 1 ? `–${r.end + 1}` : ''}</small></li>`;
+    };
     $('steplist').innerHTML = model.steps.map((s, i) => {
       const grp = s.group && s.group !== lastGroup ? `<span class="grp">${esc(s.group)}</span>` : '';
       lastGroup = s.group ?? '';
-      return `<li><button data-i="${i}"><span class="n">${i + 1}</span><span class="th">${stepSvg(model, i, { width: 260, height: 260, colors, padding: 0.06 })}</span><span class="tx">${grp}${esc(s.text)}</span></button></li>`;
+      return `${head(i)}<li><button data-i="${i}"><span class="n">${i + 1}</span><span class="th">${stepSvg(model, i, { width: 260, height: 260, colors, padding: 0.06 })}</span><span class="tx">${grp}${esc(s.text)}</span></button></li>`;
     }).join('') + `<li class="fin"><button data-i="${N}"><span class="n">Finished</span><span class="th">✓</span><span class="tx">${esc(model.finish.text)}</span></button></li>`;
     $('steplist').querySelectorAll('button').forEach((b, k) => b.classList.toggle('now', k === steps.cur));
   };
@@ -117,6 +127,7 @@ export async function initModelPage() {
     viewer.setColors(colors);
     save(`origami:colors:${id}`, colors);
     renderSwatches();
+    steps.renderSheets();
     listBuilt = false;
     if (stepsDlg.open) buildList();
   };

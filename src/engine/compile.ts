@@ -942,6 +942,8 @@ function stepSheets(phases: Phase[]): string[] {
   const out = new Set<string>();
   for (const ph of phases) {
     if (ph.motion === 'spin' || ph.motion === 'stand' || ph.motion === 'shape') continue;
+    // Placing one sheet on another puts the model together: it is about every sheet.
+    if (ph.motion === 'move') { for (const f of ph.faces) out.add(f.s); continue; }
     for (const f of ph.faces) if (f.d !== 0 || f.a.some((v, i) => Math.abs(v - f.b[i]) > 1e-6)) out.add(f.s);
   }
   return [...out];
