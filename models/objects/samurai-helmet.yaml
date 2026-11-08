@@ -1,0 +1,73 @@
+id: samurai-helmet
+title: Samurai helmet
+aliases: [kabuto, helmet, hat]
+categories: [objects/wearables]
+tags: [helmet, kabuto, hat, japan, children's day, traditional]
+difficulty: 2
+description: The traditional kabuto with two tall horns. Fold it from newspaper and it fits on your head.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#4a6fd8", back: "#fbf7ee" }
+steps:
+  - text: Start with a diamond, white side up. Fold the top corner down to the bottom corner.
+    fold: valley
+    line: [B, D]
+    move: A
+  - text: Fold the right and left corners down to the bottom point.
+    pin: { TOP: O, BOT: C, RM: mid(B C), LM: mid(D C) }
+    ops:
+      - fold: valley
+        line: { bring: B, to: C }
+        move: B
+      - fold: valley
+        line: { bring: D, to: C }
+        move: D
+  - text: Fold both flaps' bottom points up to the top corner.
+    ops:
+      - fold: valley
+        line: [mid(TOP BOT), RM]
+        move: shift(lerp(BOT TOP 0.05) BOT TOP -0.3)
+        layers: top
+      - fold: valley
+        line: [mid(TOP BOT), LM]
+        move: shift(lerp(BOT TOP 0.05) BOT TOP 0.3)
+        layers: top
+  - text: Fold both points out to the sides to make the horns.
+    pin: { M: mid(TOP BOT) }
+    ops:
+      - fold: valley
+        line: [M, lerp(TOP RM 0.38)]
+        move: lerp(lerp(TOP RM 0.1) M 0.05)
+        layers: top
+      - fold: valley
+        line: [M, lerp(TOP LM 0.38)]
+        move: lerp(lerp(TOP LM 0.1) M 0.05)
+        layers: top
+  - text: Fold the top layer of the bottom point up, a little above the middle.
+    fold: valley
+    line:
+      through: lerp(BOT M 0.6)
+      perpendicular: [BOT, TOP]
+    move: lerp(BOT M 0.02)
+    layers: top
+  - text: Fold it up again along the middle line to make the brim.
+    fold: valley
+    line:
+      through: M
+      perpendicular: [BOT, TOP]
+    move: lerp(M BOT 0.1)
+    layers: top
+  - text: Fold the back layer's bottom point up behind.
+    fold: mountain
+    line:
+      through: M
+      perpendicular: [BOT, TOP]
+    move: lerp(BOT M 0.02)
+finish:
+  camera: three-quarter
+  text: Open the bottom and wear it, or stand it on the table.

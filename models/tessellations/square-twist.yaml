@@ -1,0 +1,39 @@
+id: square-twist
+title: Square twist
+family: twist
+aliases: [twist, tessellation]
+categories: [tessellations]
+tags: [twist, tessellation, grid, pleat, geometric]
+difficulty: 3
+description: The classic square twist. Four pleats meet around a small square that turns as the paper collapses. The building block of most twist tessellations.
+credits:
+  designer: Traditional (popularised by Shuzo Fujimoto)
+  script: Origami project
+materials:
+  - id: paper
+    size: 16
+    start: front-up
+    colors: { front: "#3fb39a", back: "#fbf7ee" }
+steps:
+  - text: Coloured side up, crease an 8 by 8 grid. Make every line bend both ways so it folds easily later.
+    grid: { n: 8 }
+  - text: Collapse the twist. Pinch the four pleats towards the centre and turn the middle square as the pleats lie down around it.
+    collapse:
+      fixed: paper(8 8)
+      mountain:
+      - [paper(8 10), paper(6 8)]
+      - [paper(6 8), paper(8 6)]
+      - [paper(8 6), paper(10 8)]
+      - [paper(10 8), paper(8 10)]
+      - [paper(8 10), paper(16 10)]
+      - [paper(6 8), paper(6 16)]
+      - [paper(8 6), paper(0 6)]
+      - [paper(10 8), paper(10 0)]
+      valley:
+      - [paper(8 10), paper(8 16)]
+      - [paper(6 8), paper(0 8)]
+      - [paper(8 6), paper(8 0)]
+      - [paper(10 8), paper(16 8)]
+finish:
+  camera: top
+  text: Flip it over to see the twist from the other side. Try four twists side by side on a bigger grid.

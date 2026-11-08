@@ -1,0 +1,60 @@
+id: heart
+title: Heart
+aliases: [valentine, love heart]
+categories: [holidays, geometric/flat]
+tags: [heart, valentine, love, card, kids]
+difficulty: 1
+description: A flat heart that fits on a card or a gift. Coloured on the front with a neat folded back.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    colors: { front: "#d93a3a", back: "#fbf7ee" }
+steps:
+  - text: Start white side up. Fold in half both ways and unfold.
+    pin: { PA: A, PB: B, PC: C, PD: D }
+    ops:
+      - crease: valley
+        line: [mid(A D), mid(B C)]
+        move: A
+      - crease: valley
+        line: [mid(A B), mid(D C)]
+        move: B
+  - text: Fold the top edge down to the centre crease.
+    fold: valley
+    line: [lerp(PA PD 0.25), lerp(PB PC 0.25)]
+    move: lerp(PA PB 0.5)
+  - text: Fold the bottom edge up to the top.
+    fold: valley
+    line: [lerp(PA PD 0.625), lerp(PB PC 0.625)]
+    move: lerp(PD PC 0.5)
+  - text: Fold the right half up, so its bottom edge lies on the centre line.
+    fold: valley
+    line: [lerp(lerp(PA PD 0.625) lerp(PB PC 0.625) 0.5), lerp(PB PC 0.125)]
+    move: lerp(lerp(PB PC 0.6) lerp(PA PD 0.6) 0.05)
+  - text: Fold the left half up the same way.
+    fold: valley
+    line: [lerp(lerp(PA PD 0.625) lerp(PB PC 0.625) 0.5), lerp(PA PD 0.125)]
+    move: lerp(lerp(PA PD 0.6) lerp(PB PC 0.6) 0.05)
+  - text: Turn the model over.
+    turn-over: true
+  - text: Fold the two outer top corners behind.
+    ops:
+      - fold: mountain
+        line: [at(1.875 11.625), at(3.375 13.125)]
+        move: at(1.95 13.05)
+      - fold: mountain
+        line: [at(13.125 11.625), at(11.625 13.125)]
+        move: at(13.05 13.05)
+  - text: Fold the two middle corners behind.
+    ops:
+      - fold: mountain
+        line: [at(6 13.125), at(7.5 11.625)]
+        move: at(7.4 13.05)
+      - fold: mountain
+        line: [at(9 13.125), at(7.5 11.625)]
+        move: at(7.6 13.05)
+finish:
+  text: Your heart is ready to give away.
