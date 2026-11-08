@@ -546,7 +546,7 @@ export class FoldSim {
       const a = A.a[i], b = A.b[i];
       const fa = (h: number) => { const f0 = this.factor(s, i, h), f1 = this.factor(s + 1, i, h); return f0 + (f1 - f0) * ts; };
       if (A.kind === 'crease') {
-        const m = A.mid![i], w = Math.sin(Math.PI * tc);
+        const m = A.mid![i], w = 0.5 - 0.5 * Math.cos(2 * Math.PI * tc); // fold and unfold, at rest at both ends
         for (let h = 0; h < T.length; h++) T[h] = fa(h) * (a[h] + (m[h] - a[h]) * 0.9 * w);
       } else {
         const e = easeInOut(tc);
@@ -569,6 +569,36 @@ export class FoldSim {
   setRest(rest: [number, number, number]) {
     this.rest = rest;
     this.cache.length = 1;
+    this.frames = [];
+  }
+
+  /**
+   * Recorded positions through each step (time 0..1 across the whole step), filled as the step is
+   * simulated. Playing and scrubbing replay these instead of running the solver live, so the paper
+   * moves the same way every time and never lags or wobbles.
+   */
+  frames: ({ t: number; x: Float64Array[] }[] | undefined)[] = [];
+
+  /** Makes sure step `s` has been simulated (so its frames exist). */
+  ensureStep(s: number, quality = 1) {
+    if (s >= this.model.steps.length || this.frames[s]) return;
+    this.stateAt(s + 1, quality);
+  }
+
+  /** Loads the paper's position at time t of step s, blended between the two nearest frames. */
+  loadFrame(s: number, t: number): boolean {
+    const F = this.frames[s];
+    if (!F || !F.length) return false;
+    let j = 0;
+    while (j < F.length - 1 && F[j + 1].t <= t) j++;
+    const a = F[j], b = F[Math.min(F.length - 1, j + 1)];
+    const w = b.t > a.t ? Math.max(0, Math.min(1, (t - a.t) / (b.t - a.t))) : 0;
+    this.solvers.forEach((sv, i) => {
+      const xa = a.x[i], xb = b.x[i], X = sv.x;
+      for (let k = 0; k < X.length; k++) X[k] = xa[k] + (xb[k] - xa[k]) * w;
+      sv.v.fill(0);
+    });
+    return true;
   }
 
   iterate(iters: number): number {
@@ -596,17 +626,27 @@ export class FoldSim {
   /** Simulates step `s` from the current state to its end, ramping the targets as the animation does. */
   runStep(s: number, quality = 1) {
     const ph = this.angles[s];
-    const sub = Math.max(4, Math.round(12 * quality));
+    const np = Math.max(1, ph.length);
+    const sub = Math.max(8, Math.round(20 * quality));
+    const snap = () => this.solvers.map((sv) => sv.x.slice());
+    const frames: { t: number; x: Float64Array[] }[] = [{ t: 0, x: snap() }];
     for (let p = 0; p < ph.length; p++) {
       const changed = this.solvers.some((_, i) => ph[p].kind === 'crease' || ph[p].a[i].some((v, h) => v !== ph[p].b[i][h]));
       if (!changed) continue;
       for (let k = 1; k <= sub; k++) {
         this.setTargets(s, p, k / sub);
-        this.iterate(Math.round(60 * quality));
+        // Let the paper catch up with its targets before recording, so frames follow the motion closely.
+        let it = 0, speed = this.iterate(Math.round(40 * quality));
+        while (speed > 2e-3 && it < 400 * quality) { speed = this.iterate(20); it += 20; }
+        frames.push({ t: (p + k / sub) / np, x: snap() });
       }
     }
     this.setRestTargets(s + 1);
     this.settle(quality);
+    // The last frame is the settled paper, so the end of the step matches the start of the next.
+    if (frames.length > 1 && frames[frames.length - 1].t >= 1 - 1e-9) frames.pop();
+    frames.push({ t: 1, x: snap() });
+    this.frames[s] = frames;
   }
 
   /** Iterates until the paper stops moving (or a budget runs out). */

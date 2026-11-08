@@ -101,7 +101,7 @@ class FlatPhase {
     const a = apply(f.a, p);
     const start = new THREE.Vector3(a[0], a[1], za).sub(pivot);
     if (ph.motion === 'crease') {
-      return out.copy(start.applyAxisAngle(axis, Math.PI * 0.85 * Math.sin(Math.PI * t) * f.d).add(pivot));
+      return out.copy(start.applyAxisAngle(axis, Math.PI * 0.85 * (0.5 - 0.5 * Math.cos(2 * Math.PI * t)) * f.d).add(pivot));
     }
     const rot = start.clone().applyAxisAngle(axis, Math.PI * e * f.d).add(pivot);
     const rotEnd = start.clone().applyAxisAngle(axis, Math.PI * f.d).add(pivot);
@@ -250,7 +250,7 @@ export class FoldViewer {
   private simBudget = 0;
   private lift = 0;
   /** Lowest the lift may go during this step: keeps the paper clear of the table without bobbing. */
-  private liftFloor = 0;
+  private floors = new Map<number, number>();
   /** Smoothed placement of the simulated paper (rotation as a quaternion, and translation). */
   private place: { q: THREE.Quaternion; t: THREE.Vector3 }[] = [];
   /** True once the person has turned the camera themselves during this step. */
@@ -363,14 +363,15 @@ export class FoldViewer {
       this.vertMatch = this.sim.meshes.map((m, si) => [Int32Array.from(m.vertFace, (f) => this.faceMatch[si][0][f])]);
     }
     this.phases.forEach((v, k) => this.buildOverlay(v, k));
-    this.sim.load(this.sim.stateAt(this.step, this.opts.thumbnail ? 1.5 : 1));
+    this.sim.ensureStep(this.step);
+    this.sim.load(this.sim.stateAt(this.step, 1));
     this.place = [];
-    this.liftFloor = this.stepLiftFloor();
-    this.lift = this.liftFloor;
+
     if (camera) this.userCamera = false;
     this.t = play ? 0 : finished || !phases.length ? 1 : 0;
     this.applyT();
     if (finished || this.opts.thumbnail) this.simBudget = 3000;
+    this.updateMesh(0);
     if (camera) this.bestAngle(!this.opts.thumbnail);
     this.playing = play && phases.length > 0;
     this.dirty = true;
@@ -460,7 +461,15 @@ export class FoldViewer {
 
   /** Runs the solver a little and places the meshes. */
   private updateMesh(iters: number) {
-    if (iters > 0) {
+    if (this.step < this.stepCount && this.sim.loadFrame(this.step, this.t)) {
+      // Replaying the recorded fold: exact and repeatable, no solver needed.
+      iters = 0;
+      this.simBudget = 0;
+    } else if (this.step >= this.stepCount || !this.model.steps[this.step].phases.length) {
+      // At rest: the cached state is already settled.
+      iters = 0;
+      this.simBudget = 0;
+    } else if (iters > 0) {
       const speed = this.sim.iterate(iters);
       this.simBudget -= iters;
       if (speed < 4e-4 && !this.playing) this.simBudget = Math.min(this.simBudget, 0);
@@ -468,7 +477,10 @@ export class FoldViewer {
     const { index, local } = this.current();
     const fp = this.phases[Math.min(index, this.phases.length - 1)];
     fp.prepare(local);
-    const hasStill = fp.phase.motion === 'hinge' && fp.faces.some((f) => f.d === 0) && fp.faces.some((f) => f.d !== 0);
+    const hasStill = (fp.phase.motion === 'hinge' || fp.phase.motion === 'crease') && fp.faces.some((f) => f.d === 0) && fp.faces.some((f) => f.d !== 0);
+    // Mid-fold, place the paper by the parts that stay still. Blend that in and out at the ends of the
+    // phase, where every face is at rest, so the placement never jumps between phases or steps.
+    const lowW = 1 - 0.98 * smooth(0, 0.18, local) * (1 - smooth(0.82, 1, local));
     const v = new THREE.Vector3(), w3 = new THREE.Vector3(), vx = new THREE.Vector3(), vy = new THREE.Vector3();
     let minY = Infinity;
     this.sim.solvers.forEach((sv, si) => {
@@ -486,7 +498,7 @@ export class FoldViewer {
         if (fi < 0) { ww[i] = 0; W[i] = 0; continue; }
         toThree(fp.pose(fi, local, [mesh.paper[2 * i], mesh.paper[2 * i + 1]], v), w3);
         dst[3 * i] = w3.x; dst[3 * i + 1] = w3.y; dst[3 * i + 2] = w3.z;
-        const wt = hasStill ? (fp.faces[fi].d === 0 ? 1 : 0.02) : 1;
+        const wt = hasStill ? (fp.faces[fi].d === 0 ? 1 : lowW) : 1;
         ww[i] = wt; W[i] = wt;
       }
       const faceMatch = this.faceMatch[si][Math.min(index, this.faceMatch[si].length - 1)];
@@ -511,7 +523,7 @@ export class FoldViewer {
         // Paper front normal is x × y in paper space (toThree is a proper rotation).
         const fn = vx.clone().cross(vy).normalize();
         dst[3 * j] = w3.x + fn.x * L; dst[3 * j + 1] = w3.y + fn.y * L; dst[3 * j + 2] = w3.z + fn.z * L;
-        ww[j] = hasStill ? (fp.faces[fi].d === 0 ? 1 : 0.02) : 1;
+        ww[j] = hasStill ? (fp.faces[fi].d === 0 ? 1 : lowW) : 1;
       }
       const fit = alignRigid(src, dst, ww);
       // Ease the placement towards the new fit, so the solver's small corrections do not wobble the model.
@@ -561,13 +573,12 @@ export class FoldViewer {
       g.attributes.position.needsUpdate = true;
       g.computeBoundingSphere();
     });
-    // Keep the paper clear of the table. The lift never drops during a step (no bobbing), and rises
-    // smoothly when an opening fold reaches lower than expected.
+    // Keep the paper clear of the table. The height is a smooth function of the time through the
+    // model (each step's need, blended across the step), never below what the paper needs right now,
+    // so scrubbing back and forth gives exactly the same picture every time.
     const need = isFinite(minY) ? -minY + this.model.extent * 0.012 : 0;
-    const target = Math.max(this.liftFloor, need);
-    if (target > this.lift || !this.place.length) this.lift = target > this.lift + this.model.extent * 0.05 ? target : this.lift + (target - this.lift) * 0.35;
-    if (need > this.lift) this.lift = need;
-    this.liftFloor = Math.max(this.liftFloor, this.lift);
+    const a = this.stepFloor(this.step), b = this.stepFloor(Math.min(this.stepCount, this.step + 1));
+    this.lift = Math.max(a + (b - a) * ease(this.t), need);
     this.model3d.position.y = this.lift;
     this.overlays.position.y = this.lift;
     this.dirty = true;
@@ -599,6 +610,11 @@ export class FoldViewer {
   private framing(spec: CameraSpec) {
     const box = new THREE.Box3();
     for (const v of this.phases) box.union(v.bounds());
+    // Include the simulated paper as it is now (its folds rest a little open, so it can be bigger).
+    for (const sh of this.sheets) {
+      const P = sh.pos;
+      for (let i = 0; i < P.length; i += 3) box.expandByPoint(new THREE.Vector3(P[i], P[i + 1], P[i + 2]));
+    }
     // The simulated paper rests on the table, a little above the flat pose.
     const center = box.getCenter(new THREE.Vector3());
     center.y = Math.max(0, (box.max.y - box.min.y) / 2) + this.model.extent * 0.03;
@@ -606,7 +622,10 @@ export class FoldViewer {
     const radius = Math.max(size.length() / 2, this.model.extent * 0.3);
     const fov = (this.camera.fov * Math.PI) / 180;
     const aspect = Math.max(0.5, Math.min(this.camera.aspect, 1.6));
-    const dist = (radius / Math.sin(fov / 2)) * (aspect < 1 ? 1.15 / aspect : 1.05) / (spec.zoom ?? 1) * (this.opts.thumbnail ? 0.82 : this.opts.spin ? 1.15 : 1);
+    // Fit the model's bounding sphere with a comfortable margin (more for the page, which has
+    // controls round the edges; less for thumbnails, which have none).
+    const margin = this.opts.thumbnail ? 1.08 : this.opts.spin ? 1.2 : 1.45;
+    const dist = (radius / Math.sin(fov / 2)) * (aspect < 1 ? margin / aspect : margin) / (spec.zoom ?? 1);
     const el = (((spec.elevation ?? 72) * Math.PI) / 180);
     const az = (((spec.azimuth ?? 0) * Math.PI) / 180);
     return { center, sph: new THREE.Spherical(dist, Math.PI / 2 - Math.min(el, 89 * Math.PI / 180), az), radius };
@@ -644,19 +663,32 @@ export class FoldViewer {
     const g = this.flatness;
     this.sim.setRest([0.62 + 0.38 * g, 0.96 + 0.04 * g, 1]);
     const t = this.t, playing = this.playing;
-    this.sim.load(this.sim.stateAt(this.step, this.opts.thumbnail ? 1.5 : 1));
+    this.sim.ensureStep(this.step);
+    this.sim.load(this.sim.stateAt(this.step, 1));
     this.t = t;
     this.playing = playing;
-    this.liftFloor = this.stepLiftFloor();
+    this.floors.clear();
     this.applyT();
     this.simBudget = Math.max(this.simBudget, 3000);
   }
 
-  /** Height the paper needs above the table for this step, from the exact pose over the whole step. */
-  private stepLiftFloor(): number {
+  /** Height the paper needs above the table at the start of step i, from the exact pose over the step before it and itself. */
+  private stepFloor(i: number): number {
+    const hit = this.floors.get(i);
+    if (hit !== undefined) return hit;
     let minY = 0;
-    for (const v of this.phases) minY = Math.min(minY, v.bounds().min.y);
-    return -minY + this.model.extent * 0.012;
+    for (const k of [i - 1, i]) {
+      const st = this.model.steps[k];
+      if (!st) continue;
+      for (const ph of st.phases) {
+        const fp = new FlatPhase(ph, this.thick);
+        minY = Math.min(minY, fp.bounds().min.y);
+        fp.dispose();
+      }
+    }
+    const v = -minY + this.model.extent * 0.012;
+    this.floors.set(i, v);
+    return v;
   }
 
   /**
@@ -738,7 +770,6 @@ export class FoldViewer {
 
   /** Settles the paper and renders immediately (for thumbnails). */
   renderNow() {
-    this.sim.settle(1.5);
     this.updateMesh(0);
     this.controls.update();
     this.fitDepth();
