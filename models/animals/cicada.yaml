@@ -1,0 +1,64 @@
+id: cicada
+title: Cicada
+family: cicada
+aliases: [semi, bug, insect]
+categories: [animals/insects]
+tags: [cicada, insect, bug, summer, japan, kids, traditional]
+difficulty: 1
+description: A classic from Japan. Two wings fold down past the body and a striped head finishes it off.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#4f8a3c", back: "#fbf7ee" }
+steps:
+  - text: Start with a diamond, white side up. Fold the bottom corner up to the top.
+    fold: valley
+    line: [B, D]
+    move: C
+  - text: Fold the right and left corners up to the top corner.
+    pin: { T: A, BOT: O, RC: mid(A B), LC: mid(A D) }
+    ops:
+      - fold: valley
+        line: { bring: B, to: A }
+        move: B
+      - fold: valley
+        line: { bring: D, to: A }
+        move: D
+  - text: Fold both flaps down so their points stick out past the bottom, a little apart. These are the wings.
+    ops:
+      - fold: valley
+        line: [RC, lerp(BOT T 0.4)]
+        move: lerp(lerp(T RC 0.15) BOT 0.1)
+        layers: top
+      - fold: valley
+        line: [LC, lerp(BOT T 0.4)]
+        move: lerp(lerp(T LC 0.15) BOT 0.1)
+        layers: top
+  - text: Fold the top layer of the top point down.
+    fold: valley
+    line:
+      through: lerp(BOT T 0.72)
+      perpendicular: [BOT, T]
+    move: lerp(T BOT 0.03)
+    layers: top
+  - text: Fold the next layer down too, a little higher, so a stripe of the first layer still shows.
+    fold: valley
+    line:
+      through: lerp(BOT T 0.8)
+      perpendicular: [BOT, T]
+    move: lerp(T BOT 0.03)
+    layers: top
+  - text: Fold the two sides behind.
+    ops:
+      - fold: mountain
+        line: [lerp(T RC 0.6), shift(lerp(BOT T 0.3) BOT T -5.2)]
+        move: RC
+      - fold: mountain
+        line: [lerp(T LC 0.6), shift(lerp(BOT T 0.3) BOT T 5.2)]
+        move: LC
+finish:
+  text: Draw on two eyes if you like. Cicadas look great stuck on a summer card.

@@ -249,6 +249,14 @@ export class FoldViewer {
   /** Solver iterations still wanted before the paper is at rest. */
   private simBudget = 0;
   private lift = 0;
+  /** Lowest the lift may go during this step: keeps the paper clear of the table without bobbing. */
+  private liftFloor = 0;
+  /** Smoothed placement of the simulated paper (rotation as a quaternion, and translation). */
+  private place: { q: THREE.Quaternion; t: THREE.Vector3 }[] = [];
+  /** True once the person has turned the camera themselves during this step. */
+  userCamera = false;
+  /** 0 = folds rest open, 1 = pressed completely flat. */
+  flatness = 0.75;
   /** For each sheet and phase, the phase face index of every mesh vertex. */
   private vertMatch: Int32Array[][] = [];
   /** For each sheet and phase, the phase face index of every crease-pattern face. */
@@ -258,7 +266,8 @@ export class FoldViewer {
   constructor(public el: HTMLElement, public model: CompiledModel, public opts: ViewerOptions) {
     this.colors = opts.colors;
     this.thick = model.extent * 0.0016;
-    this.layerGap = model.extent * 0.0012;
+    // Paper thickness, exaggerated a little so stacked layers always read as separate sheets.
+    this.layerGap = model.extent * 0.0022;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: !!opts.thumbnail });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true;
@@ -272,7 +281,7 @@ export class FoldViewer {
     this.controls.screenSpacePanning = true;
     this.controls.maxPolarAngle = Math.PI * 0.495;
     this.controls.addEventListener('change', () => (this.dirty = true));
-    this.controls.addEventListener('start', () => (this.camTween = null));
+    this.controls.addEventListener('start', () => { this.camTween = null; this.userCamera = true; });
     if (opts.spin) {
       this.controls.autoRotate = true;
       this.controls.autoRotateSpeed = 2.4;
@@ -303,6 +312,9 @@ export class FoldViewer {
     this.scene.add(this.model3d, this.overlays);
 
     this.sim = new FoldSim(model);
+    try { const f = Number(localStorage.getItem('origami:flatness')); if (f >= 0 && f <= 1 && localStorage.getItem('origami:flatness') !== null) this.flatness = f; } catch { /* ignore */ }
+    if (opts.thumbnail || opts.spin) this.flatness = 0.75;
+    this.sim.setRest([0.62 + 0.38 * this.flatness, 0.96 + 0.04 * this.flatness, 1]);
     this.sheets = this.sim.meshes.map((m) => {
       const sh = model.sheets.find((s) => s.id === m.sheet)!;
       const v = new SheetView(m, this.colors[m.sheet] ?? { front: sh.front, back: sh.back });
@@ -352,6 +364,10 @@ export class FoldViewer {
     }
     this.phases.forEach((v, k) => this.buildOverlay(v, k));
     this.sim.load(this.sim.stateAt(this.step, this.opts.thumbnail ? 1.5 : 1));
+    this.place = [];
+    this.liftFloor = this.stepLiftFloor();
+    this.lift = this.liftFloor;
+    if (camera) this.userCamera = false;
     this.t = play ? 0 : finished || !phases.length ? 1 : 0;
     this.applyT();
     if (finished || this.opts.thumbnail) this.simBudget = 3000;
@@ -497,7 +513,16 @@ export class FoldViewer {
         dst[3 * j] = w3.x + fn.x * L; dst[3 * j + 1] = w3.y + fn.y * L; dst[3 * j + 2] = w3.z + fn.z * L;
         ww[j] = hasStill ? (fp.faces[fi].d === 0 ? 1 : 0.02) : 1;
       }
-      const { R, t } = alignRigid(src, dst, ww);
+      const fit = alignRigid(src, dst, ww);
+      // Ease the placement towards the new fit, so the solver's small corrections do not wobble the model.
+      const mq = new THREE.Matrix4().set(fit.R[0], fit.R[1], fit.R[2], 0, fit.R[3], fit.R[4], fit.R[5], 0, fit.R[6], fit.R[7], fit.R[8], 0, 0, 0, 0, 1);
+      const q = new THREE.Quaternion().setFromRotationMatrix(mq), tv = new THREE.Vector3(fit.t[0], fit.t[1], fit.t[2]);
+      const prev = this.place[si];
+      const k = !prev || iters === 0 ? 1 : this.playing ? 0.6 : 0.3;
+      if (prev) { prev.q.slerp(q, k); prev.t.lerp(tv, k); } else this.place[si] = { q, t: tv };
+      const pl = this.place[si];
+      const Rm = new THREE.Matrix4().makeRotationFromQuaternion(pl.q).elements;
+      const R = [Rm[0], Rm[4], Rm[8], Rm[1], Rm[5], Rm[9], Rm[2], Rm[6], Rm[10]], t = [pl.t.x, pl.t.y, pl.t.z];
       const P = this.sheets[si].pos;
       for (let i = 0; i < n; i++) {
         const x = src[3 * i], y = src[3 * i + 1], z = src[3 * i + 2];
@@ -536,8 +561,13 @@ export class FoldViewer {
       g.attributes.position.needsUpdate = true;
       g.computeBoundingSphere();
     });
-    // Rest the paper on the table.
-    this.lift = isFinite(minY) ? -minY + this.thick * 0.6 : 0;
+    // Keep the paper clear of the table. The lift never drops during a step (no bobbing), and rises
+    // smoothly when an opening fold reaches lower than expected.
+    const need = isFinite(minY) ? -minY + this.model.extent * 0.012 : 0;
+    const target = Math.max(this.liftFloor, need);
+    if (target > this.lift || !this.place.length) this.lift = target > this.lift + this.model.extent * 0.05 ? target : this.lift + (target - this.lift) * 0.35;
+    if (need > this.lift) this.lift = need;
+    this.liftFloor = Math.max(this.liftFloor, this.lift);
     this.model3d.position.y = this.lift;
     this.overlays.position.y = this.lift;
     this.dirty = true;
@@ -584,7 +614,7 @@ export class FoldViewer {
 
   bestAngle(animate = true) {
     const finished = this.step === this.stepCount;
-    const spec = finished ? this.model.finish.camera : this.model.steps[this.step]?.camera ?? PRESET_DEFAULT;
+    const spec = finished ? this.model.finish.camera : this.model.steps[this.step] ? this.autoCamera() : PRESET_DEFAULT;
     const { center, sph } = this.framing(spec);
     this.sun.target.position.set(center.x, 0, center.z);
     this.sun.position.set(center.x - 0.35 * this.model.extent, 1.6 * this.model.extent, center.z + 0.55 * this.model.extent);
@@ -605,6 +635,55 @@ export class FoldViewer {
     const to = sph.clone();
     to.theta = cur.theta + dTheta;
     this.camTween = { from: cur, to, tf: this.controls.target.clone(), tt: center, t: 0 };
+  }
+
+  /** Sets how flat the folds are pressed (0 = relaxed and open, 1 = completely flat). */
+  setFlatness(f: number) {
+    this.flatness = Math.max(0, Math.min(1, f));
+    try { localStorage.setItem('origami:flatness', String(this.flatness)); } catch { /* ignore */ }
+    const g = this.flatness;
+    this.sim.setRest([0.62 + 0.38 * g, 0.96 + 0.04 * g, 1]);
+    const t = this.t, playing = this.playing;
+    this.sim.load(this.sim.stateAt(this.step, this.opts.thumbnail ? 1.5 : 1));
+    this.t = t;
+    this.playing = playing;
+    this.liftFloor = this.stepLiftFloor();
+    this.applyT();
+    this.simBudget = Math.max(this.simBudget, 3000);
+  }
+
+  /** Height the paper needs above the table for this step, from the exact pose over the whole step. */
+  private stepLiftFloor(): number {
+    let minY = 0;
+    for (const v of this.phases) minY = Math.min(minY, v.bounds().min.y);
+    return -minY + this.model.extent * 0.012;
+  }
+
+  /**
+   * Camera for a step without an authored one: a raised three-quarter view turned so the fold's hinge
+   * runs across the picture at an angle, which shows the flap lifting best. Stays near the diagram's
+   * own orientation (top of the paper away from you).
+   */
+  private autoCamera(): CameraSpec {
+    const finished = this.step === this.stepCount;
+    if (finished) return this.model.finish.camera;
+    const step = this.model.steps[this.step];
+    if (!step.camera.auto) return step.camera;
+    const ph = step.phases.find((p) => p.axis && (p.motion === 'hinge' || p.motion === 'crease'));
+    if (!ph?.axis) return { azimuth: 0, elevation: 70, zoom: 1 };
+    const [a, b] = ph.axis;
+    // Axis direction in three.js ground coordinates (x, z) = (x, -y).
+    const ax = b[0] - a[0], az = -(b[1] - a[1]), L = Math.hypot(ax, az) || 1;
+    let best = 0, bestScore = Infinity;
+    for (let deg = -35; deg <= 35; deg += 5) {
+      const r = (deg * Math.PI) / 180;
+      // Horizontal view direction for this azimuth (camera looks towards -z when azimuth is 0).
+      const vx = -Math.sin(r), vz = -Math.cos(r);
+      const ang = Math.acos(Math.min(1, Math.abs((vx * ax + vz * az) / L))) * (180 / Math.PI);
+      const score = Math.abs(ang - 50) + Math.abs(deg) * 0.15;
+      if (score < bestScore) { bestScore = score; best = deg; }
+    }
+    return { azimuth: best, elevation: ph.motion === 'crease' ? 62 : 56, zoom: 1 };
   }
 
   zoomBy(k: number) {

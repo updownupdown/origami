@@ -565,6 +565,12 @@ export class FoldSim {
     this.solvers.forEach((sv) => sv.target.fill(0));
   }
 
+  /** Changes how far folds rest open ([newest, previous, older] factors of a full fold) and drops cached states. */
+  setRest(rest: [number, number, number]) {
+    this.rest = rest;
+    this.cache.length = 1;
+  }
+
   iterate(iters: number): number {
     let mx = 0;
     for (const s of this.solvers) mx = Math.max(mx, s.step(iters));

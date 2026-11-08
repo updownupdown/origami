@@ -64,24 +64,26 @@ export async function initModelPage() {
     $('steplist').innerHTML = model.steps.map((s, i) => {
       const grp = s.group && s.group !== lastGroup ? `<span class="grp">${esc(s.group)}</span>` : '';
       lastGroup = s.group ?? '';
-      return `<li><button data-i="${i}"><span class="n">${i + 1}</span><span class="th">${stepSvg(model, i, { width: 112, height: 112, colors, padding: 0.06 })}</span><span class="tx">${grp}${esc(s.text)}</span></button></li>`;
-    }).join('') + `<li><button data-i="${N}"><span class="n">✓</span><span class="tx">Finished</span></button></li>`;
+      return `<li><button data-i="${i}"><span class="n">${i + 1}</span><span class="th">${stepSvg(model, i, { width: 260, height: 260, colors, padding: 0.06 })}</span><span class="tx">${grp}${esc(s.text)}</span></button></li>`;
+    }).join('') + `<li class="fin"><button data-i="${N}"><span class="n">Finished</span><span class="th">✓</span><span class="tx">${esc(model.finish.text)}</span></button></li>`;
     $('steplist').querySelectorAll('button').forEach((b, k) => b.classList.toggle('now', k === steps.cur));
   };
   $('steplist').addEventListener('click', (e) => {
     const b = (e.target as HTMLElement).closest('button');
-    if (b) { steps.go(Number(b.dataset.i)); if (matchMedia('(max-width: 640px)').matches) toggleDrawer(false); }
+    if (b) { stepsDlg.close(); steps.go(Number(b.dataset.i)); }
   });
-  const toggleDrawer = (open?: boolean) => {
-    const d = $('drawer');
-    const show = open ?? d.hidden;
-    if (show) buildList();
-    d.hidden = !show;
-    $('btn-steps').setAttribute('aria-expanded', String(show));
-    if (show) d.querySelector('.now')?.scrollIntoView({ block: 'nearest' });
-  };
-  $('btn-steps').addEventListener('click', () => toggleDrawer());
-  $('btn-close-steps').addEventListener('click', () => toggleDrawer(false));
+  $('btn-steps').addEventListener('click', () => {
+    buildList();
+    $('steplist').querySelectorAll('button').forEach((b, k) => b.classList.toggle('now', k === steps.cur));
+    stepsDlg.showModal();
+    $('steplist').querySelector('.now')?.scrollIntoView({ block: 'center' });
+  });
+
+  // Flatness: how firmly the folds are pressed.
+  const flat = $<HTMLInputElement>('flatness');
+  flat.value = String(Math.round(viewer.flatness * 100));
+  let flatTimer = 0;
+  flat.addEventListener('input', () => { clearTimeout(flatTimer); flatTimer = window.setTimeout(() => viewer.setFlatness(Number(flat.value) / 100), 120); });
 
   $('btn-best').addEventListener('click', () => viewer.bestAngle());
   $('btn-in').addEventListener('click', () => viewer.zoomBy(1.25));
@@ -116,7 +118,7 @@ export async function initModelPage() {
     save(`origami:colors:${id}`, colors);
     renderSwatches();
     listBuilt = false;
-    if (!$('drawer').hidden) buildList();
+    if (stepsDlg.open) buildList();
   };
   // Which side of each sheet the swatches apply to.
   const side: Record<string, 'front' | 'back'> = Object.fromEntries(model.sheets.map((s) => [s.id, 'front']));
@@ -164,7 +166,7 @@ export async function initModelPage() {
     });
     return d;
   };
-  const paperDlg = dlg('dlg-paper'), infoDlg = dlg('dlg-info');
+  const paperDlg = dlg('dlg-paper'), infoDlg = dlg('dlg-info'), stepsDlg = dlg('dlg-steps');
   $('btn-paper').addEventListener('click', () => { buildPaper(); paperDlg.showModal(); });
   let cpBuilt = false;
   $('btn-info').addEventListener('click', () => {

@@ -1,0 +1,34 @@
+id: whale
+title: Whale
+family: whale
+aliases: [simple whale]
+categories: [animals/sea-life]
+tags: [whale, sea, ocean, kite base, kids, quick, traditional]
+difficulty: 1
+description: A chunky whale with a flicked-up tail, made from the kite base in a few easy folds.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#3a6ea5", back: "#fbf7ee" }
+steps:
+  - use: base/kite
+  - text: Fold the top corner down so it lies over the flaps.
+    fold: valley
+    line: [KL, KR]
+    move: A
+  - text: Fold in half from left to right, so the flaps end up inside.
+    fold: valley
+    line: [lerp(KL KR 0.5), C]
+    move: KL
+  - text: Turn the model on its side.
+    rotate: 90
+  - text: Fold the tail up around the outside of the body (outside reverse fold).
+    reverse: outside
+    line: [lerp(C O 0.55), shift(lerp(C O 0.3) O C 2.4)]
+    move: lerp(C O 0.03)
+finish:
+  text: Draw an eye and a smile. Spread the flaps a little so it sits up.

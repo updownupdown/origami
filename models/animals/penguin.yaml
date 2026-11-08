@@ -1,0 +1,45 @@
+id: penguin
+title: Penguin
+family: penguin
+categories: [animals/birds]
+tags: [penguin, bird, winter, kids, traditional]
+difficulty: 2
+description: A standing penguin in profile, with a white front and a little head that tips forward.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#2b2a28", back: "#fbf7ee" }
+steps:
+  - text: Start with a diamond, white side up. Fold in half from side to side and unfold.
+    crease: valley
+    line: [A, C]
+    move: B
+  - text: Fold the left and right corners in from the top point, so they stop short of the centre. Leave a white strip that gets wider towards the bottom.
+    pin: { T: A, BOT: C, L: D, R: B }
+    ops:
+      - fold: valley
+        line: [T, lerp(BOT L 0.665)]
+        move: L
+      - fold: valley
+        line: [T, lerp(BOT R 0.665)]
+        move: R
+  - text: Fold the model in half behind along the centre.
+    fold: mountain
+    line: [T, BOT]
+    move: lerp(lerp(T BOT 0.6) R 0.05)
+  - text: Fold the top point down and forward around the outside to make the head (outside reverse fold).
+    reverse: outside
+    line: [lerp(BOT T 0.86), shift(lerp(BOT T 0.794) T BOT -2)]
+    move: lerp(T BOT 0.02)
+  - text: Push the bottom point up inside so the penguin has a flat base (inside reverse fold).
+    reverse: inside
+    line:
+      through: lerp(BOT T 0.283)
+      perpendicular: [BOT, T]
+    move: lerp(BOT T 0.02)
+finish:
+  text: Stand your penguin up, or make a whole family in different sizes.
