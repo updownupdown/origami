@@ -1,6 +1,7 @@
 import type { CompiledModel } from '../engine/types';
 import { creasePatternSvg, stepSvg } from '../engine/svg';
 import { FoldViewer, type Colors } from './viewer';
+import { StepControls } from './step-controls';
 
 const base = (window as any).__BASE__ as string;
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -27,10 +28,23 @@ export async function initModelPage() {
     document.body.style.background = 'transparent';
   }
 
-  let scrubbing = false;
+  const N = model.steps.length;
+  const steps = new StepControls({
+    onStep: (i) => {
+      $('steplist').querySelectorAll('button').forEach((b, k) => b.classList.toggle('now', k === i));
+      $('finish').hidden = i < N;
+      if (i >= N) $('finish-text').textContent = `${model.title}, ${N} steps.`;
+    },
+    onLand: (i) => {
+      save(`origami:step:${id}`, i + 1);
+      const url = new URL(location.href);
+      url.searchParams.set('step', String(i + 1));
+      history.replaceState(null, '', url);
+    },
+  });
   const viewer = new FoldViewer($('canvas'), model, {
     colors, thumbnail: thumb,
-    onFrame: (t) => { if (!scrubbing) ($<HTMLInputElement>('scrub')).value = String(Math.round(t * 1000)); },
+    onFrame: (t) => { if (!thumb) steps.frame(t); },
   });
   (window as any).viewer = viewer;
 
@@ -39,16 +53,9 @@ export async function initModelPage() {
     requestAnimationFrame(() => { viewer.renderNow(); (window as any).__thumbReady = true; });
     return;
   }
-
-  const N = model.steps.length;
+  steps.attach(model, viewer);
   const startAt = Math.min(N, Math.max(0, Number(params.get('step') ?? load(`origami:step:${id}`, 1)) - 1));
 
-  // --- Progress bar and step list
-  $('progress').innerHTML = model.steps.map((_, i) => `<button aria-label="Step ${i + 1}" data-i="${i}"></button>`).join('');
-  $('progress').addEventListener('click', (e) => {
-    const b = (e.target as HTMLElement).closest('button');
-    if (b) go(Number(b.dataset.i));
-  });
   let listBuilt = false;
   const buildList = () => {
     if (listBuilt) return;
@@ -59,15 +66,16 @@ export async function initModelPage() {
       lastGroup = s.group ?? '';
       return `<li><button data-i="${i}"><span class="n">${i + 1}</span><span class="th">${stepSvg(model, i, { width: 112, height: 112, colors, padding: 0.06 })}</span><span class="tx">${grp}${esc(s.text)}</span></button></li>`;
     }).join('') + `<li><button data-i="${N}"><span class="n">✓</span><span class="tx">Finished</span></button></li>`;
+    $('steplist').querySelectorAll('button').forEach((b, k) => b.classList.toggle('now', k === steps.cur));
   };
   $('steplist').addEventListener('click', (e) => {
     const b = (e.target as HTMLElement).closest('button');
-    if (b) { go(Number(b.dataset.i)); if (matchMedia('(max-width: 640px)').matches) toggleDrawer(false); }
+    if (b) { steps.go(Number(b.dataset.i)); if (matchMedia('(max-width: 640px)').matches) toggleDrawer(false); }
   });
   const toggleDrawer = (open?: boolean) => {
     const d = $('drawer');
     const show = open ?? d.hidden;
-    if (show) { buildList(); toggleCp(false); }
+    if (show) buildList();
     d.hidden = !show;
     $('btn-steps').setAttribute('aria-expanded', String(show));
     if (show) d.querySelector('.now')?.scrollIntoView({ block: 'nearest' });
@@ -75,56 +83,14 @@ export async function initModelPage() {
   $('btn-steps').addEventListener('click', () => toggleDrawer());
   $('btn-close-steps').addEventListener('click', () => toggleDrawer(false));
 
-  // --- Crease pattern
-  const toggleCp = (open?: boolean) => {
-    const c = $('cp');
-    const show = open ?? c.hidden;
-    if (show) {
-      toggleDrawer(false);
-      $('cp-body').innerHTML = model.sheets.map((s) => `${model.sheets.length > 1 ? `<p class="hint">${esc(s.name)}</p>` : ''}${creasePatternSvg(model, s.id)}`).join('');
-    }
-    c.hidden = !show;
-    $('btn-cp').setAttribute('aria-pressed', String(show));
-  };
-  $('btn-cp').addEventListener('click', () => toggleCp());
-  $('btn-close-cp').addEventListener('click', () => toggleCp(false));
-
-  // --- Step navigation
-  const show = (i: number, play = true) => {
-    viewer.showStep(i, { play });
-    const finished = i >= N;
-    $('step-label').textContent = finished ? 'Finished' : `${model.steps[i].group ? `${model.steps[i].group} · ` : ''}Step ${i + 1} of ${N}`;
-    $('step-text').textContent = finished ? model.finish.text : model.steps[i].text;
-    const tip = $('step-tip');
-    tip.hidden = finished || !model.steps[i].tip;
-    tip.textContent = finished ? '' : model.steps[i].tip ?? '';
-    $('progress').querySelectorAll('button').forEach((b, k) => { b.className = k < i ? 'past' : k === i ? 'now' : ''; });
-    $('steplist').querySelectorAll('button').forEach((b, k) => b.classList.toggle('now', k === i));
-    ($('btn-prev') as HTMLButtonElement).disabled = i === 0;
-    ($('btn-next') as HTMLButtonElement).disabled = finished;
-    $('finish').hidden = !finished;
-    if (finished) $('finish-text').textContent = `${model.title}, ${model.steps.length} steps.`;
-    save(`origami:step:${id}`, i + 1);
-    const url = new URL(location.href);
-    url.searchParams.set('step', String(i + 1));
-    history.replaceState(null, '', url);
-  };
-  let cur = startAt;
-  const go = (i: number) => { cur = Math.max(0, Math.min(N, i)); show(cur); };
-  $('btn-prev').addEventListener('click', () => go(cur - 1));
-  $('btn-next').addEventListener('click', () => go(cur + 1));
-  $('btn-play').addEventListener('click', () => { viewer.setT(0); viewer.play(); });
   $('btn-best').addEventListener('click', () => viewer.bestAngle());
   $('btn-in').addEventListener('click', () => viewer.zoomBy(1.25));
   $('btn-out').addEventListener('click', () => viewer.zoomBy(0.8));
-  const scrub = $<HTMLInputElement>('scrub');
-  scrub.addEventListener('input', () => { scrubbing = true; viewer.setT(Number(scrub.value) / 1000); });
-  scrub.addEventListener('change', () => (scrubbing = false));
   addEventListener('keydown', (e) => {
     if ((e.target as HTMLElement).closest('input, textarea, select, dialog')) return;
-    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(cur + 1); }
-    if (e.key === 'ArrowLeft') go(cur - 1);
-    if (e.key === 'r') { viewer.setT(0); viewer.play(); }
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); steps.go(steps.cur + 1); }
+    if (e.key === 'ArrowLeft') steps.go(steps.cur - 1);
+    if (e.key === 'r') steps.playRepeats();
     if (e.key === 'b') viewer.bestAngle();
   });
 
@@ -150,29 +116,40 @@ export async function initModelPage() {
     save(`origami:colors:${id}`, colors);
     renderSwatches();
     listBuilt = false;
-    if (!$('drawer').hidden) { buildList(); show(cur, false); }
+    if (!$('drawer').hidden) buildList();
   };
+  // Which side of each sheet the swatches apply to.
+  const side: Record<string, 'front' | 'back'> = Object.fromEntries(model.sheets.map((s) => [s.id, 'front']));
   const buildPaper = () => {
-    $('paper-list').innerHTML = model.sheets.map((s) => `
-      <div class="paper-row" data-sheet="${s.id}">
-        <span class="nm">${s.count > 1 ? `${s.count} × ` : ''}${esc(s.name)}<small>${s.w === s.h ? `${fmt(s.w)} square` : `${fmt(s.w)} × ${fmt(s.h)}`}</small></span>
-        <label><input type="color" data-side="front" value="${colors[s.id].front}" aria-label="${esc(s.name)} front colour">Front</label>
-        <label><input type="color" data-side="back" value="${colors[s.id].back}" aria-label="${esc(s.name)} back colour">Back</label>
-      </div>
-      <div class="presets" data-sheet="${s.id}">${PRESETS.map((c) => `<button style="background:${c}" data-color="${c}" aria-label="Use ${c} for the front"></button>`).join('')}</div>`).join('')
-      + `<p><button class="btn small" id="btn-reset-colors">Reset to suggested colours</button></p>`;
+    $('paper-list').innerHTML = model.sheets.map((s) => {
+      const c = colors[s.id], sel = c[side[s.id]].toLowerCase();
+      const sideBtn = (k: 'front' | 'back', name: string, sub: string) =>
+        `<button data-pick="${k}" aria-pressed="${side[s.id] === k}"><i style="background:${c[k]}"></i><span>${name}<small>${sub}</small></span></button>`;
+      return `<div class="sheet-block" data-sheet="${s.id}">
+        ${model.sheets.length > 1 ? `<p class="nm">${s.count > 1 ? `${s.count} × ` : ''}${esc(s.name)}<small>${s.w === s.h ? `${fmt(s.w)} square` : `${fmt(s.w)} × ${fmt(s.h)}`}</small></p>` : ''}
+        <div class="sides">${sideBtn('front', 'Front', 'coloured side')}${sideBtn('back', 'Back', 'other side')}</div>
+        <div class="presets">${PRESETS.map((col) => `<button style="background:${col}" data-color="${col}" aria-pressed="${col === sel}" aria-label="${side[s.id]} colour ${col}"></button>`).join('')}
+          <label title="Custom colour" aria-label="Custom ${side[s.id]} colour">+<input type="color" value="${c[side[s.id]]}"></label></div>
+      </div>`;
+    }).join('') + `<p><button class="btn small" id="btn-reset-colors">Reset to suggested colours</button></p>`;
   };
   $('paper-list').addEventListener('input', (e) => {
     const inp = e.target as HTMLInputElement;
     const sheet = inp.closest<HTMLElement>('[data-sheet]')?.dataset.sheet;
-    if (!sheet || !inp.dataset.side) return;
-    setColors({ ...colors, [sheet]: { ...colors[sheet], [inp.dataset.side]: inp.value } });
+    if (!sheet || inp.type !== 'color') return;
+    setColors({ ...colors, [sheet]: { ...colors[sheet], [side[sheet]]: inp.value } });
+    const sw = inp.closest('.sheet-block')!.querySelector<HTMLElement>(`[data-pick="${side[sheet]}"] i`);
+    if (sw) sw.style.background = inp.value;
   });
+  $('paper-list').addEventListener('change', (e) => { if ((e.target as HTMLInputElement).type === 'color') buildPaper(); });
   $('paper-list').addEventListener('click', (e) => {
-    const b = e.target as HTMLElement;
+    const b = (e.target as HTMLElement).closest<HTMLElement>('button');
+    if (!b) return;
     if (b.id === 'btn-reset-colors') { setColors({ ...defaults }); buildPaper(); return; }
-    const sheet = b.closest<HTMLElement>('.presets')?.dataset.sheet;
-    if (sheet && b.dataset.color) { setColors({ ...colors, [sheet]: { ...colors[sheet], front: b.dataset.color } }); buildPaper(); }
+    const sheet = b.closest<HTMLElement>('[data-sheet]')?.dataset.sheet;
+    if (!sheet) return;
+    if (b.dataset.pick) { side[sheet] = b.dataset.pick as 'front' | 'back'; buildPaper(); return; }
+    if (b.dataset.color) { setColors({ ...colors, [sheet]: { ...colors[sheet], [side[sheet]]: b.dataset.color } }); buildPaper(); }
   });
   document.querySelectorAll<HTMLButtonElement>('[data-unit]').forEach((b) => b.addEventListener('click', () => {
     units = b.dataset.unit as 'cm' | 'in';
@@ -189,7 +166,14 @@ export async function initModelPage() {
   };
   const paperDlg = dlg('dlg-paper'), infoDlg = dlg('dlg-info');
   $('btn-paper').addEventListener('click', () => { buildPaper(); paperDlg.showModal(); });
-  $('btn-info').addEventListener('click', () => infoDlg.showModal());
+  let cpBuilt = false;
+  $('btn-info').addEventListener('click', () => {
+    if (!cpBuilt) {
+      cpBuilt = true;
+      $('cp-body').innerHTML = model.sheets.map((s) => `${model.sheets.length > 1 ? `<p class="hint">${esc(s.name)}</p>` : ''}${creasePatternSvg(model, s.id)}`).join('');
+    }
+    infoDlg.showModal();
+  });
 
   // --- Finished
   const doneList: string[] = load('origami:done', []);
@@ -204,6 +188,8 @@ export async function initModelPage() {
 
   renderSwatches();
   renderUnits();
-  show(cur, false);
+  steps.show(startAt, false);
   viewer.bestAngle(false);
+  // Show the opening step once the page has settled.
+  setTimeout(() => { if (steps.cur === startAt && !steps.scrubbing) steps.playRepeats(); }, 600);
 }

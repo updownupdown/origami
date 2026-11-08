@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const S = process.argv[2];
+const b = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const page = await b.newPage({ viewport: { width: 1300, height: 800 } });
+page.on('pageerror', (e) => console.log('pageerror:', e.message));
+await page.goto('http://localhost:4321/origami/author/?model=cat-face');
+await page.waitForTimeout(4000);
+await page.click('#btn-next'); await page.click('#btn-next');
+await page.waitForTimeout(1500);
+await page.screenshot({ path: `${S}/author.png` });
+await b.close();
