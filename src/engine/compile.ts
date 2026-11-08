@@ -882,8 +882,8 @@ function opsOf(step: StepSpec): Op[] {
   if (step.pin) ops.unshift({ pin: step.pin } as unknown as Op);
   ops.push(...(step.ops ?? []));
   if (step.fold || step.crease || step.unfold || step.reverse) {
-    const { fold, crease, unfold, reverse, line, move, layers, sheet } = step;
-    ops.push({ fold, crease, unfold, reverse, line, move, layers, sheet });
+    const { fold, crease, unfold, reverse, line, move, layers, sheet, name } = step;
+    ops.push({ fold, crease, unfold, reverse, line, move, layers, sheet, ...(name ? { name } : {}) });
   }
   if (step['turn-over']) ops.push({ 'turn-over': step['turn-over'] });
   if (step.rotate !== undefined) ops.push({ rotate: step.rotate });
