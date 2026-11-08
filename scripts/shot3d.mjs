@@ -7,7 +7,7 @@ const page = await b.newPage({ viewport: { width: 900, height: 700 } });
 page.on('pageerror', (e) => console.log('pageerror:', e.message));
 for (const it of items) {
   const [id, step, t] = it.split(':');
-  await page.goto(`http://localhost:4321/origami/models/${id}/`);
+  await page.goto(`http://localhost:${process.env.PORT ?? 4321}/origami/models/${id}/`);
   await page.waitForFunction(() => window.viewer, null, { timeout: 20000 });
   await page.waitForTimeout(1200);
   await page.evaluate(([s, t, EL]) => {

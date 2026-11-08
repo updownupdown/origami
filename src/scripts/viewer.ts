@@ -70,13 +70,34 @@ class FlatPhase {
   constructor(public phase: Phase, public thick: number) {
     this.faces = phase.faces;
     this.depthA = stackDepth(this.faces, 'a');
-    this.depthB = phase.motion === 'crease' || phase.motion === 'none' ? this.depthA : stackDepth(this.faces, 'b');
+    this.depthB = phase.motion === 'crease' || phase.motion === 'none' || phase.motion === 'shape' || phase.motion === 'stand' ? this.depthA : stackDepth(this.faces, 'b');
     const moving = this.faces.filter((f) => f.d !== 0);
     this.zPivot = moving.length ? (moving.reduce((s, f) => s + f.la, 0) / moving.length) * thick : 0;
   }
 
-  /** Paper-world position (x, y, z) of paper point p on face i at time t. */
+  /** Paper-world position (x, y, z) of paper point p on face i at time t, with the model's tilt (standing). */
   pose(i: number, t: number, p: V2, out: THREE.Vector3): THREE.Vector3 {
+    this.poseFlat(i, t, p, out);
+    const tl = this.phase.tilt;
+    if (!tl) return out;
+    const ang = ((tl.a0 + (tl.a1 - tl.a0) * ease(t)) * Math.PI) / 180;
+    if (Math.abs(ang) < 1e-9) return out;
+    return out.sub(new THREE.Vector3(tl.p[0], tl.p[1], 0))
+      .applyAxisAngle(new THREE.Vector3(tl.q[0] - tl.p[0], tl.q[1] - tl.p[1], 0).normalize(), ang)
+      .add(new THREE.Vector3(tl.p[0], tl.p[1], 0));
+  }
+
+  /** Tilt at the end of the phase as a three.js matrix (for the diagram overlay). */
+  tiltMatrix(): THREE.Matrix4 | null {
+    const tl = this.phase.tilt;
+    if (!tl || Math.abs(tl.a1) < 1e-9) return null;
+    const P = toThree(new THREE.Vector3(tl.p[0], tl.p[1], 0)), Q = toThree(new THREE.Vector3(tl.q[0], tl.q[1], 0));
+    return new THREE.Matrix4().makeTranslation(P.x, P.y, P.z)
+      .multiply(new THREE.Matrix4().makeRotationAxis(Q.clone().sub(P).normalize(), (tl.a1 * Math.PI) / 180))
+      .multiply(new THREE.Matrix4().makeTranslation(-P.x, -P.y, -P.z));
+  }
+
+  private poseFlat(i: number, t: number, p: V2, out: THREE.Vector3): THREE.Vector3 {
     const f = this.faces[i], ph = this.phase, e = ease(t), T = this.thick;
     const za = f.la * T, zb = f.lb * T, z = za + (zb - za) * e;
     if (ph.motion === 'spin') {
@@ -357,7 +378,9 @@ export class FoldViewer {
       this.vertMatch = this.sim.meshes.map((m, si) => this.faceMatch[si].map((match) => Int32Array.from(m.vertFace, (f) => match[f])));
     } else {
       const faces = stateBefore(this.model, this.step);
+      const lastTilt = this.model.steps.slice(0, this.step).reverse().flatMap((st) => st.phases.slice(-1))[0]?.tilt;
       const ph: Phase = { motion: 'none', faces: faces.map((f) => ({ ...f, a: f.b, la: f.lb, d: 0 })), lines: [], arrows: [] };
+      if (lastTilt) ph.tilt = { ...lastTilt, a0: lastTilt.a1 };
       this.phases = [new FlatPhase(ph, this.thick)];
       this.faceMatch = this.sim.meshes.map((m) => [matchFaces(m, ph.faces)]);
       this.vertMatch = this.sim.meshes.map((m, si) => [Int32Array.from(m.vertFace, (f) => this.faceMatch[si][0][f])]);
@@ -426,6 +449,8 @@ export class FoldViewer {
       head.renderOrder = 11;
       v.overlay.add(head);
     }
+    const tm = v.tiltMatrix();
+    if (tm) v.overlay.applyMatrix4(tm);
     this.overlays.add(v.overlay);
   }
 
@@ -477,10 +502,13 @@ export class FoldViewer {
     const { index, local } = this.current();
     const fp = this.phases[Math.min(index, this.phases.length - 1)];
     fp.prepare(local);
-    const hasStill = (fp.phase.motion === 'hinge' || fp.phase.motion === 'crease') && fp.faces.some((f) => f.d === 0) && fp.faces.some((f) => f.d !== 0);
+    // Shaped (3D) models are placed by their anchor faces, so the base stays put while walls rise.
+    const anchored = fp.faces.some((f) => f.k);
+    const hasStill = !anchored && (fp.phase.motion === 'hinge' || fp.phase.motion === 'crease') && fp.faces.some((f) => f.d === 0) && fp.faces.some((f) => f.d !== 0);
     // Mid-fold, place the paper by the parts that stay still. Blend that in and out at the ends of the
     // phase, where every face is at rest, so the placement never jumps between phases or steps.
     const lowW = 1 - 0.98 * smooth(0, 0.18, local) * (1 - smooth(0.82, 1, local));
+    const still = (fi: number) => (anchored ? (fp.faces[fi].k ? 1 : 0.02) : hasStill ? (fp.faces[fi].d === 0 ? 1 : lowW) : 1);
     const v = new THREE.Vector3(), w3 = new THREE.Vector3(), vx = new THREE.Vector3(), vy = new THREE.Vector3();
     let minY = Infinity;
     this.sim.solvers.forEach((sv, si) => {
@@ -498,7 +526,7 @@ export class FoldViewer {
         if (fi < 0) { ww[i] = 0; W[i] = 0; continue; }
         toThree(fp.pose(fi, local, [mesh.paper[2 * i], mesh.paper[2 * i + 1]], v), w3);
         dst[3 * i] = w3.x; dst[3 * i + 1] = w3.y; dst[3 * i + 2] = w3.z;
-        const wt = hasStill ? (fp.faces[fi].d === 0 ? 1 : lowW) : 1;
+        const wt = still(fi);
         ww[i] = wt; W[i] = wt;
       }
       const faceMatch = this.faceMatch[si][Math.min(index, this.faceMatch[si].length - 1)];
@@ -523,7 +551,7 @@ export class FoldViewer {
         // Paper front normal is x × y in paper space (toThree is a proper rotation).
         const fn = vx.clone().cross(vy).normalize();
         dst[3 * j] = w3.x + fn.x * L; dst[3 * j + 1] = w3.y + fn.y * L; dst[3 * j + 2] = w3.z + fn.z * L;
-        ww[j] = hasStill ? (fp.faces[fi].d === 0 ? 1 : lowW) : 1;
+        ww[j] = still(fi);
       }
       const fit = alignRigid(src, dst, ww);
       // Ease the placement towards the new fit, so the solver's small corrections do not wobble the model.

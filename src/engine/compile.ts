@@ -35,6 +35,8 @@ interface State {
   sheets: Map<string, Sheet>;
   active: string;
   nextId: number;
+  /** Current whole-model tilt (stand), degrees about the line p→q. */
+  tilt: { p: V2; q: V2; a: number } | null;
 }
 
 const DEFAULT_FRONT = '#e8642c';
@@ -350,7 +352,8 @@ function makePhase(motion: Phase['motion'], items: { f: Face; a: Mat; b: Mat; la
   return {
     motion,
     faces: items.map((x) => ({
-      id: x.f.id, s: x.f.sheet, p: flatPoly(x.f.poly), a: roundM(x.a), b: roundM(x.b), la: x.la, lb: x.lb, d: x.d, ...x.extra,
+      id: x.f.id, s: x.f.sheet, p: flatPoly(x.f.poly), a: roundM(x.a), b: roundM(x.b), la: x.la, lb: x.lb, d: x.d,
+      ...(x.f.anchor ? { k: 1 as const } : {}), ...x.extra,
     })),
     lines: [],
     arrows: [],
@@ -497,6 +500,7 @@ function opFold(st: State, op: FoldOp): Phase {
 
   const phase = makePhase(isCrease ? 'crease' : 'hinge', items);
   phase.axis = [p, q];
+  if (op.name) phase.name = op.name;
   // Diagram: the fold line across the moving paper, and an arrow.
   const seg = clipToFaces(mv.map((x) => worldPoly({ ...x.f })), p, q);
   if (seg) {
@@ -608,19 +612,8 @@ function opGrid(st: State, g: { n: number; m?: number; kind?: 'valley' | 'mounta
   return phase;
 }
 
-function opCollapse(st: State, c: NonNullable<StepSpec['collapse']>, sheet: string): Phase {
-  const faces0 = sheetFaces(st, sheet);
-  const m0 = faces0[0].m;
-  for (const f of faces0) {
-    if (f.m.some((v, i) => Math.abs(v - m0[i]) > 1e-6)) throw new Error('Collapse needs the sheet to be flat (unfold it first)');
-  }
-  const inv0 = invert(m0);
-  const toPaper = (e: PointExpr) => apply(inv0, resolvePoint(st, e));
-  const creases: { a: V2; b: V2; kind: 'valley' | 'mountain' }[] = [
-    ...(c.valley ?? []).map(fixList).map(([a, b]) => ({ a: toPaper(a), b: toPaper(b), kind: 'valley' as const })),
-    ...(c.mountain ?? []).map(fixList).map(([a, b]) => ({ a: toPaper(a), b: toPaper(b), kind: 'mountain' as const })),
-  ];
-  // Split faces by every crease segment that fully crosses them.
+/** Splits faces (paper space) by crease segments that fully cross them; a segment may not end inside a face. */
+function splitBySegments(st: State, faces0: Face[], creases: { a: V2; b: V2 }[]): Face[] {
   let faces = faces0.slice();
   for (const cr of creases) {
     const L = dist(cr.a, cr.b), u = norm(sub(cr.b, cr.a));
@@ -638,6 +631,62 @@ function opCollapse(st: State, c: NonNullable<StepSpec['collapse']>, sheet: stri
     }
     faces = next;
   }
+  return faces;
+}
+
+/**
+ * Creases a whole crease pattern into a flat sheet (each segment must end on an edge or on another
+ * crease), then optionally shapes it: every crease folds to `angle` degrees at once. For tessellations
+ * and boxes that are shaped in 3D rather than folded flat.
+ */
+function opPattern(st: State, pt: NonNullable<StepSpec['pattern']>, sheet: string): Phase[] {
+  const faces0 = sheetFaces(st, sheet);
+  const m0 = faces0[0].m;
+  for (const f of faces0) {
+    if (f.m.some((v, i) => Math.abs(v - m0[i]) > 1e-6)) throw new Error('pattern needs the sheet to be flat (unfold it first)');
+  }
+  const inv0 = invert(m0);
+  const toPaper = (e: PointExpr) => apply(inv0, resolvePoint(st, e));
+  // Each segment is [P, Q] or [P, Q, angle] (its own fold angle in degrees).
+  const seg = (kind: 'valley' | 'mountain') => (x: unknown) => {
+    const arr = x as unknown[];
+    const ang = arr.length === 3 && typeof arr[2] === 'number' ? (arr[2] as number) : undefined;
+    const [a, b] = fixList((ang === undefined ? arr : arr.slice(0, 2)) as [PointExpr, PointExpr]);
+    return { a: toPaper(a), b: toPaper(b), kind, angle: ang };
+  };
+  const creases = [...(pt.valley ?? []).map(seg('valley')), ...(pt.mountain ?? []).map(seg('mountain'))];
+  if (!creases.length) throw new Error('pattern needs some valley or mountain segments');
+  const faces = splitBySegments(st, faces0, creases);
+  st.faces = [...st.faces.filter((f) => f.sheet !== sheet), ...faces];
+  const lines: DiagramLine[] = creases.map((cr) => ({ kind: cr.kind, p: apply(m0, cr.a), q: apply(m0, cr.b) }));
+  const crease = stillPhase(st, 'none');
+  crease.lines = lines;
+  if (pt.angle === undefined && creases.every((c) => c.angle === undefined)) return [crease];
+  if (pt.fixed !== undefined) {
+    const w = resolvePoint(st, pt.fixed);
+    st.faces = st.faces.map((f) => ({ ...f, anchor: f.sheet === sheet && containsPoint(worldPoly(f), w, 1e-4) }));
+  }
+  const shape = stillPhase(st, 'shape');
+  const anyAnchor = st.faces.some((f) => f.anchor);
+  shape.faces.forEach((f) => (f.d = anyAnchor && !f.k ? 1 : 0));
+  shape.shape = lines.map((l, i) => ({ p: l.p, q: l.q, kind: l.kind as 'valley' | 'mountain', angle: creases[i].angle ?? pt.angle ?? 180 }));
+  if (pt.name) shape.name = pt.name;
+  return [crease, shape];
+}
+
+function opCollapse(st: State, c: NonNullable<StepSpec['collapse']>, sheet: string): Phase {
+  const faces0 = sheetFaces(st, sheet);
+  const m0 = faces0[0].m;
+  for (const f of faces0) {
+    if (f.m.some((v, i) => Math.abs(v - m0[i]) > 1e-6)) throw new Error('Collapse needs the sheet to be flat (unfold it first)');
+  }
+  const inv0 = invert(m0);
+  const toPaper = (e: PointExpr) => apply(inv0, resolvePoint(st, e));
+  const creases: { a: V2; b: V2; kind: 'valley' | 'mountain' }[] = [
+    ...(c.valley ?? []).map(fixList).map(([a, b]) => ({ a: toPaper(a), b: toPaper(b), kind: 'valley' as const })),
+    ...(c.mountain ?? []).map(fixList).map(([a, b]) => ({ a: toPaper(a), b: toPaper(b), kind: 'mountain' as const })),
+  ];
+  let faces = splitBySegments(st, faces0, creases);
   const onCrease = (e: [V2, V2]) => creases.find((cr) => distToLine(e[0], cr.a, cr.b) < 1e-5 && distToLine(e[1], cr.a, cr.b) < 1e-5
     && segmentsOverlap(e[0], e[1], cr.a, cr.b, 1e-5));
   // Maekawa's theorem: at every interior vertex, mountains and valleys differ by two.
@@ -767,6 +816,55 @@ function opPlace(st: State, pl: NonNullable<StepSpec['place']>): Phase {
   return makePhase('move', items);
 }
 
+function stillPhase(st: State, motion: Phase['motion']): Phase {
+  return makePhase(motion, st.faces.map((f) => ({ f, a: f.m, b: f.m, la: f.layer, lb: f.layer, d: 0 })));
+}
+
+/** Sets creases to 3D angles. The flat state does not change; the simulation bends the paper. */
+function opShape(st: State, spec: NonNullable<StepSpec['shape']>): Phase {
+  const list = Array.isArray(spec) ? spec : spec.creases ?? [];
+  const fixed = Array.isArray(spec) ? undefined : spec.fixed;
+  if (!list.length) throw new Error('shape needs at least one crease');
+  if (fixed !== undefined) {
+    const w = resolvePoint(st, fixed);
+    const hit = st.faces.filter((f) => containsPoint(worldPoly(f), w, 1e-4));
+    if (!hit.length) throw new Error('There is no paper at the "fixed" point');
+    st.faces = st.faces.map((f) => ({ ...f, anchor: hit.includes(f) }));
+  }
+  const ph = stillPhase(st, 'shape');
+  ph.shape = list.map((c) => {
+    if (typeof c.angle !== 'number' || c.angle < 0 || c.angle > 180) throw new Error('shape: angle must be 0 to 180 degrees');
+    if (c.creases) return { name: c.creases, angle: c.angle, ...(c.kind ? { kind: c.kind } : {}) };
+    if (!c.line) throw new Error('shape: give "creases: <name>" or "line: [P, Q]"');
+    const [p, q] = fixList(c.line).map((e) => resolvePoint(st, e));
+    if (dist(p, q) < 1e-6) throw new Error('shape: the line needs two different points');
+    return { p, q, angle: c.angle, ...(c.kind ? { kind: c.kind } : {}) };
+  });
+  // Faces off the anchor move with the shaping (for placement weights).
+  const anyAnchor = st.faces.some((f) => f.anchor);
+  ph.faces.forEach((f) => (f.d = anyAnchor && !f.k ? 1 : 0));
+  return ph;
+}
+
+/** Tips the whole model up about a base line, so it stands on the table. */
+function opStand(st: State, spec: NonNullable<StepSpec['stand']>): Phase {
+  const on = Array.isArray(spec) ? spec : spec.on;
+  const angle = Array.isArray(spec) ? 90 : spec.angle ?? 90;
+  let [p, q] = fixList(on).map((e) => resolvePoint(st, e));
+  if (dist(p, q) < 1e-6) throw new Error('stand: the base line needs two different points');
+  // Tip the side the model is on upwards: with the model on the left of p→q, a positive turn about p→q lifts it.
+  const c = modelCenter(st);
+  if (side(c, p, q) < 0) [p, q] = [q, p];
+  const prev = st.tilt;
+  const ph = stillPhase(st, 'stand');
+  const a0 = prev ? prev.a : 0;
+  const base = prev ?? { p, q, a: 0 };
+  if (prev && (dist(prev.p, p) > 1e-6 || dist(prev.q, q) > 1e-6)) throw new Error('stand: the model is already standing on another line');
+  st.tilt = { p: base.p, q: base.q, a: angle };
+  ph.tilt = { p: base.p, q: base.q, a0, a1: angle };
+  return ph;
+}
+
 function opMark(st: State, mark: Record<string, PointExpr>) {
   for (const [name, e] of Object.entries(mark)) {
     const w = resolvePoint(st, e);
@@ -792,6 +890,9 @@ function opsOf(step: StepSpec): Op[] {
   if (step.grid) ops.push({ grid: step.grid, sheet: step.sheet });
   if (step.collapse) ops.push({ collapse: step.collapse, sheet: step.sheet });
   if (step.place) ops.push({ place: step.place });
+  if (step.pattern) ops.push({ pattern: step.pattern, sheet: step.sheet });
+  if (step.shape) ops.push({ shape: step.shape });
+  if (step.stand) ops.push({ stand: step.stand });
   return ops;
 }
 
@@ -803,6 +904,9 @@ function defaultText(ops: Op[]): string {
   if ('grid' in op) return `Crease a ${op.grid.n} × ${op.grid.m ?? op.grid.n} grid.`;
   if ('collapse' in op) return 'Collapse along the creases.';
   if ('place' in op) return 'Put the pieces together.';
+  if ('shape' in op) return 'Open the model into shape.';
+  if ('pattern' in op) return 'Crease the pattern.';
+  if ('stand' in op) return 'Stand the model up.';
   const f = op as FoldOp;
   if (f.reverse) return `${f.reverse === 'inside' ? 'Inside' : 'Outside'} reverse fold.`;
   if (f.crease) return `${f.crease === 'mountain' ? 'Mountain' : 'Valley'} fold and unfold.`;
@@ -833,9 +937,19 @@ function parseSize(size: string | number): [number, number] {
   return m.length === 1 ? [m[0], m[0]] : [m[0], m[1]];
 }
 
+/** Sheets a step changes: faces that move, turn or crease. */
+function stepSheets(phases: Phase[]): string[] {
+  const out = new Set<string>();
+  for (const ph of phases) {
+    if (ph.motion === 'spin' || ph.motion === 'stand' || ph.motion === 'shape') continue;
+    for (const f of ph.faces) if (f.d !== 0 || f.a.some((v, i) => Math.abs(v - f.b[i]) > 1e-6)) out.add(f.s);
+  }
+  return [...out];
+}
+
 export function compileModel(script: ModelScript, bases: BaseLibrary = {}): CompiledModel {
   if (!script.materials?.length) throw new CompileError(-1, 'A model needs at least one sheet in "materials"');
-  const st: State = { faces: [], pins: new Map(), sheets: new Map(), active: script.materials[0].id, nextId: 1 };
+  const st: State = { faces: [], pins: new Map(), sheets: new Map(), active: script.materials[0].id, nextId: 1, tilt: null };
   let x = 0;
   let layer = 0;
   const sheets: SheetInfo[] = [];
@@ -895,6 +1009,9 @@ export function compileModel(script: ModelScript, bases: BaseLibrary = {}): Comp
         if ('grid' in op) { phases.push(opGrid(st, op.grid, op.sheet ?? st.active)); continue; }
         if ('collapse' in op) { phases.push(opCollapse(st, op.collapse, op.sheet ?? st.active)); continue; }
         if ('place' in op) { phases.push(opPlace(st, op.place)); continue; }
+        if ('shape' in op) { phases.push(opShape(st, op.shape)); continue; }
+        if ('pattern' in op) { phases.push(...opPattern(st, op.pattern, op.sheet ?? st.active)); continue; }
+        if ('stand' in op) { phases.push(opStand(st, op.stand)); continue; }
         const f = op as FoldOp;
         if (f.sheet) st.active = f.sheet;
         phases.push(opFold(st, f));
@@ -902,7 +1019,9 @@ export function compileModel(script: ModelScript, bases: BaseLibrary = {}): Comp
       cam = camera(step.camera, cam);
       if (!step.camera && (cam.auto || cam.preset === 'top')) cam = { ...cam, auto: true };
       else if (step.camera) cam = { ...cam, auto: false };
-      steps.push({ text: step.text ?? defaultText(ops), tip: step.tip, group, camera: cam, phases });
+      // Every phase carries the model's tilt, so the viewer can pose it standing.
+      for (const ph of phases) if (!ph.tilt && st.tilt) ph.tilt = { p: st.tilt.p, q: st.tilt.q, a0: st.tilt.a, a1: st.tilt.a };
+      steps.push({ text: step.text ?? defaultText(ops), tip: step.tip, group, sheets: stepSheets(phases), camera: cam, phases });
     } catch (e) {
       if (e instanceof CompileError) throw e;
       throw new CompileError(i, (e as Error).message);

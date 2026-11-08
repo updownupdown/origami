@@ -31,6 +31,8 @@ export interface FoldOp {
   move?: PointExpr;
   layers?: LayerChoice;
   sheet?: string;
+  /** Names the creases this fold makes, so a later `shape` step can open them to a 3D angle. */
+  name?: string;
 }
 
 export interface TurnOverOp {
@@ -72,7 +74,42 @@ export interface MarkOp {
   mark: Record<string, PointExpr>;
 }
 
-export type Op = FoldOp | TurnOverOp | RotateOp | GridOp | CollapseOp | PlaceOp | MarkOp;
+/** One crease set to a 3D (non-flat) fold angle. */
+export interface ShapeCrease {
+  /** Creases made by the folds with this `name`. */
+  creases?: string;
+  /** Or: creases lying on this segment (world, current state), with their fold direction... */
+  line?: [PointExpr, PointExpr];
+  /** ...needed when the crease is open (flat) at this point. Seen from above. */
+  kind?: 'valley' | 'mountain';
+  /** How far the crease is folded, in degrees: 0 is flat open, 180 is folded flat. */
+  angle: number;
+}
+export interface ShapeOp {
+  /** Open or close creases to 3D angles (walls of a box, a body opened to stand, a puffed wing). */
+  shape: ShapeCrease[] | { creases?: ShapeCrease[]; fixed?: PointExpr };
+}
+export interface PatternOp {
+  /** Crease a crease pattern (segments in world space on a flat sheet), and optionally fold it all to `angle`. */
+  pattern: {
+    /** Segments [P, Q], or [P, Q, angle] to give one crease its own angle. */
+    valley?: ([PointExpr, PointExpr] | [PointExpr, PointExpr, number])[];
+    mountain?: ([PointExpr, PointExpr] | [PointExpr, PointExpr, number])[];
+    /** Fold every crease of the pattern to this many degrees at once (0 flat, 180 folded flat). */
+    angle?: number;
+    /** A point on the face that stays still while it folds. */
+    fixed?: PointExpr;
+    /** Name for a later `shape: [{ creases: <name>, angle }]`. */
+    name?: string;
+  };
+  sheet?: string;
+}
+export interface StandOp {
+  /** Stand the model up: tip it about a base line until it rests on that line (default 90°). */
+  stand: { on: [PointExpr, PointExpr]; angle?: number } | [PointExpr, PointExpr];
+}
+
+export type Op = FoldOp | TurnOverOp | RotateOp | GridOp | CollapseOp | PlaceOp | MarkOp | ShapeOp | StandOp | PatternOp;
 
 export type CameraPreset = 'top' | 'three-quarter' | 'front' | 'side' | 'bottom' | 'hero';
 export interface CameraSpec {
@@ -96,6 +133,9 @@ export interface StepSpec extends Partial<FoldOp> {
   collapse?: CollapseOp['collapse'];
   place?: PlaceOp['place'];
   mark?: MarkOp['mark'];
+  shape?: ShapeOp['shape'];
+  pattern?: PatternOp['pattern'];
+  stand?: StandOp['stand'];
   /** Name fixed points in space (they stay put when the paper moves). */
   pin?: Record<string, PointExpr>;
   /** Tip shown under the step text. */
@@ -160,6 +200,8 @@ export interface Face {
   poly: V2[];
   m: Mat;
   layer: number;
+  /** Stays put while the model is shaped in 3D. */
+  anchor?: boolean;
 }
 
 export interface SheetInfo {
@@ -173,7 +215,23 @@ export interface SheetInfo {
   note?: string;
 }
 
-export type MotionKind = 'hinge' | 'crease' | 'spin' | 'chain' | 'move' | 'none';
+export type MotionKind = 'hinge' | 'crease' | 'spin' | 'chain' | 'move' | 'none' | 'shape' | 'stand';
+
+/** A 3D fold angle for a set of creases, resolved by the simulation. */
+export interface PhaseShape {
+  /** Creases made by phases with this name... */
+  name?: string;
+  /** ...or creases on this world segment (in the phase's flat state). */
+  p?: V2;
+  q?: V2;
+  /** Direction for open creases: valley or mountain seen from above. */
+  kind?: 'valley' | 'mountain';
+  /** Degrees: 0 flat open, 180 folded flat. */
+  angle: number;
+}
+
+/** Whole-model tilt about a line on the table (world), in degrees by the right-hand rule along p→q. */
+export interface Tilt { p: V2; q: V2; a0: number; a1: number }
 
 export interface PhaseFace {
   id: number;
@@ -190,6 +248,8 @@ export interface PhaseFace {
   parent?: number;
   hinge?: [number, number, number, number];
   ang?: number;
+  /** 1 on faces that stay put when the model is shaped in 3D (they anchor its placement). */
+  k?: 1;
 }
 
 export interface DiagramLine {
@@ -212,12 +272,20 @@ export interface Phase {
   faces: PhaseFace[];
   lines: DiagramLine[];
   arrows: DiagramArrow[];
+  /** Fold name (see FoldOp.name). */
+  name?: string;
+  /** For 'shape' phases: the creases and angles. */
+  shape?: PhaseShape[];
+  /** The model's tilt through this phase (absent when upright on the table, i.e. lying flat). */
+  tilt?: Tilt;
 }
 
 export interface CompiledStep {
   text: string;
   tip?: string;
   group?: string;
+  /** Sheets this step works on (ids). Several, or none, for assembly and whole-model moves. */
+  sheets?: string[];
   camera: CameraSpec;
   phases: Phase[];
 }

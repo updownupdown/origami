@@ -9,6 +9,7 @@
 // Pure TypeScript with no three.js, so it runs in the browser, in workers and in tests.
 
 import type { CompiledModel, Phase, PhaseFace } from './types.ts';
+import { applyShapes } from './shape.ts';
 
 type V2 = [number, number];
 
@@ -463,7 +464,7 @@ export class Solver {
 
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-interface PhaseAngles { kind: 'flat' | 'crease'; a: Float64Array[]; b: Float64Array[]; mid?: Float64Array[]; match: Int32Array[] }
+interface PhaseAngles { kind: 'flat' | 'crease'; a: Float64Array[]; b: Float64Array[]; mid?: Float64Array[]; match: Int32Array[]; exA?: Uint8Array[]; exB?: Uint8Array[] }
 
 export interface FoldSimOptions extends SolverOptions {
   /**
@@ -505,8 +506,10 @@ export class FoldSim {
       if (ph.motion === 'crease') {
         return { kind: 'crease' as const, a, b, match, mid: this.meshes.map((m, i) => creaseAngles(m, ph.faces, match[i])) };
       }
-      return { kind: 'flat' as const, a, b, match };
+      return { kind: 'flat' as const, a, b, match } as PhaseAngles;
     }));
+    // 3D shaping steps: creases held at in-between angles.
+    applyShapes(model, this.meshes, this.angles);
     this.cache[0] = this.solvers.map((s) => s.getState());
     // Which step last changed each hinge, as of the start of every step.
     const N = model.steps.length;
@@ -550,7 +553,14 @@ export class FoldSim {
         for (let h = 0; h < T.length; h++) T[h] = fa(h) * (a[h] + (m[h] - a[h]) * 0.9 * w);
       } else {
         const e = easeInOut(tc);
-        for (let h = 0; h < T.length; h++) T[h] = fa(h) * (a[h] + (b[h] - a[h]) * e);
+        const xa = A.exA?.[i], xb = A.exB?.[i];
+        for (let h = 0; h < T.length; h++) {
+          if ((xa && xa[h]) || (xb && xb[h])) {
+            // Shaped creases sit at their exact 3D angle, however flat the other folds are pressed.
+            const f = fa(h), va = xa && xa[h] ? a[h] : f * a[h], vb = xb && xb[h] ? b[h] : f * b[h];
+            T[h] = va + (vb - va) * e;
+          } else T[h] = fa(h) * (a[h] + (b[h] - a[h]) * e);
+        }
       }
     });
   }
