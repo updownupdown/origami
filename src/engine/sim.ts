@@ -8,7 +8,7 @@
 //
 // Pure TypeScript with no three.js, so it runs in the browser, in workers and in tests.
 
-import type { CompiledModel, PhaseFace } from './types.ts';
+import type { CompiledModel, Phase, PhaseFace } from './types.ts';
 
 type V2 = [number, number];
 
@@ -255,6 +255,32 @@ export function flatAngles(mesh: SimMesh, faces: PhaseFace[], match: Int32Array,
   return out;
 }
 
+/** Overrides `out` for hinges on the authored crease lines of a collapse (chain) phase. */
+export function chainAngles(mesh: SimMesh, ph: Phase, match: Int32Array, out: Float64Array) {
+  const nh = mesh.hingeCrease.length;
+  for (let h = 0; h < nh; h++) {
+    if (!mesh.hingeCrease[h]) continue;
+    const F = ph.faces[match[mesh.hingeFaces[2 * h]]];
+    if (!F) continue;
+    const ia = mesh.hinges[4 * h], ib = mesh.hinges[4 * h + 1];
+    const m = F.a;
+    const pa: V2 = [m[0] * mesh.paper[2 * ia] + m[2] * mesh.paper[2 * ia + 1] + m[4], m[1] * mesh.paper[2 * ia] + m[3] * mesh.paper[2 * ia + 1] + m[5]];
+    const pb: V2 = [m[0] * mesh.paper[2 * ib] + m[2] * mesh.paper[2 * ib + 1] + m[4], m[1] * mesh.paper[2 * ib] + m[3] * mesh.paper[2 * ib + 1] + m[5]];
+    const line = ph.lines.find((l) => l.kind !== 'crease' && onSeg(pa, l.p, l.q) && onSeg(pb, l.p, l.q));
+    if (!line) continue;
+    const frontUp = det(m) > 0;
+    const towardFront = line.kind === 'valley' ? frontUp : !frontUp;
+    out[h] = towardFront ? -Math.PI : Math.PI;
+  }
+}
+
+function onSeg(p: V2, a: V2, b: V2): boolean {
+  const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1;
+  const t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2;
+  if (t < -1e-4 || t > 1 + 1e-4) return false;
+  return Math.hypot(a[0] + t * dx - p[0], a[1] + t * dy - p[1]) < 1e-4 * Math.sqrt(L2) + 1e-6;
+}
+
 /** Fold angles at the middle of a "crease" phase (fold and unfold): the creased hinges fold one way. */
 export function creaseAngles(mesh: SimMesh, faces: PhaseFace[], match: Int32Array): Float64Array {
   const nh = mesh.hingeCrease.length;
@@ -471,6 +497,11 @@ export class FoldSim {
       const match = this.meshes.map((m) => matchFaces(m, ph.faces));
       const a = this.meshes.map((m, i) => flatAngles(m, ph.faces, match[i], 'a'));
       const b = this.meshes.map((m, i) => flatAngles(m, ph.faces, match[i], 'b'));
+      if (ph.motion === 'chain') {
+        // Collapses: the flat engine's stacking is only approximate, so take each crease's direction
+        // from the authored mountain and valley lines instead.
+        this.meshes.forEach((m, i) => chainAngles(m, ph, match[i], b[i]));
+      }
       if (ph.motion === 'crease') {
         return { kind: 'crease' as const, a, b, match, mid: this.meshes.map((m, i) => creaseAngles(m, ph.faces, match[i])) };
       }
