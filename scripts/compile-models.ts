@@ -8,7 +8,7 @@ import { ROOT, loadBases, loadModels } from './lib.ts';
 import { buildIndex } from './index-entries.ts';
 
 const out = (p: string) => path.join(ROOT, p);
-for (const d of ['public/models', 'public/fold', 'public/thumbs', 'src/generated']) fs.mkdirSync(out(d), { recursive: true });
+for (const d of ['public/models', 'public/fold', 'public/thumbs', 'public/src', 'src/generated']) fs.mkdirSync(out(d), { recursive: true });
 
 const bases = loadBases();
 const compiled = [];
@@ -23,6 +23,7 @@ for (const { file, script } of loadModels()) {
     const m = compileModel(script, bases);
     fs.writeFileSync(out(`public/models/${m.id}.json`), JSON.stringify(m));
     fs.writeFileSync(out(`public/fold/${m.id}.fold`), JSON.stringify(toFold(m)));
+    fs.copyFileSync(file, out(`public/src/${m.id}.yaml`));
     fs.writeFileSync(out(`public/thumbs/${m.id}.svg`), finalSvg(m, { width: 400, height: 400, padding: 0.12 }));
     compiled.push(m);
   } catch (e) {
@@ -30,6 +31,7 @@ for (const { file, script } of loadModels()) {
     console.error(`✗ ${rel}: ${(e as Error).message}`);
   }
 }
+fs.writeFileSync(out('public/bases.json'), JSON.stringify(bases));
 const index = buildIndex(compiled);
 fs.writeFileSync(out('src/generated/index.json'), JSON.stringify(index));
 fs.writeFileSync(out('public/search.json'), JSON.stringify(index));

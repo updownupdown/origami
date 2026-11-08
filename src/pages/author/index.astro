@@ -1,4 +1,80 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { icon } from '../../lib/icons';
+import index from '../../generated/index.json';
+const base = import.meta.env.BASE_URL;
+const models = (index as any[]).filter((e) => e.kind === 'foldable').sort((a, b) => a.title.localeCompare(b.title));
 ---
-<Base title="Editor"><main><p>Editor coming soon.</p></main></Base>
+<Base title="Editor" bodyClass="author-page">
+  <main class="author">
+    <section class="ed">
+      <header class="ed-bar">
+        <a class="btn icon" href={base} aria-label="All models"><Fragment set:html={icon('back')} /></a>
+        <h1>Editor</h1>
+        <select id="pick" aria-label="Load a model">
+          <option value="">Load a model…</option>
+          <option value="__new">New blank model</option>
+          {models.map((m) => <option value={m.id}>{m.title}</option>)}
+        </select>
+        <button class="btn small" id="btn-dl">Download</button>
+      </header>
+      <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Model script (YAML)"></textarea>
+      <p class="ed-status" id="status" role="status"></p>
+      <details class="ed-help">
+        <summary>Cheat sheet</summary>
+        <ul>
+          <li><b>Corners</b> A B C D clockwise from top-left (top corner with <code>diamond: true</code>), centre <code>O</code>.</li>
+          <li><b>Points</b> <code>mid(A B)</code>, <code>lerp(A B 0.25)</code>, <code>intersect(P Q R S)</code>, <code>reflect(X P Q)</code>, <code>shift(X P Q d)</code>, <code>at(x y)</code>, <code>paper(x y)</code>.</li>
+          <li><b>Lines</b> <code>[P, Q]</code>; <code>{'{'} bring: P, to: Q {'}'}</code>; <code>{'{'} bring: [P, Q], onto: [R, S] {'}'}</code>; <code>{'{'} through: P, perpendicular: [Q, R] {'}'}</code>.</li>
+          <li><b>Steps</b> <code>fold</code>/<code>crease</code>: valley or mountain, <code>reverse</code>: inside or outside, <code>unfold</code>, <code>turn-over</code>, <code>rotate</code>, <code>grid</code>, <code>collapse</code>, <code>place</code>, <code>use: base/kite</code>.</li>
+          <li><b>Names</b> <code>mark</code> names a point on the paper (it moves with it); <code>pin</code> names a fixed spot.</li>
+          <li><b>Which part moves</b> <code>move: P</code> picks the side; <code>layers: top</code> or <code>bottom</code> folds one layer.</li>
+        </ul>
+      </details>
+    </section>
+    <section class="pv">
+      <div class="canvas" id="canvas" role="img" aria-label="3D preview"></div>
+      <div class="pv-card card">
+        <div class="pv-row">
+          <button class="btn icon" id="btn-prev" aria-label="Previous step"><Fragment set:html={icon('back')} /></button>
+          <div class="pv-txt"><span id="step-label" class="lbl"></span><p id="step-text"></p></div>
+          <button class="btn icon" id="btn-next" aria-label="Next step"><Fragment set:html={icon('next')} /></button>
+        </div>
+        <input type="range" id="scrub" min="0" max="1000" value="1000" aria-label="Fold progress" />
+      </div>
+    </section>
+  </main>
+</Base>
+
+<style>
+  .author { display: grid; grid-template-columns: minmax(320px, 42%) 1fr; height: 100dvh; }
+  .ed { display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--paper-raised); min-height: 0; }
+  .ed-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  .ed-bar h1 { font-size: 1.05rem; font-weight: 600; margin: 0 auto 0 4px; }
+  .ed-bar select { font: inherit; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); max-width: 180px; }
+  textarea { flex: 1; min-height: 0; resize: none; border: 0; padding: 14px 16px; font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--paper-raised); color: var(--ink); outline: none; tab-size: 2; }
+  .ed-status { margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 0.9rem; color: var(--ink-soft); min-height: 2.6em; }
+  .ed-status.err { color: #b23a1a; background: color-mix(in srgb, #d93a3a 8%, transparent); }
+  .ed-help { padding: 8px 16px 12px; border-top: 1px solid var(--line); font-size: 0.85rem; color: var(--ink-soft); }
+  .ed-help summary { cursor: pointer; color: var(--ink); }
+  .ed-help ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+  .ed-help code { font-size: 0.85em; background: var(--paper-sunk); padding: 1px 4px; border-radius: 4px; }
+  .pv { position: relative; min-height: 0; background: var(--paper); }
+  .pv .canvas { position: absolute; inset: 0; }
+  .pv-card { position: absolute; left: 16px; right: 16px; bottom: 16px; padding: 10px 12px; max-width: 640px; margin: 0 auto; }
+  .pv-row { display: flex; align-items: center; gap: 10px; }
+  .pv-txt { flex: 1; min-width: 0; }
+  .pv-txt .lbl { font-size: 0.8rem; color: var(--ink-faint); }
+  .pv-txt p { margin: 2px 0 0; }
+  #scrub { width: 100%; margin-top: 8px; accent-color: var(--accent); }
+  @media (max-width: 760px) {
+    .author { grid-template-columns: 1fr; grid-template-rows: 55dvh 1fr; height: auto; min-height: 100dvh; }
+    .ed { order: 2; border-right: 0; border-top: 1px solid var(--line); min-height: 60dvh; }
+    .pv { order: 1; }
+  }
+</style>
+
+<script>
+  import { initAuthor } from '../../scripts/author';
+  initAuthor();
+</script>

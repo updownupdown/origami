@@ -7,3 +7,5 @@ public/thumbs/
 src/generated/
 test-results/
 public/search.json
+public/src/
+public/bases.json
