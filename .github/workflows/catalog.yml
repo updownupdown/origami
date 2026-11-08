@@ -23,6 +23,7 @@ jobs:
           git add data/catalog
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git commit -m "Refresh link-only catalog"
+          git pull --rebase origin main
           git push
           gh workflow run deploy.yml --ref main
         env:
