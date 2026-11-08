@@ -1,0 +1,16 @@
+import { chromium } from 'playwright';
+const S = process.argv[2];
+const b = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const page = await b.newPage({ viewport: { width: 1200, height: 800 } });
+page.on('pageerror', (e) => console.log('pageerror:', e.message));
+await page.goto('http://localhost:4321/origami/');
+await page.waitForTimeout(1500);
+await page.click('#levels button[data-level="1"]');
+await page.hover('.tile[data-id="fox-face"] .thumb');
+await page.waitForTimeout(2500);
+console.log(await page.evaluate(() => document.querySelectorAll('.live-box canvas').length));
+await page.screenshot({ path: `${S}/browse.png` });
+await page.mouse.move(5, 5);
+await page.waitForTimeout(300);
+console.log(await page.evaluate(() => document.querySelectorAll('.live-box').length));
+await b.close();

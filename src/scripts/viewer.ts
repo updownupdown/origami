@@ -178,10 +178,19 @@ class SheetView {
     this.back = new THREE.Mesh(this.geo, mk(colors.back, THREE.BackSide));
     // Paper casts onto the table only: self-shadowing between layers a hair apart shows as acne.
     for (const m of [this.front, this.back]) { m.castShadow = true; m.receiveShadow = false; }
-    const lg = new THREE.BufferGeometry();
-    lg.setAttribute('position', this.geo.getAttribute('position'));
-    lg.setIndex(new THREE.BufferAttribute(new Uint32Array(mesh.lines), 1));
-    this.lines = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0x2b2a28, transparent: true, opacity: 0.2 }));
+    // Cartoon-style lines (as in Origami Simulator): a clear outline round the paper's edges and
+    // faint creases, so the shape reads at a glance.
+    const pick = (kind: number) => {
+      const out: number[] = [];
+      for (let k = 0; k < mesh.lineKind.length; k++) if (mesh.lineKind[k] === kind) out.push(mesh.lines[2 * k], mesh.lines[2 * k + 1]);
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', this.geo.getAttribute('position'));
+      g.setIndex(new THREE.BufferAttribute(new Uint32Array(out), 1));
+      return g;
+    };
+    this.lines = new THREE.LineSegments(pick(1), new THREE.LineBasicMaterial({ color: 0x2b2a28, transparent: true, opacity: 0.22 }));
+    this.lines.add(new THREE.LineSegments(pick(2), new THREE.LineBasicMaterial({ color: 0x2b2a28, transparent: true, opacity: 0.55 })));
+    this.lines.traverse((o) => (o.frustumCulled = false));
   }
   setColors(c: { front: string; back: string }) {
     (this.front.material as THREE.MeshStandardMaterial).color.set(c.front);
@@ -189,10 +198,9 @@ class SheetView {
   }
   dispose() {
     this.geo.dispose();
-    this.lines.geometry.dispose();
+    this.lines.traverse((o) => { const l = o as THREE.LineSegments; l.geometry?.dispose(); (l.material as THREE.Material | undefined)?.dispose(); });
     (this.front.material as THREE.Material).dispose();
     (this.back.material as THREE.Material).dispose();
-    (this.lines.material as THREE.Material).dispose();
   }
 }
 
@@ -201,6 +209,8 @@ const PRESET_DEFAULT: CameraSpec = { azimuth: 0, elevation: 72, zoom: 1 };
 export interface ViewerOptions {
   colors: Colors;
   thumbnail?: boolean;
+  /** Small live preview: no table, slow turntable spin, rotate only. */
+  spin?: boolean;
   /** Leave room at the bottom of the canvas for a step card. */
   cardOffset?: boolean;
   /** Called with the time (0..1) through the current step on every change. */
@@ -263,6 +273,12 @@ export class FoldViewer {
     this.controls.maxPolarAngle = Math.PI * 0.495;
     this.controls.addEventListener('change', () => (this.dirty = true));
     this.controls.addEventListener('start', () => (this.camTween = null));
+    if (opts.spin) {
+      this.controls.autoRotate = true;
+      this.controls.autoRotateSpeed = 2.4;
+      this.controls.enableZoom = false;
+      this.controls.enablePan = false;
+    }
 
     // Soft, even light like a bright room: a big sky/ground fill, a gentle key light with a soft shadow, and a rim.
     this.scene.add(new THREE.HemisphereLight(0xfffbf2, 0xd9cfbd, 1.6));
@@ -283,7 +299,7 @@ export class FoldViewer {
     this.scene.add(rim);
 
     this.table = makeTable(S, this.el);
-    if (!opts.thumbnail) this.scene.add(this.table);
+    if (!opts.thumbnail && !opts.spin) this.scene.add(this.table);
     this.scene.add(this.model3d, this.overlays);
 
     this.sim = new FoldSim(model);
@@ -311,7 +327,7 @@ export class FoldViewer {
     this.renderer.domElement.style.height = '100%';
     this.camera.aspect = w / h;
     // Shift the picture up so the step card at the bottom does not cover the model.
-    if (!this.opts.thumbnail && this.opts.cardOffset !== false) this.camera.setViewOffset(w, h, 0, Math.min(120, h * 0.11), w, h);
+    if (!this.opts.thumbnail && !this.opts.spin && this.opts.cardOffset !== false) this.camera.setViewOffset(w, h, 0, Math.min(120, h * 0.11), w, h);
     else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
     this.dirty = true;
@@ -560,7 +576,7 @@ export class FoldViewer {
     const radius = Math.max(size.length() / 2, this.model.extent * 0.3);
     const fov = (this.camera.fov * Math.PI) / 180;
     const aspect = Math.max(0.5, Math.min(this.camera.aspect, 1.6));
-    const dist = (radius / Math.sin(fov / 2)) * (aspect < 1 ? 1.15 / aspect : 1.05) / (spec.zoom ?? 1) * (this.opts.thumbnail ? 0.82 : 1);
+    const dist = (radius / Math.sin(fov / 2)) * (aspect < 1 ? 1.15 / aspect : 1.05) / (spec.zoom ?? 1) * (this.opts.thumbnail ? 0.82 : this.opts.spin ? 1.15 : 1);
     const el = (((spec.elevation ?? 72) * Math.PI) / 180);
     const az = (((spec.azimuth ?? 0) * Math.PI) / 180);
     return { center, sph: new THREE.Spherical(dist, Math.PI / 2 - Math.min(el, 89 * Math.PI / 180), az), radius };
@@ -624,10 +640,21 @@ export class FoldViewer {
     }
     if (this.controls.update()) this.dirty = true;
     if (this.dirty) {
+      this.fitDepth();
       this.renderer.render(this.scene, this.camera);
       this.dirty = false;
     }
     this.raf = requestAnimationFrame(this.loop);
+  }
+
+  /** Keeps the depth range tight round the model: stacked layers sit a hair apart, so precision matters. */
+  private fitDepth() {
+    const d = this.camera.position.distanceTo(this.controls.target), S = this.model.extent;
+    const near = Math.max(0.05, (d - S * 1.6) * 0.9, d * 0.04), far = d + S * 12;
+    if (Math.abs(near - this.camera.near) > 1e-3 || Math.abs(far - this.camera.far) > 1e-3) {
+      this.camera.near = near; this.camera.far = far;
+      this.camera.updateProjectionMatrix();
+    }
   }
 
   /** Settles the paper and renders immediately (for thumbnails). */
@@ -635,6 +662,7 @@ export class FoldViewer {
     this.sim.settle(1.5);
     this.updateMesh(0);
     this.controls.update();
+    this.fitDepth();
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -646,6 +674,7 @@ export class FoldViewer {
     this.table.traverse((o) => { const m = o as THREE.Mesh; m.geometry?.dispose(); (m.material as THREE.Material | undefined)?.dispose(); });
     this.controls.dispose();
     this.renderer.dispose();
+    this.renderer.forceContextLoss();
     this.renderer.domElement.remove();
   }
 }
