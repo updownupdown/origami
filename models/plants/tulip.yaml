@@ -1,0 +1,83 @@
+id: tulip
+title: Tulip with stem
+family: tulip
+aliases: [flower, spring flower]
+categories: [plants/flowers]
+tags: [tulip, flower, stem, spring, mother's day, kids, two sheets]
+difficulty: 1
+description: A three-pointed tulip head on a long leafy stem. Two squares, one for the flower and one for the stem.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: flower
+    name: Flower
+    size: 15
+    diamond: true
+    at: [-12, 0]
+    colors: { front: "#d93a3a", back: "#fbf7ee" }
+  - id: stem
+    name: Stem
+    size: 15
+    diamond: true
+    at: [12, 0]
+    colors: { front: "#5fbf6a", back: "#fbf7ee" }
+steps:
+  - text: "Flower: start with a diamond, white side up. Fold the bottom corner up to the top."
+    fold: valley
+    sheet: flower
+    line: [flower.B, flower.D]
+    move: flower.C
+  - text: Fold the right corner up so it points past the top, a little out to the side.
+    fold: valley
+    sheet: flower
+    line: [flower.O, lerp(flower.B flower.C 0.41)]
+    move: flower.B
+  - text: Fold the left corner up the same way. That's the flower.
+    fold: valley
+    sheet: flower
+    line: [flower.O, lerp(flower.D flower.C 0.41)]
+    move: flower.D
+  - text: "Stem: start with a diamond, white side up. Fold the right and left lower edges to the centre line (a kite)."
+    pin: { SA: stem.A, SC: stem.C, SB: stem.B, SD: stem.D }
+    ops:
+      - fold: valley
+        sheet: stem
+        line:
+          bring: [stem.C, stem.B]
+          onto: [stem.C, stem.A]
+        move: stem.B
+      - fold: valley
+        sheet: stem
+        line:
+          bring: [stem.C, stem.D]
+          onto: [stem.C, stem.A]
+        move: stem.D
+  - text: Fold the upper edges to the centre line too, making a long thin diamond.
+    ops:
+      - fold: valley
+        sheet: stem
+        line:
+          bring: [SA, SB]
+          onto: [SA, SC]
+        move: shift(lerp(SA SC 0.1) SA SC 1)
+      - fold: valley
+        sheet: stem
+        line:
+          bring: [SA, SD]
+          onto: [SA, SC]
+        move: shift(lerp(SA SC 0.1) SA SC -1)
+  - text: Fold the stem in half from left to right along the centre.
+    fold: valley
+    sheet: stem
+    line: [SA, SC]
+    move: shift(lerp(SA SC 0.5) SA SC -0.3)
+  - text: Fold the bottom point up and out at an angle. This is the leaf.
+    fold: valley
+    sheet: stem
+    line: [lerp(SC SA 0.3), shift(lerp(SC SA 0.42) SC SA 3)]
+    move: lerp(SC SA 0.02)
+  - text: Slide the flower onto the top of the stem.
+    place: { sheet: flower, point: flower.O, to: lerp(SA SC 0.06), layer: above }
+finish:
+  text: A dab of glue keeps the flower on its stem. Make a few for a bunch.
