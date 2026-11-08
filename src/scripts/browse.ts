@@ -40,19 +40,34 @@ export async function initBrowse() {
     q: saved.q ?? '', cat: saved.cat ?? '', sheets: saved.sheets ?? '', links: !!saved.links,
     levels: Array.isArray(saved.levels) ? saved.levels : saved.difficulty ? [Number(saved.difficulty)] : [],
   };
-  const q = $<HTMLInputElement>('q'), cat = $<HTMLSelectElement>('cat'), links = $<HTMLInputElement>('links');
+  const q = $<HTMLInputElement>('q'), links = $<HTMLInputElement>('links');
+  const catBtn = $<HTMLButtonElement>('cat-btn'), catPanel = $('cat-panel');
+  const catOpts = [...catPanel.querySelectorAll<HTMLButtonElement>('button[data-cat]')];
   const params = new URLSearchParams(location.search);
   if (params.has('q')) state.q = params.get('q')!;
   if (params.has('cat')) state.cat = params.get('cat')!;
-  q.value = state.q; cat.value = state.cat; links.checked = state.links;
-  if (cat.value !== state.cat) state.cat = '';
+  q.value = state.q; links.checked = state.links;
+  if (!catOpts.some((b) => b.dataset.cat === state.cat)) state.cat = '';
   const levelBtns = [...document.querySelectorAll<HTMLButtonElement>('#levels button')];
   const sheetBtns = [...document.querySelectorAll<HTMLButtonElement>('#sheets button')];
 
   const render = () => {
     levelBtns.forEach((b) => b.setAttribute('aria-pressed', String(state.levels.includes(Number(b.dataset.level)))));
     sheetBtns.forEach((b) => b.setAttribute('aria-checked', String(b.dataset.sheets === state.sheets)));
-    cat.classList.toggle('on', !!state.cat);
+    catBtn.classList.toggle('on', !!state.cat);
+    const selected = catOpts.find((b) => b.dataset.cat === state.cat);
+    $('cat-label').textContent = selected?.querySelector('span')?.textContent ?? 'All categories';
+    catOpts.forEach((b) => b.setAttribute('aria-selected', String(b === selected)));
+    // Counts for each category under the other filters.
+    const pool = all.filter((e) => (state.links || e.kind !== 'link')
+      && (!state.levels.length || state.levels.includes(e.difficulty))
+      && (state.sheets !== '1' || e.sheets === 1) && (state.sheets !== '2' || e.sheets >= 2));
+    catOpts.forEach((b) => {
+      const c = b.dataset.cat ?? '';
+      const n = c ? pool.filter((e) => e.categories.some((x) => x === c || x.startsWith(`${c}/`))).length : pool.length;
+      b.querySelector('b')!.textContent = String(n);
+      b.classList.toggle('empty', n === 0);
+    });
     $('clear').hidden = !(state.cat || state.levels.length || state.sheets);
     let list: Entry[] = state.q.trim() ? ms.search(state.q.trim()).map((r) => byId.get(r.id)!) : all;
     list = list.filter((e) => {
@@ -84,7 +99,20 @@ export async function initBrowse() {
   };
 
   q.addEventListener('input', () => { state.q = q.value; render(); });
-  cat.addEventListener('change', () => { state.cat = cat.value; render(); });
+  const openCats = (open: boolean) => {
+    catPanel.hidden = !open;
+    catBtn.setAttribute('aria-expanded', String(open));
+    if (open) (catOpts.find((b) => b.getAttribute('aria-selected') === 'true') ?? catOpts[0]).focus();
+  };
+  catBtn.addEventListener('click', () => openCats(catPanel.hidden));
+  catOpts.forEach((b) => b.addEventListener('click', () => { state.cat = b.dataset.cat ?? ''; render(); openCats(false); catBtn.focus(); }));
+  catPanel.addEventListener('keydown', (e) => {
+    const i = catOpts.indexOf(document.activeElement as HTMLButtonElement);
+    if (e.key === 'Escape') { openCats(false); catBtn.focus(); }
+    if (e.key === 'ArrowDown') { catOpts[Math.min(catOpts.length - 1, i + 1)].focus(); e.preventDefault(); }
+    if (e.key === 'ArrowUp') { catOpts[Math.max(0, i - 1)].focus(); e.preventDefault(); }
+  });
+  document.addEventListener('pointerdown', (e) => { if (!catPanel.hidden && !$('catpick').contains(e.target as Node)) openCats(false); });
   links.addEventListener('change', () => { state.links = links.checked; render(); });
   levelBtns.forEach((b) => b.addEventListener('click', () => {
     const n = Number(b.dataset.level);
@@ -92,7 +120,7 @@ export async function initBrowse() {
     render();
   }));
   sheetBtns.forEach((b) => b.addEventListener('click', () => { state.sheets = b.dataset.sheets ?? ''; render(); }));
-  $('clear').addEventListener('click', () => { state.cat = ''; state.levels = []; state.sheets = ''; cat.value = ''; render(); });
+  $('clear').addEventListener('click', () => { state.cat = ''; state.levels = []; state.sheets = ''; render(); });
   render();
   livePreviews();
 }

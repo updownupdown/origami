@@ -80,6 +80,8 @@ export interface CameraSpec {
   azimuth?: number;
   elevation?: number;
   zoom?: number;
+  /** Set by the compiler when the author gave no camera: the viewer picks one for the fold. */
+  auto?: boolean;
 }
 
 export interface StepSpec extends Partial<FoldOp> {

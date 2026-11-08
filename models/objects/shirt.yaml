@@ -1,0 +1,62 @@
+id: shirt
+title: Shirt
+family: shirt
+aliases: [t-shirt, shirt and collar, father's day shirt]
+categories: [objects/wearables]
+tags: [shirt, collar, clothes, father's day, card, rectangle, traditional]
+difficulty: 2
+description: A buttoned shirt with a white collar and short sleeves, folded from a 2 by 1 rectangle. Lovely on a Father's Day card.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    name: Rectangle (2 by 1)
+    size: 7.5x15
+    start: front-up
+    colors: { front: "#3f7cc4", back: "#fbf7ee" }
+    note: Half of a square, or any strip twice as long as it is wide.
+steps:
+  - text: Coloured side up. Fold the top edge down about 1.5 cm.
+    pin: { TL: A, TR: B, BR: C, BL: D }
+    fold: valley
+    line: [lerp(TL BL 0.1), lerp(TR BR 0.1)]
+    move: lerp(mid(TL TR) mid(BL BR) 0.02)
+  - text: Turn the paper over.
+    turn-over: true
+  - text: Fold in half from side to side and unfold.
+    crease: valley
+    line: [mid(TL TR), mid(BL BR)]
+    move: lerp(BL BR 0.9)
+  - text: Fold the left and right edges to the centre line.
+    ops:
+      - fold: valley
+        line: [lerp(TL TR 0.25), lerp(BL BR 0.25)]
+        move: lerp(BL BR 0.05)
+      - fold: valley
+        line: [lerp(TL TR 0.75), lerp(BL BR 0.75)]
+        move: lerp(BL BR 0.95)
+  - text: Fold the top corners down at an angle so they nearly meet at the middle. This is the collar.
+    ops:
+      - fold: valley
+        line: [at(3.35 13.5), at(1.875 12.025)]
+        move: at(2 13.4)
+      - fold: valley
+        line: [at(4.15 13.5), at(5.625 12.025)]
+        move: at(5.5 13.4)
+  - text: At the bottom, fold the inner corners of the flaps out to the sides. These become the sleeves.
+    ops:
+      - fold: valley
+        line: [at(3.75 3.75), at(1.875 0)]
+        move: at(3.6 0.3)
+        layers: top
+      - fold: valley
+        line: [at(3.75 3.75), at(5.625 0)]
+        move: at(3.9 0.3)
+        layers: top
+  - text: Fold the bottom half behind so its edge meets the top. The sleeves pop out at the shoulders.
+    fold: mountain
+    line: [at(0 6.75), at(7.5 6.75)]
+    move: at(3 0.5)
+finish:
+  text: Add buttons with a pen, or slip it into a card.

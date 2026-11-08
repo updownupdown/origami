@@ -900,6 +900,8 @@ export function compileModel(script: ModelScript, bases: BaseLibrary = {}): Comp
         phases.push(opFold(st, f));
       }
       cam = camera(step.camera, cam);
+      if (!step.camera && (cam.auto || cam.preset === 'top')) cam = { ...cam, auto: true };
+      else if (step.camera) cam = { ...cam, auto: false };
       steps.push({ text: step.text ?? defaultText(ops), tip: step.tip, group, camera: cam, phases });
     } catch (e) {
       if (e instanceof CompileError) throw e;

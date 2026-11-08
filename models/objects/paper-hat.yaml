@@ -1,0 +1,61 @@
+id: paper-hat
+title: Paper hat
+family: hat
+aliases: [newspaper hat, pirate hat, party hat, painter's hat]
+categories: [objects/wearables]
+tags: [hat, newspaper, pirate, party, dress up, kids, quick, traditional]
+difficulty: 1
+description: The classic folded hat. Make it from a big sheet of newspaper and it fits on your head.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    name: Printer paper or newspaper
+    size: 21x29.7
+    colors: { front: "#e6e1d3", back: "#e6e1d3" }
+    note: A4 makes a toy-sized hat. A double page of newspaper makes one you can wear.
+steps:
+  - text: Fold the sheet in half from top to bottom.
+    pin: { TL: A, TR: B, BR: C, BL: D }
+    fold: valley
+    line: [mid(TL BL), mid(TR BR)]
+    move: lerp(TL TR 0.5)
+  - text: Fold in half from side to side and unfold, to mark the centre.
+    crease: valley
+    line: [mid(mid(TL BL) mid(TR BR)) , mid(BL BR)]
+    move: lerp(BL BR 0.9)
+  - text: Fold the top corners down so their edges meet on the centre line.
+    pin: { TOP: mid(mid(TL BL) mid(TR BR)) }
+    ops:
+      - fold: valley
+        line: { bring: [TOP, mid(TL BL)], onto: [TOP, mid(BL BR)] }
+        move: lerp(mid(TL BL) BL 0.02)
+      - fold: valley
+        line: { bring: [TOP, mid(TR BR)], onto: [TOP, mid(BL BR)] }
+        move: lerp(mid(TR BR) BR 0.02)
+  - text: Fold the bottom edge of the top layer up to the bottom of the triangles. Then fold the strip up again over the triangles.
+    ops:
+      - fold: valley
+        line: [lerp(BL TL 0.0732), lerp(BR TR 0.0732)]
+        move: lerp(BL BR 0.5)
+        layers: top
+      - fold: valley
+        line: [lerp(BL TL 0.1464), lerp(BR TR 0.1464)]
+        move: lerp(lerp(BL BR 0.5) lerp(TL TR 0.5) 0.1)
+        layers: top
+  - text: Turn the model over.
+    turn-over: true
+  - text: Fold the other strip up twice in the same way.
+    ops:
+      - fold: valley
+        line: [lerp(BL TL 0.0732), lerp(BR TR 0.0732)]
+        move: lerp(BL BR 0.5)
+        layers: top
+      - fold: valley
+        line: [lerp(BL TL 0.1464), lerp(BR TR 0.1464)]
+        move: lerp(lerp(BL BR 0.5) lerp(TL TR 0.5) 0.1)
+        layers: top
+finish:
+  camera: three-quarter
+  text: Open the bottom and pop it on your head.

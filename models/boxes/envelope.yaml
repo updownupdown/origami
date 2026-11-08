@@ -1,0 +1,45 @@
+id: envelope
+title: Simple envelope
+family: envelope
+aliases: [letter, note, card envelope]
+categories: [boxes/envelopes]
+tags: [envelope, letter, card, gift, kids, quick, traditional]
+difficulty: 1
+description: A little envelope with a pointed flap, folded from one square. Slip a note or a small card inside.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#e0a43a", back: "#fbf7ee" }
+steps:
+  - text: Start with a diamond, white side up. Fold the bottom corner up to the centre.
+    pin: { BOT: C, TOP: A, L: D, R: B }
+    fold: valley
+    line: { bring: C, to: O }
+    move: C
+  - text: Fold the bottom edge up along the middle.
+    fold: valley
+    line: [L, R]
+    move: lerp(O BOT 0.3)
+  - text: Fold the left and right corners in so they meet in the middle.
+    ops:
+      - fold: valley
+        line:
+          through: lerp(L R 0.25)
+          perpendicular: [L, R]
+        move: lerp(L R 0.05)
+      - fold: valley
+        line:
+          through: lerp(L R 0.75)
+          perpendicular: [L, R]
+        move: lerp(L R 0.95)
+  - text: Fold the top corner down to close the flap.
+    fold: valley
+    line: [mid(L TOP), mid(R TOP)]
+    move: lerp(O TOP 0.9)
+    tip: Put your note inside first, under the side flaps.
+finish:
+  text: Seal the flap with a sticker.

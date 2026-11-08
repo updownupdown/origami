@@ -26,18 +26,23 @@ const linkCount = index.length - foldable.length;
     </header>
 
     <div class="filters" role="group" aria-label="Filters">
-      <label class="fsel">
-        <span class="visually-hidden">Category</span>
-        <select id="cat">
-          <option value="">All categories</option>
-          {CATEGORIES.map((c) => c.children ? (
-            <optgroup label={c.label}>
-              <option value={c.id}>All {c.label.toLowerCase()}</option>
-              {c.children.map((k) => <option value={k.id}>{k.label}</option>)}
-            </optgroup>
-          ) : <option value={c.id}>{c.label}</option>)}
-        </select>
-      </label>
+      <div class="catpick" id="catpick">
+        <button class="cp-btn" id="cat-btn" aria-haspopup="listbox" aria-expanded="false">
+          <span id="cat-label">All categories</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="cp-panel card" id="cat-panel" role="listbox" aria-label="Category" hidden>
+          <button role="option" data-cat="" class="cp-all"><span>All categories</span><b data-count=""></b></button>
+          <div class="cp-groups">
+            {CATEGORIES.map((c) => (
+              <div class="cp-group">
+                <button role="option" data-cat={c.id} class="cp-top"><span>{c.label}</span><b data-count={c.id}></b></button>
+                {c.children?.map((k) => <button role="option" data-cat={k.id} class="cp-sub"><span>{k.label}</span><b data-count={k.id}></b></button>)}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
       <div class="seg levels" id="levels" role="group" aria-label="Level">
         {DIFFICULTY.slice(1).map((d, i) => (
           <button aria-pressed="false" data-level={i + 1} title={d}>
@@ -77,8 +82,24 @@ const linkCount = index.length - foldable.length;
   .links a { color: var(--ink-soft); text-decoration: none; }
   .links a:hover { color: var(--ink); }
   .filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  .fsel select { height: 40px; border-radius: 20px; border: 1px solid var(--line-strong); background: var(--paper-raised); padding: 0 14px; font: inherit; font-size: 14px; color: var(--ink); max-width: 220px; }
-  .fsel select.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .catpick { position: relative; }
+  .cp-btn { height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 16px; border-radius: 20px; border: 1px solid var(--line-strong); background: var(--paper-raised); font: inherit; font-size: 14px; color: var(--ink); cursor: pointer; }
+  .cp-btn.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .cp-btn svg { color: var(--ink-soft); transition: transform 0.15s; }
+  .cp-btn[aria-expanded=true] svg { transform: rotate(180deg); }
+  .cp-panel { position: absolute; z-index: 20; top: 46px; left: 0; width: min(560px, calc(100vw - 32px)); max-height: min(70vh, 520px); overflow-y: auto; padding: 10px; box-shadow: var(--shadow); }
+  .cp-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 4px 12px; margin-top: 6px; }
+  .cp-group { display: flex; flex-direction: column; padding: 4px 0; }
+  .cp-panel button { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; border: none; background: none; text-align: left; font: inherit; color: var(--ink); cursor: pointer; border-radius: 10px; padding: 7px 10px; }
+  .cp-panel button:hover, .cp-panel button:focus-visible { background: var(--paper-sunk); outline: none; }
+  .cp-panel button[aria-selected=true] { background: var(--ink); color: var(--paper-raised); }
+  .cp-panel button[aria-selected=true] b { color: inherit; opacity: 0.7; }
+  .cp-panel button.empty { color: var(--ink-faint); }
+  .cp-panel b { font-weight: 500; font-size: 12px; color: var(--ink-faint); }
+  .cp-all { font-weight: 600; }
+  .cp-top { font-weight: 600; font-size: 14px; }
+  .cp-sub { font-size: 14px; padding-left: 18px !important; color: var(--ink-soft) !important; }
+  .cp-sub[aria-selected=true] { color: var(--paper-raised) !important; }
   .seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 20px; background: var(--paper-sunk); border: 1px solid var(--line); }
   .seg button { border: none; background: none; font: inherit; font-size: 13px; color: var(--ink-soft); padding: 0 12px; height: 32px; border-radius: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
   .seg button:hover { color: var(--ink); }

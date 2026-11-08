@@ -1,7 +1,5 @@
 ---
 import { icon } from '../lib/icons';
-interface Props { steps?: boolean }
-const { steps = false } = Astro.props;
 ---
 <section class="stepcard card" aria-live="polite">
   <div class="row">
@@ -13,36 +11,42 @@ const { steps = false } = Astro.props;
     </div>
     <button class="btn icon primary" id="btn-next" aria-label="Next step"><Fragment set:html={icon('next')} /></button>
   </div>
-  <div class="foot">
-    {steps && <button class="btn small icon" id="btn-steps" aria-expanded="false" aria-label="All steps" title="All steps"><Fragment set:html={icon('list')} /></button>}
-    <button class="btn small icon" id="btn-play" aria-label="Replay this step" title="Replay this step"><Fragment set:html={icon('replay')} /></button>
-    <div class="track" id="track">
-      <div class="ticks" id="ticks"></div>
-      <div class="seg" id="seg"></div>
-      <div class="fill" id="fill"></div>
-      <input type="range" id="scrub" min="0" max="1000" step="1" value="0" aria-label="Folding progress through all steps" />
+  <div class="sliders">
+    <div class="slider one" id="sl-step">
+      <div class="rail"><div class="fill"></div></div>
+      <button class="knob" role="slider" aria-label="This step: drag to fold, tap to replay" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" title="Drag to fold, tap to replay"><Fragment set:html={icon('replay')} /></button>
     </div>
-    <span class="legend"><span class="lv"></span>Valley <span class="lm"></span>Mountain</span>
+    <div class="slider all" id="sl-all">
+      <div class="rail"><div class="ticks"></div><div class="seg"></div><div class="fill"></div></div>
+      <button class="knob" role="slider" aria-label="All steps" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="num">1</span></button>
+    </div>
   </div>
+  <div class="legend"><span class="lv"></span>Valley <span class="lm"></span>Mountain</div>
 </section>
 
 <style is:global>
-  .stepcard { position: absolute; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(640px, calc(100% - 24px)); padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .stepcard { position: absolute; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(640px, calc(100% - 24px)); padding: 14px 16px 10px; display: flex; flex-direction: column; gap: 8px; }
   .stepcard .row { display: flex; align-items: center; gap: 12px; }
   .stepcard .txt { flex: 1; min-width: 0; }
   .stepcard .txt p { margin: 2px 0 0; font-size: 17px; line-height: 1.35; }
   .stepcard .tip { font-size: 14px !important; color: var(--ink-soft); }
-  .foot { display: flex; align-items: center; gap: 8px; }
-  .track { position: relative; flex: 1; min-width: 80px; height: 28px; }
-  .track .ticks, .track .seg, .track .fill { position: absolute; left: 0; right: 0; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px; pointer-events: none; }
-  .track .ticks { background: var(--line); }
-  .track .ticks i { position: absolute; top: -2px; width: 2px; height: 10px; margin-left: -1px; border-radius: 1px; background: var(--paper-raised); }
-  .track .seg { right: auto; background: color-mix(in srgb, var(--valley) 30%, transparent); }
-  .track .fill { right: auto; background: var(--ink); }
-  .track input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
-  .track::after { content: ''; position: absolute; top: 50%; left: var(--knob, 0%); width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: var(--paper-raised); border: 2px solid var(--ink); box-shadow: var(--shadow); pointer-events: none; }
-  .track:focus-within::after { outline: 2px solid var(--valley); outline-offset: 2px; }
-  .legend { font-size: 12px; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .sliders { display: flex; flex-direction: column; gap: 2px; }
+  .slider { position: relative; height: 40px; touch-action: none; cursor: pointer; user-select: none; -webkit-user-select: none; margin: 0 18px; }
+  .slider .rail { position: absolute; left: 0; right: 0; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px; background: var(--line); }
+  .slider .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--ink); }
+  .slider .knob { position: absolute; top: 50%; left: 0; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; border: 2px solid var(--ink); background: var(--paper-raised); color: var(--ink); display: grid; place-items: center; padding: 0; cursor: grab; box-shadow: var(--shadow); font: inherit; }
+  .slider .knob:active { cursor: grabbing; }
+  .slider .knob:focus-visible { outline: 2px solid var(--valley); outline-offset: 2px; }
+  .slider .knob svg { width: 18px; height: 18px; }
+  .slider.one .rail { height: 8px; margin-top: -4px; border-radius: 4px; }
+  .slider.one .fill { background: var(--valley); }
+  .slider.one .knob { border-color: var(--valley); color: var(--valley); }
+  .slider.all { height: 32px; }
+  .slider.all .rail { height: 4px; margin-top: -2px; }
+  .slider.all .knob { width: 28px; height: 28px; margin: -14px 0 0 -14px; background: var(--ink); color: var(--paper-raised); border-color: var(--ink); font-size: 13px; font-weight: 600; }
+  .slider.all .ticks i { position: absolute; top: -3px; width: 2px; height: 10px; margin-left: -1px; border-radius: 1px; background: var(--line-strong); }
+  .slider.all .seg { position: absolute; top: -2px; bottom: -2px; border-radius: 4px; background: color-mix(in srgb, var(--valley) 35%, transparent); }
+  .legend { font-size: 12px; color: var(--ink-soft); display: flex; justify-content: center; align-items: center; gap: 6px; white-space: nowrap; }
   .legend .lv, .legend .lm { width: 22px; height: 0; border-top: 2px dashed var(--valley); display: inline-block; }
   .legend .lm { border-top: 2px dotted var(--mountain); margin-left: 8px; }
   @media (max-width: 640px) {

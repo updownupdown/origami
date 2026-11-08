@@ -27,7 +27,8 @@ const desc = `${entry.title}: ${DIFFICULTY[entry.difficulty]} origami, ${entry.s
       </div>
     </div>
 
-    <div class="tr card">
+    <div class="tr card" role="toolbar" aria-label="Model panels">
+      <button class="btn small" id="btn-steps" aria-haspopup="dialog"><Fragment set:html={icon('list')} /><span class="lbl">Steps</span></button>
       <button class="btn small" id="btn-paper" aria-haspopup="dialog" aria-label="Paper colours">
         <span class="swatches" id="swatches"></span>
         <span class="lbl">Paper</span>
@@ -41,12 +42,18 @@ const desc = `${entry.title}: ${DIFFICULTY[entry.difficulty]} origami, ${entry.s
       <button class="btn icon fab" id="btn-out" aria-label="Zoom out"><Fragment set:html={icon('minus')} /></button>
     </div>
 
-    <StepCard steps={true} />
+    <div class="flat card" title="How flat the folds are pressed">
+      <span class="fl-lbl">Flat</span>
+      <input type="range" id="flatness" min="0" max="100" value="75" aria-label="Flatness: how firmly the folds are pressed" />
+      <span class="fl-lbl">Open</span>
+    </div>
 
-    <aside class="drawer card" id="drawer" hidden>
-      <header><h2>Steps</h2><button class="btn small icon" id="btn-close-steps" aria-label="Close steps"><Fragment set:html={icon('close')} /></button></header>
+    <StepCard />
+
+    <dialog id="dlg-steps" class="card full">
+      <header><h2>Steps</h2><button class="btn small icon" data-close aria-label="Close steps"><Fragment set:html={icon('close')} /></button></header>
       <ol id="steplist"></ol>
-    </aside>
+    </dialog>
 
     <dialog id="dlg-paper" class="card">
       <header><h2>Paper</h2><button class="btn small icon" data-close aria-label="Close"><Fragment set:html={icon('close')} /></button></header>
@@ -114,25 +121,32 @@ const desc = `${entry.title}: ${DIFFICULTY[entry.difficulty]} origami, ${entry.s
   .swatches { display: inline-flex; gap: 2px; }
   .swatches i { width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.15); display: block; }
   .rail { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; }
-  .drawer { position: absolute; left: 16px; top: 80px; bottom: 16px; width: 320px; display: flex; flex-direction: column; overflow: hidden; z-index: 5; }
-  .drawer header, dialog header { display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 8px 16px; }
-  .drawer h2, dialog h2 { margin: 0; font-size: 18px; font-weight: 600; }
-  .drawer ol { list-style: none; margin: 0; padding: 0 8px 12px; overflow-y: auto; }
-  .drawer li button { width: 100%; display: flex; gap: 10px; align-items: center; text-align: left; padding: 6px 8px; border: none; border-radius: 10px; background: none; cursor: pointer; }
-  .drawer li button:hover { background: var(--paper-sunk); }
-  .drawer li button.now { background: var(--paper-sunk); }
-  .drawer li .n { width: 22px; font-weight: 600; color: var(--ink-faint); font-size: 14px; flex-shrink: 0; }
-  .drawer li button.now .n { color: var(--valley); }
-  .drawer li .th { width: 56px; height: 56px; border-radius: 8px; background: var(--paper); flex-shrink: 0; overflow: hidden; }
-  .drawer li .th svg { width: 100%; height: 100%; }
-  .drawer li .tx { font-size: 14px; line-height: 1.3; }
-  .drawer li .grp { display: block; font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+  dialog header { display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 8px 16px; }
+  dialog h2 { margin: 0; font-size: 18px; font-weight: 600; }
   #cp-body { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
   #cp-body svg { width: 100%; height: auto; max-width: 260px; }
   #cp-body .hint { width: 100%; margin: 0; }
   dialog .cp-hint { margin: 6px 16px 0; text-align: center; }
   .hint { font-size: 13px; color: var(--ink-soft); margin: 4px 16px 8px; }
   dialog { border: none; padding: 0 0 16px; width: min(460px, calc(100% - 24px)); max-height: calc(100% - 40px); color: var(--ink); }
+  dialog.full { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; border-radius: 0; padding: 0; display: none; flex-direction: column; }
+  dialog.full[open] { display: flex; }
+  dialog.full header { padding: max(16px, env(safe-area-inset-top)) 20px 12px; border-bottom: 1px solid var(--line); }
+  dialog.full h2 { font-size: 22px; }
+  #steplist { list-style: none; margin: 0 !important; padding: 16px 20px 32px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; align-content: start; }
+  #steplist li button { width: 100%; height: 100%; display: flex; flex-direction: column; gap: 8px; align-items: stretch; text-align: left; padding: 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper-raised); cursor: pointer; font: inherit; color: var(--ink); }
+  #steplist li button:hover { border-color: var(--line-strong); }
+  #steplist li button.now { border-color: var(--valley); box-shadow: 0 0 0 1px var(--valley); }
+  #steplist li .n { font-weight: 600; color: var(--ink-faint); font-size: 13px; }
+  #steplist li button.now .n { color: var(--valley); }
+  #steplist li .th { width: 100%; aspect-ratio: 1; border-radius: 10px; background: var(--paper); overflow: hidden; display: block; }
+  #steplist li .th svg { width: 100%; height: 100%; }
+  #steplist li .tx { font-size: 14px; line-height: 1.35; }
+  #steplist li .grp { display: block; font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+  #steplist li.fin .th { display: grid; place-items: center; font-size: 40px; color: var(--valley); }
+  .flat { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; }
+  .flat .fl-lbl { font-size: 11px; color: var(--ink-soft); }
+  .flat input { writing-mode: vertical-lr; direction: rtl; width: 28px; height: 150px; accent-color: var(--ink); margin: 0; cursor: pointer; }
   dialog::backdrop { background: rgba(30, 25, 20, 0.25); }
   dialog > *:not(header) { margin-left: 16px; margin-right: 16px; }
   dialog h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); font-weight: 500; margin: 18px 16px 6px; }
@@ -164,10 +178,11 @@ const desc = `${entry.title}: ${DIFFICULTY[entry.difficulty]} origami, ${entry.s
   .finish p { margin: 0; }
   @media (max-width: 640px) {
     .tr .lbl { display: none; }
-    .rail { top: auto; bottom: 230px; transform: none; right: 12px; }
+    .rail { top: auto; bottom: 250px; transform: none; right: 12px; }
+    .flat { top: auto; bottom: 250px; transform: none; left: 12px; }
+    .flat input { height: 110px; }
     .rail #btn-in, .rail #btn-out { display: none; }
-    .drawer { left: 8px; right: 8px; width: auto; top: 70px; bottom: 210px; }
-    .tl { left: 12px; max-width: calc(100% - 130px); }
+      .tl { left: 12px; max-width: calc(100% - 130px); }
     .tr { right: 12px; }
   }
 </style>
