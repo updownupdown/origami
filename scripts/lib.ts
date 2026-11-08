@@ -25,6 +25,5 @@ export function loadBases(): BaseLibrary {
 
 export function loadModels(): { file: string; script: ModelScript }[] {
   return walk(path.join(ROOT, 'models'))
-    .filter((f) => !f.includes(`${path.sep}bases${path.sep}`))
     .map((file) => ({ file, script: parse(fs.readFileSync(file, 'utf8')) as ModelScript }));
 }

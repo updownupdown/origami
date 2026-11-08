@@ -1,0 +1,54 @@
+id: dog-face
+title: Dog face
+family: dog
+variant: Face
+categories: [animals/mammals]
+tags: [dog, puppy, face, kids, quick]
+difficulty: 1
+description: A floppy-eared puppy from five folds. Draw on eyes and a nose.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#c9a27a", back: "#fbf7ee" }
+steps:
+  - text: Start with a diamond, white side up. Fold the top corner down to the bottom corner.
+    fold: valley
+    line: [B, D]
+    move: A
+  - text: Fold in half and unfold to mark the centre.
+    crease: valley
+    line: { bring: B, to: D }
+    move: B
+  - text: Fold the right corner down to make a floppy ear.
+    fold: valley
+    line: [lerp(O B 0.3), lerp(B C 0.28)]
+    move: B
+  - text: Repeat on the left.
+    fold: valley
+    line: [lerp(O D 0.3), lerp(D C 0.28)]
+    move: D
+  - text: Fold the top layer of the bottom point up to make the nose.
+    fold: valley
+    line:
+      through: lerp(C O 0.25)
+      perpendicular: [C, O]
+    move: C
+    layers: top
+  - text: Fold the rest of the point behind.
+    fold: mountain
+    line:
+      through: lerp(C O 0.18)
+      perpendicular: [C, O]
+    move: lerp(C O 0.05)
+  - text: Fold the top edge behind to round the head.
+    fold: mountain
+    line:
+      through: lerp(O C 0.12)
+      perpendicular: [C, O]
+    move: O
+finish:
+  text: Draw eyes and a nose on your puppy.

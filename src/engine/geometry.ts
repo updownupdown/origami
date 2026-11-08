@@ -108,7 +108,7 @@ export function centroid(poly: V2[]): V2 {
  * Splits a convex polygon by the line p→q.
  * Returns [left, right]; either may be null when the line misses the polygon.
  */
-export function splitPolygon(poly: V2[], p: V2, q: V2, tol = 1e-7): [V2[] | null, V2[] | null] {
+export function splitPolygon(poly: V2[], p: V2, q: V2, tol = 1e-3): [V2[] | null, V2[] | null] {
   const d = poly.map((x) => side(x, p, q));
   const left: V2[] = [];
   const right: V2[] = [];
@@ -128,7 +128,7 @@ export function splitPolygon(poly: V2[], p: V2, q: V2, tol = 1e-7): [V2[] | null
     const out: V2[] = [];
     for (const x of pts) if (!out.length || !near(out[out.length - 1], x, 1e-9)) out.push(x);
     if (out.length > 1 && near(out[0], out[out.length - 1], 1e-9)) out.pop();
-    return out.length >= 3 && Math.abs(signedArea(out)) > 1e-8 ? out : null;
+    return out.length >= 3 && Math.abs(signedArea(out)) > 1e-4 ? out : null;
   };
   return [clean(left), clean(right)];
 }

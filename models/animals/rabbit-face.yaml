@@ -1,0 +1,42 @@
+id: rabbit-face
+title: Rabbit face
+family: rabbit
+variant: Face
+aliases: [bunny]
+categories: [animals/mammals]
+tags: [rabbit, bunny, face, easter, kids]
+difficulty: 1
+description: Two long upright ears on a simple face. A good first model for little hands.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#e6a0d8", back: "#fbf7ee" }
+steps:
+  - text: Start with a diamond, white side up. Fold the top corner down to the bottom corner.
+    fold: valley
+    line: [B, D]
+    move: A
+  - text: Fold in half and unfold to mark the centre.
+    crease: valley
+    line: { bring: B, to: D }
+    move: B
+  - text: Fold the right corner up so it sticks up and out as an ear.
+    fold: valley
+    line: [lerp(O B 0.58), C]
+    move: B
+  - text: Fold the left corner up the same way.
+    fold: valley
+    line: [lerp(O D 0.58), C]
+    move: D
+  - text: Fold the bottom point behind.
+    fold: mountain
+    line:
+      through: lerp(C O 0.35)
+      perpendicular: [C, O]
+    move: C
+finish:
+  text: Draw eyes, a pink nose and whiskers.

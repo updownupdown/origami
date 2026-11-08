@@ -93,6 +93,8 @@ export interface StepSpec extends Partial<FoldOp> {
   collapse?: CollapseOp['collapse'];
   place?: PlaceOp['place'];
   mark?: MarkOp['mark'];
+  /** Name fixed points in space (they stay put when the paper moves). */
+  pin?: Record<string, PointExpr>;
   /** Tip shown under the step text. */
   tip?: string;
 }

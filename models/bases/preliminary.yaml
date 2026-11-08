@@ -1,0 +1,28 @@
+id: preliminary
+title: Preliminary base
+aliases: [square base]
+kind: base
+categories: [bases]
+difficulty: 2
+description: Also called the square base. A small layered diamond with the closed point at the top; the start of the crane, lily and frog base.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+steps:
+  - text: Start with a diamond, white side up. Fold the bottom corner up to the top.
+    fold: valley
+    line: [B, D]
+    move: C
+    mark: { M1: mid(D A), M2: mid(B A) }
+  - text: Push the left corner inside, so it meets the top corner (inside reverse fold).
+    reverse: inside
+    line: [O, M1]
+    move: lerp(D O 0.15)
+  - text: Do the same on the right to finish the base.
+    reverse: inside
+    line: [O, M2]
+    move: lerp(B O 0.15)

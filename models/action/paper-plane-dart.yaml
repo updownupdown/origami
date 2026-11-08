@@ -1,0 +1,65 @@
+id: paper-plane-dart
+title: Dart paper plane
+family: paper plane
+variant: Dart
+aliases: [paper airplane, dart]
+categories: [action, objects/vehicles]
+tags: [plane, airplane, flies, kids]
+difficulty: 1
+description: The classic fast dart. Throw it hard and level.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    name: Printer paper
+    size: 21x29.7
+    colors: { front: "#fbf7ee", back: "#fbf7ee" }
+    note: A4 or US Letter
+steps:
+  - text: Fold in half lengthwise and unfold.
+    crease: valley
+    line: [mid(A B), mid(D C)]
+    move: B
+    mark: { T: mid(A B), S: mid(D C), E: lerp(B C 10.5/29.7), F: lerp(A D 10.5/29.7) }
+  - text: Fold the top right corner to the centre line.
+    fold: valley
+    line:
+      bring: [T, B]
+      onto: [T, S]
+    move: B
+  - text: Fold the top left corner to the centre line.
+    fold: valley
+    line:
+      bring: [T, A]
+      onto: [T, S]
+    move: A
+  - text: Fold the new right edge to the centre line.
+    fold: valley
+    line:
+      bring: [T, E]
+      onto: [T, S]
+    move: lerp(E C 0.5)
+  - text: Fold the new left edge to the centre line.
+    fold: valley
+    line:
+      bring: [T, F]
+      onto: [T, S]
+    move: lerp(F D 0.5)
+  - text: Fold the plane in half behind, along the centre.
+    fold: mountain
+    line: [T, S]
+    move: lerp(S D 0.5)
+  - text: Fold the top wing over, along a line about 2.5 cm from the centre fold.
+    fold: valley
+    line: [shift(T T S 2.5), shift(S T S 2.5)]
+    move: shift(S T S 3.5)
+    layers: top
+  - text: Fold the other wing behind to match.
+    fold: mountain
+    line: [shift(T T S 2.5), shift(S T S 2.5)]
+    move: shift(S T S 3.5)
+    layers: bottom
+finish:
+  camera: three-quarter
+  text: Open the wings so they sit level, then throw.

@@ -1,0 +1,32 @@
+id: kite
+title: Kite base
+kind: base
+categories: [bases]
+difficulty: 1
+description: A diamond with both lower edges folded to the centre line. Starts swans, birds, giraffes and many more.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+steps:
+  - text: Start with a diamond, white side up. Fold in half from left to right and unfold.
+    crease: valley
+    line: [A, C]
+    move: B
+  - text: Fold the lower right edge to the centre crease.
+    fold: valley
+    line:
+      bring: [C, B]
+      onto: [C, A]
+    move: B
+    mark: { KR: intersect(C mid(B lerp(C A 0.70710678)) A B) }
+  - text: Fold the lower left edge to the centre crease.
+    fold: valley
+    line:
+      bring: [C, D]
+      onto: [C, A]
+    move: D
+    mark: { KL: intersect(C mid(D lerp(C A 0.70710678)) A D) }

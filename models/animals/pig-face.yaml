@@ -1,0 +1,63 @@
+id: pig-face
+title: Piglet
+family: pig
+variant: Face
+aliases: [pig, piggy]
+categories: [animals/mammals]
+tags: [pig, piglet, face, kids, farm]
+difficulty: 1
+description: A round piglet face with ears that flop forward and a turned-up snout.
+credits:
+  designer: Origami project
+  script: Origami project
+  note: Our own design, inspired by traditional animal faces.
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#e889c0", back: "#f6c9de" }
+steps:
+  - text: Start with a diamond, white side up. Fold the top corner down to the bottom corner.
+    fold: valley
+    line: [B, D]
+    move: A
+  - text: Fold in half and unfold to mark the centre.
+    crease: valley
+    line: { bring: B, to: D }
+    move: B
+  - text: Fold the right corner down at a slant for a floppy ear.
+    fold: valley
+    line: [lerp(O B 0.42), lerp(B C 0.18)]
+    move: B
+  - text: Repeat on the left.
+    fold: valley
+    line: [lerp(O D 0.42), lerp(D C 0.18)]
+    move: D
+  - text: Fold the top layer of the bottom point up to make the snout.
+    fold: valley
+    line:
+      through: lerp(C O 0.4)
+      perpendicular: [C, O]
+    move: C
+    layers: top
+  - text: Fold the tip of the snout back down a little.
+    fold: valley
+    line:
+      through: lerp(C O 0.62)
+      perpendicular: [C, O]
+    move: lerp(C O 0.72)
+    layers: top
+  - text: Fold the bottom point behind.
+    fold: mountain
+    line:
+      through: lerp(C O 0.32)
+      perpendicular: [C, O]
+    move: lerp(C O 0.1)
+  - text: Fold the top edge behind to round the head.
+    fold: mountain
+    line:
+      through: lerp(O C 0.1)
+      perpendicular: [C, O]
+    move: O
+finish:
+  text: Add two nostrils to the snout.

@@ -1,0 +1,41 @@
+id: cat-face
+title: Cat face
+family: cat
+variant: Face
+categories: [animals/mammals]
+tags: [cat, kitten, face, kids, quick]
+difficulty: 1
+description: Upright ears and a blunt chin make an easy cat face.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#2b2a28", back: "#fbf7ee" }
+steps:
+  - text: Start with a diamond, white side up. Fold the top corner down to the bottom corner.
+    fold: valley
+    line: [B, D]
+    move: A
+  - text: Fold in half and unfold to mark the centre.
+    crease: valley
+    line: { bring: B, to: D }
+    move: B
+  - text: Fold the right corner up so it points straight up. This is an ear.
+    fold: valley
+    line: [lerp(O B 0.55), C]
+    move: B
+  - text: Fold the left corner up the same way.
+    fold: valley
+    line: [lerp(O D 0.55), C]
+    move: D
+  - text: Fold the bottom point behind to make the chin.
+    fold: mountain
+    line:
+      through: lerp(C O 0.3)
+      perpendicular: [C, O]
+    move: C
+finish:
+  text: Add eyes, a nose and whiskers.

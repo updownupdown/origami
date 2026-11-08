@@ -1,0 +1,43 @@
+id: cup
+title: Cup
+aliases: [drinking cup, pocket]
+categories: [objects/household, boxes/pots]
+tags: [cup, kids, quick, traditional]
+difficulty: 1
+description: A little cup that really holds water for a minute or two. The front flap makes a handy pocket too.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#3fa7d6", back: "#fbf7ee" }
+steps:
+  - text: Start with a diamond, white side up. Fold the bottom corner up to the top.
+    fold: valley
+    line: [B, D]
+    move: C
+    mark: { Q: lerp(B A 0.5858), X: lerp(D A 0.5858) }
+  - text: Fold the right corner across so it touches the left edge, with its bottom edge level.
+    fold: valley
+    line: { bring: B, to: X }
+    move: B
+  - text: Fold the left corner across the same way.
+    fold: valley
+    line: { bring: D, to: Q }
+    move: D
+  - text: Fold the top layer of the top point down over the front.
+    fold: valley
+    line: [Q, X]
+    move: C
+    layers: top
+  - text: Turn the cup over.
+    turn-over: true
+  - text: Fold the other point down. Open the top to use your cup.
+    fold: valley
+    line: [Q, X]
+    move: A
+    layers: top
+finish:
+  text: Squeeze the sides gently to open the cup.

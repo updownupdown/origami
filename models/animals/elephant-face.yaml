@@ -1,0 +1,56 @@
+id: elephant-face
+title: Elephant face
+family: elephant
+variant: Face
+categories: [animals/mammals]
+tags: [elephant, face, trunk, kids]
+difficulty: 2
+description: Wide floppy ears and a narrow trunk with a curl at the tip.
+credits:
+  designer: Origami project
+  script: Origami project
+  note: Our own design, built on the traditional animal-face folds.
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#9aa3ad", back: "#e7e9ec" }
+steps:
+  - text: Start with a diamond, white side up. Fold the top corner down to the bottom corner.
+    fold: valley
+    line: [B, D]
+    move: A
+  - text: Fold in half and unfold to mark the centre.
+    crease: valley
+    line: { bring: B, to: D }
+    move: B
+    pin: { CW: C, OW: O }
+  - text: Fold the right corner down to make a big ear.
+    fold: valley
+    line: [lerp(O B 0.22), lerp(B C 0.36)]
+    move: B
+  - text: Repeat on the left.
+    fold: valley
+    line: [lerp(O D 0.22), lerp(D C 0.36)]
+    move: D
+  - text: Fold the bottom point up to the middle.
+    fold: valley
+    line:
+      through: lerp(CW OW 0.5)
+      perpendicular: [CW, OW]
+    move: CW
+  - text: Fold it back down a little lower to make the trunk.
+    fold: valley
+    line:
+      through: lerp(CW OW 0.62)
+      perpendicular: [CW, OW]
+    move: lerp(CW OW 0.9)
+    layers: top
+  - text: Fold the top edge behind to round the head.
+    fold: mountain
+    line:
+      through: lerp(OW CW 0.1)
+      perpendicular: [CW, OW]
+    move: OW
+finish:
+  text: Add two eyes above the trunk.

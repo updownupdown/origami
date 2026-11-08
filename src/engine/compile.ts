@@ -30,6 +30,8 @@ interface Sheet extends SheetInfo {
 
 interface State {
   faces: Face[];
+  /** Named fixed points in world space (they do not move with the paper). */
+  pins: Map<string, V2>;
   sheets: Map<string, Sheet>;
   active: string;
   nextId: number;
@@ -146,6 +148,8 @@ function lookupName(st: State, name: string): { sheet: string; p: V2 } {
 function evalAst(st: State, a: Ast): V2 | number {
   if (a.k === 'num') return a.v;
   if (a.k === 'name') {
+    const pin = st.pins.get(a.v);
+    if (pin) return pin;
     const { sheet, p } = lookupName(st, a.v);
     return paperToWorld(st, sheet, p);
   }
@@ -175,6 +179,17 @@ function evalAst(st: State, a: Ast): V2 | number {
     case 'project': {
       const p = pt(1), u = norm(sub(pt(2), p));
       return add(p, mul(u, dot(sub(pt(0), p), u)));
+    }
+    case 'shift': {
+      // shift(X, A, B, d): X moved distance d to the left of the direction A -> B.
+      const a = pt(1), b = pt(2), n = perp(norm(sub(b, a)));
+      return add(pt(0), mul(n, num(3)));
+    }
+    case 'at': {
+      // at(x, y): a fixed point in world space, measured from the active sheet's starting lower-left corner.
+      const sh = st.sheets.get(st.active)!;
+      const origin = bbox(cornerWorld0(sh)).min;
+      return [origin[0] + num(0), origin[1] + num(1)];
     }
     case 'paper': {
       // paper(x, y) or paper(sheet, x, y): a literal point in the sheet's starting view.
@@ -760,8 +775,9 @@ function opMark(st: State, mark: Record<string, PointExpr>) {
 // Steps
 
 function opsOf(step: StepSpec): Op[] {
-  // Marks are taken first, before the step's folds move anything.
+  // Marks and pins are taken first, before the step's folds move anything.
   const ops: Op[] = step.mark ? [{ mark: step.mark }] : [];
+  if (step.pin) ops.unshift({ pin: step.pin } as unknown as Op);
   ops.push(...(step.ops ?? []));
   if (step.fold || step.crease || step.unfold || step.reverse) {
     const { fold, crease, unfold, reverse, line, move, layers, sheet } = step;
@@ -815,7 +831,7 @@ function parseSize(size: string | number): [number, number] {
 
 export function compileModel(script: ModelScript, bases: BaseLibrary = {}): CompiledModel {
   if (!script.materials?.length) throw new CompileError(-1, 'A model needs at least one sheet in "materials"');
-  const st: State = { faces: [], sheets: new Map(), active: script.materials[0].id, nextId: 1 };
+  const st: State = { faces: [], pins: new Map(), sheets: new Map(), active: script.materials[0].id, nextId: 1 };
   let x = 0;
   let layer = 0;
   const sheets: SheetInfo[] = [];
@@ -869,6 +885,7 @@ export function compileModel(script: ModelScript, bases: BaseLibrary = {}): Comp
       const phases: Phase[] = [];
       for (const op of ops) {
         if ('mark' in op) { opMark(st, op.mark); continue; }
+        if ('pin' in op) { for (const [k, e] of Object.entries((op as { pin: Record<string, PointExpr> }).pin)) st.pins.set(k, resolvePoint(st, e)); continue; }
         if ('turn-over' in op) { phases.push(opTurnOver(st, op['turn-over'] === 'horizontal' ? 'horizontal' : 'vertical')); continue; }
         if ('rotate' in op) { phases.push(opRotate(st, op.rotate)); continue; }
         if ('grid' in op) { phases.push(opGrid(st, op.grid, op.sheet ?? st.active)); continue; }

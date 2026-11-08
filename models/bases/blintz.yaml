@@ -1,0 +1,37 @@
+id: blintz
+title: Blintz base
+kind: base
+categories: [bases]
+difficulty: 1
+description: All four corners folded to the centre. The start of the fortune teller and many boxes.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+steps:
+  - text: Fold in half diagonally both ways and unfold to find the centre.
+    ops:
+      - crease: valley
+        line: [A, C]
+        move: B
+      - crease: valley
+        line: [B, D]
+        move: A
+  - text: Fold the top left corner to the centre.
+    fold: valley
+    line: { bring: A, to: O }
+    move: A
+  - text: Fold the top right corner to the centre.
+    fold: valley
+    line: { bring: B, to: O }
+    move: B
+  - text: Fold the bottom right corner to the centre.
+    fold: valley
+    line: { bring: C, to: O }
+    move: C
+  - text: Fold the bottom left corner to the centre.
+    fold: valley
+    line: { bring: D, to: O }
+    move: D

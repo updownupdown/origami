@@ -28,7 +28,7 @@ const linkCount = index.length - foldable.length;
     <div class="filters" role="group" aria-label="Filters">
       <div class="cats" id="cats">
         <button class="btn small" aria-pressed="true" data-cat="">All</button>
-        {CATEGORIES.filter((c) => c.id !== 'bases').map((c) => <button class="btn small" aria-pressed="false" data-cat={c.id}>{c.label}</button>)}
+        {CATEGORIES.map((c) => <button class="btn small" aria-pressed="false" data-cat={c.id}>{c.label}</button>)}
       </div>
       <div class="selects">
         <label>
