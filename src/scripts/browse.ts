@@ -35,20 +35,30 @@ export async function initBrowse() {
   const byId = new Map(all.map((e) => [e.id, e]));
   const done: string[] = store('origami:done', []);
 
-  const state = store('origami:browse', { q: '', cat: '', difficulty: '', sheets: '', links: false });
-  const q = $<HTMLInputElement>('q'), diff = $<HTMLSelectElement>('difficulty'), sheets = $<HTMLSelectElement>('sheets'), links = $<HTMLInputElement>('links');
+  const saved = store<any>('origami:browse', {});
+  const state: { q: string; cat: string; levels: number[]; sheets: string; links: boolean } = {
+    q: saved.q ?? '', cat: saved.cat ?? '', sheets: saved.sheets ?? '', links: !!saved.links,
+    levels: Array.isArray(saved.levels) ? saved.levels : saved.difficulty ? [Number(saved.difficulty)] : [],
+  };
+  const q = $<HTMLInputElement>('q'), cat = $<HTMLSelectElement>('cat'), links = $<HTMLInputElement>('links');
   const params = new URLSearchParams(location.search);
   if (params.has('q')) state.q = params.get('q')!;
-  q.value = state.q; diff.value = state.difficulty; sheets.value = state.sheets; links.checked = state.links;
-  const cats = [...document.querySelectorAll<HTMLButtonElement>('#cats button')];
+  if (params.has('cat')) state.cat = params.get('cat')!;
+  q.value = state.q; cat.value = state.cat; links.checked = state.links;
+  if (cat.value !== state.cat) state.cat = '';
+  const levelBtns = [...document.querySelectorAll<HTMLButtonElement>('#levels button')];
+  const sheetBtns = [...document.querySelectorAll<HTMLButtonElement>('#sheets button')];
 
   const render = () => {
-    cats.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cat === state.cat)));
+    levelBtns.forEach((b) => b.setAttribute('aria-pressed', String(state.levels.includes(Number(b.dataset.level)))));
+    sheetBtns.forEach((b) => b.setAttribute('aria-checked', String(b.dataset.sheets === state.sheets)));
+    cat.classList.toggle('on', !!state.cat);
+    $('clear').hidden = !(state.cat || state.levels.length || state.sheets);
     let list: Entry[] = state.q.trim() ? ms.search(state.q.trim()).map((r) => byId.get(r.id)!) : all;
     list = list.filter((e) => {
       if (!state.links && e.kind === 'link') return false;
       if (state.cat && !e.categories.some((c) => c === state.cat || c.startsWith(`${state.cat}/`))) return false;
-      if (state.difficulty && e.difficulty !== Number(state.difficulty)) return false;
+      if (state.levels.length && !state.levels.includes(e.difficulty)) return false;
       if (state.sheets === '1' && e.sheets !== 1) return false;
       if (state.sheets === '2' && e.sheets < 2) return false;
       return true;
@@ -68,15 +78,89 @@ export async function initBrowse() {
         <span class="meta"><span class="name">${title}</span><span class="sub">${dots}<span>${esc(e.designer || 'Unknown designer')}</span></span></span></a></li>`;
     }
     const sub = [`${e.steps} steps`, e.sheets > 1 ? `${e.sheets} sheets` : ''].filter(Boolean).join(' · ');
-    return `<li><a class="tile" href="${base}models/${e.id}/">
+    return `<li><a class="tile" data-id="${e.id}" href="${base}models/${e.id}/">
       <span class="thumb"><img src="${base}thumbs/${e.id}.png" alt="" loading="lazy" onerror="this.onerror=null;this.src='${base}thumbs/${e.id}.svg'">${done.includes(e.id) ? `<span class="done" title="Folded">${icon('check')}</span>` : ''}</span>
       <span class="meta"><span class="name">${title}</span><span class="sub">${dots}<span>${DIFFICULTY[e.difficulty]} · ${sub}</span></span></span></a></li>`;
   };
 
   q.addEventListener('input', () => { state.q = q.value; render(); });
-  diff.addEventListener('change', () => { state.difficulty = diff.value; render(); });
-  sheets.addEventListener('change', () => { state.sheets = sheets.value; render(); });
+  cat.addEventListener('change', () => { state.cat = cat.value; render(); });
   links.addEventListener('change', () => { state.links = links.checked; render(); });
-  cats.forEach((b) => b.addEventListener('click', () => { state.cat = b.dataset.cat ?? ''; render(); }));
+  levelBtns.forEach((b) => b.addEventListener('click', () => {
+    const n = Number(b.dataset.level);
+    state.levels = state.levels.includes(n) ? state.levels.filter((x) => x !== n) : [...state.levels, n].sort();
+    render();
+  }));
+  sheetBtns.forEach((b) => b.addEventListener('click', () => { state.sheets = b.dataset.sheets ?? ''; render(); }));
+  $('clear').addEventListener('click', () => { state.cat = ''; state.levels = []; state.sheets = ''; cat.value = ''; render(); });
   render();
+  livePreviews();
+}
+
+/**
+ * Hovering a tile (or pressing and holding it on touch) swaps its picture for a live 3D view that
+ * turns slowly and can be dragged round. Only one runs at a time, so it stays cheap.
+ */
+function livePreviews() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  let active: { tile: HTMLElement; box: HTMLElement; viewer: { dispose(): void } } | null = null;
+  let timer = 0;
+  const models = new Map<string, Promise<unknown>>();
+  const stop = () => {
+    clearTimeout(timer);
+    if (!active) return;
+    active.viewer.dispose();
+    active.box.remove();
+    active.tile.classList.remove('live');
+    active = null;
+  };
+  const start = async (tile: HTMLElement) => {
+    const id = tile.dataset.id!;
+    if (active?.tile === tile) return;
+    stop();
+    if (!models.has(id)) models.set(id, fetch(`${base}models/${id}.json`).then((r) => r.json()));
+    const [model, { FoldViewer }] = await Promise.all([models.get(id)!, import('./viewer')]);
+    if (!tile.matches(':hover') && !tile.classList.contains('pressed')) return;
+    stop();
+    const thumb = tile.querySelector<HTMLElement>('.thumb')!;
+    const box = document.createElement('div');
+    box.className = 'live-box';
+    thumb.append(box);
+    const m = model as any;
+    const colors = Object.fromEntries(m.sheets.map((s: any) => [s.id, { front: s.front, back: s.back }]));
+    const viewer = new FoldViewer(box, m, { colors, spin: true });
+    viewer.showStep(m.steps.length, { play: false });
+    tile.classList.add('live');
+    active = { tile, box, viewer };
+  };
+  const grid = document.getElementById('grid')!;
+  grid.addEventListener('pointerover', (e) => {
+    const tile = (e.target as HTMLElement).closest<HTMLElement>('.tile[data-id]');
+    if (!tile || e.pointerType === 'touch' || active?.tile === tile) return;
+    clearTimeout(timer);
+    timer = window.setTimeout(() => start(tile), 280);
+  });
+  grid.addEventListener('pointerout', (e) => {
+    const tile = (e.target as HTMLElement).closest<HTMLElement>('.tile[data-id]');
+    if (!tile || tile.contains(e.relatedTarget as Node)) return;
+    if (e.pointerType === 'touch') return;
+    stop();
+  });
+  // Touch: press and hold the picture to spin it; tap elsewhere to stop.
+  grid.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+    const tile = (e.target as HTMLElement).closest<HTMLElement>('.tile[data-id]');
+    if (!tile || active?.tile === tile) return;
+    clearTimeout(timer);
+    timer = window.setTimeout(() => { tile.classList.add('pressed'); start(tile); }, 450);
+  });
+  grid.addEventListener('pointerup', () => clearTimeout(timer));
+  document.addEventListener('pointerdown', (e) => { if (active && !active.tile.contains(e.target as Node)) { active.tile.classList.remove('pressed'); stop(); } });
+  // Dragging inside the live view should turn the model, not follow the link.
+  grid.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('.live-box') && dragged) { e.preventDefault(); dragged = false; } }, true);
+  let dragged = false, downX = 0, downY = 0;
+  grid.addEventListener('pointerdown', (e) => { downX = e.clientX; downY = e.clientY; dragged = false; });
+  grid.addEventListener('pointermove', (e) => { if (e.buttons && Math.hypot(e.clientX - downX, e.clientY - downY) > 6) dragged = true; });
+  grid.addEventListener('contextmenu', (e) => { if ((e.target as HTMLElement).closest('.tile.pressed')) e.preventDefault(); });
+  addEventListener('pagehide', stop);
 }
