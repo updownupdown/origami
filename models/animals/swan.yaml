@@ -49,8 +49,9 @@ steps:
     rotate: 90
   - text: Pull the neck up and pinch it flat (outside reverse fold).
     reverse: outside
-    line: [lerp(A O 0.55), shift(lerp(A O 0.25) A O 3)]
-    move: lerp(A O 0.1)
+    line: [lerp(A O 0.8), shift(lerp(A O 0.5) A O 3.2)]
+    move: shift(lerp(A O 0.5) A O 0.3)
+    layers: outer
 finish:
   camera: three-quarter
   text: Your swan is ready to sail.

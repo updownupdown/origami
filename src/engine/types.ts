@@ -18,7 +18,8 @@ export interface LineSpec {
   pick?: number;
 }
 
-export type LayerChoice = 'all' | 'top' | 'bottom';
+/** Which layers at the move point start the fold. 'outer' takes the top and bottom layers (a neck pulled out between the body layers). */
+export type LayerChoice = 'all' | 'top' | 'bottom' | 'outer';
 
 export interface FoldOp {
   fold?: 'valley' | 'mountain';

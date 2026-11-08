@@ -418,6 +418,9 @@ function opFold(st: State, op: FoldOp): Phase {
   } else if (choice === 'bottom') {
     const mn = Math.min(...seeds.map((x) => x.f.layer));
     seeds = seeds.filter((x) => x.f.layer === mn);
+  } else if (choice === 'outer') {
+    const mn = Math.min(...seeds.map((x) => x.f.layer)), mx = Math.max(...seeds.map((x) => x.f.layer));
+    seeds = seeds.filter((x) => x.f.layer === mn || x.f.layer === mx);
   }
   const moving = new Set<Piece>(seeds);
   const queue = [...seeds];
