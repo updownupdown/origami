@@ -1,0 +1,39 @@
+id: giraffe
+title: Giraffe
+family: giraffe
+categories: [animals/mammals]
+tags: [giraffe, safari, kids, kite base]
+difficulty: 2
+description: A tall flat giraffe made from a kite base, with a long neck and a pleated head.
+credits:
+  designer: Origami project
+  script: Origami project
+  note: Our own simple design, built on the traditional kite base.
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#e8b04a", back: "#fbf7ee" }
+steps:
+  - use: base/kite
+  - text: Turn the model over.
+    turn-over: true
+    pin: { TOP: A, BOT: C }
+  - text: Fold the narrow point up to the top corner. This is the neck.
+    fold: valley
+    line: { bring: BOT, to: TOP }
+    move: BOT
+    pin: { NK: mid(TOP BOT) }
+  - text: Fold the tip back down to make the head.
+    fold: valley
+    line:
+      through: lerp(NK TOP 0.75)
+      perpendicular: [TOP, BOT]
+    move: C
+  - text: Fold the model in half behind, along the centre line.
+    fold: mountain
+    line: [TOP, BOT]
+    move: shift(NK TOP BOT 1)
+finish:
+  camera: three-quarter
+  text: Draw spots and set your giraffe on its long body.

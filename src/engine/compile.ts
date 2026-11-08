@@ -471,8 +471,9 @@ function opFold(st: State, op: FoldOp): Phase {
         case 'mountain':
           lb = minAll - 1 - (f.layer - minM); d = -1; break;
         case 'inside':
-          // Pushed in between the layers, order reversed.
-          lb = midM + (midM - f.layer) * 0.001; d = f.layer >= midM ? -1 : 1; break;
+          // Pushed in between the layers. The front flap stays in front of the back flap,
+          // so the spine crease flips from mountain to valley.
+          lb = midM + (f.layer - midM) * 0.001; d = f.layer >= midM ? -1 : 1; break;
         case 'outside':
           if (f.layer >= midM) { lb = maxAll + 1 + (maxM - f.layer); d = 1; }
           else { lb = minAll - 1 - (f.layer - minM); d = -1; }

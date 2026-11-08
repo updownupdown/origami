@@ -2,6 +2,7 @@ import { parse } from 'yaml';
 import { compileModel, type BaseLibrary } from '../engine/compile';
 import type { CompiledModel, ModelScript } from '../engine/types';
 import { FoldViewer } from './viewer';
+import { StepControls } from './step-controls';
 
 const base = (window as any).__BASE__ as string;
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -38,23 +39,36 @@ export async function initAuthor() {
   const bases: BaseLibrary = await fetch(`${base}bases.json`).then((r) => r.json()).catch(() => ({}));
 
   let viewer: FoldViewer | null = null;
+  let finalView: FoldViewer | null = null;
   let model: CompiledModel | null = null;
-  let cur = 0;
-  let scrubbing = false;
+  let finalTimer = 0;
+  const steps = new StepControls({ camera: false });
+
+  // Colour override, so dark or similar paper colours can be swapped while writing.
+  const COLORS = 'origami:author:colors';
+  let override: { front: string; back: string } | null = null;
+  try { override = JSON.parse(localStorage.getItem(COLORS) || 'null'); } catch { /* ignore */ }
+  const colorsFor = (m: CompiledModel) => Object.fromEntries(m.sheets.map((s) => [s.id, override ?? { front: s.front, back: s.back }]));
+  const syncInputs = () => {
+    const s = model?.sheets[0];
+    $<HTMLInputElement>('col-front').value = override?.front ?? s?.front ?? '#e8642c';
+    $<HTMLInputElement>('col-back').value = override?.back ?? s?.back ?? '#fbf7ee';
+  };
+  const applyColors = () => {
+    try { localStorage.setItem(COLORS, JSON.stringify(override)); } catch { /* ignore */ }
+    if (model) { viewer?.setColors(colorsFor(model)); finalView?.setColors(colorsFor(model)); }
+    syncInputs();
+  };
+  for (const side of ['front', 'back'] as const) {
+    $<HTMLInputElement>(`col-${side}`).addEventListener('input', (e) => {
+      const s = model?.sheets[0];
+      override = { front: override?.front ?? s?.front ?? '#e8642c', back: override?.back ?? s?.back ?? '#fbf7ee', [side]: (e.target as HTMLInputElement).value };
+      applyColors();
+    });
+  }
+  $('col-reset').addEventListener('click', () => { override = null; applyColors(); });
 
   const setStatus = (msg: string, err = false) => { status.textContent = msg; status.classList.toggle('err', err); };
-
-  const showStep = (i: number, play = true) => {
-    if (!model || !viewer) return;
-    const N = model.steps.length;
-    cur = Math.max(0, Math.min(N, i));
-    viewer.showStep(cur, { play, camera: false });
-    const done = cur >= N;
-    $('step-label').textContent = done ? 'Finished' : `Step ${cur + 1} of ${N}`;
-    $('step-text').textContent = done ? model.finish.text : model.steps[cur].text;
-    ($('btn-prev') as HTMLButtonElement).disabled = cur === 0;
-    ($('btn-next') as HTMLButtonElement).disabled = done;
-  };
 
   const compile = () => {
     const text = src.value;
@@ -69,16 +83,23 @@ export async function initAuthor() {
     try {
       const m = compileModel(script, bases);
       const first = !model;
-      const keep = Math.min(cur, m.steps.length);
+      const keep = Math.min(steps.cur, m.steps.length);
       model = m;
       if (viewer) viewer.dispose();
-      viewer = new FoldViewer($('canvas'), m, {
-        colors: Object.fromEntries(m.sheets.map((s) => [s.id, { front: s.front, back: s.back }])),
-        onFrame: (t) => { if (!scrubbing) $<HTMLInputElement>('scrub').value = String(Math.round(t * 1000)); },
-      });
-      showStep(first ? 0 : keep, false);
+      viewer = new FoldViewer($('canvas'), m, { colors: colorsFor(m), onFrame: (t) => steps.frame(t) });
+      steps.attach(m, viewer);
+      steps.show(first ? 0 : keep, false);
       viewer.bestAngle(false);
+      syncInputs();
       setStatus(`${m.title}: ${m.steps.length} steps compiled.`);
+      // The finished model, for reference (after the main view, so typing stays responsive).
+      clearTimeout(finalTimer);
+      finalTimer = window.setTimeout(() => {
+        finalView?.dispose();
+        finalView = new FoldViewer($('final'), m, { colors: colorsFor(m), cardOffset: false });
+        finalView.showStep(m.steps.length, { play: false });
+        finalView.bestAngle(false);
+      }, 120);
     } catch (e) {
       setStatus((e as Error).message, true);
     }
@@ -89,7 +110,7 @@ export async function initAuthor() {
     const r = await fetch(`${base}src/${id}.yaml`);
     if (!r.ok) { setStatus(`Could not load "${id}".`, true); return; }
     src.value = await r.text();
-    cur = 0;
+    steps.cur = 0;
     model = null;
     compile();
   };
@@ -108,11 +129,6 @@ export async function initAuthor() {
     const v = (e.target as HTMLSelectElement).value;
     if (v) load(v);
   });
-  $('btn-prev').addEventListener('click', () => showStep(cur - 1));
-  $('btn-next').addEventListener('click', () => showStep(cur + 1));
-  const scrub = $<HTMLInputElement>('scrub');
-  scrub.addEventListener('input', () => { scrubbing = true; viewer?.setT(Number(scrub.value) / 1000); });
-  scrub.addEventListener('change', () => (scrubbing = false));
   $('btn-dl').addEventListener('click', () => {
     let id = 'model';
     try { id = (parse(src.value) as ModelScript).id || id; } catch { /* keep default */ }
