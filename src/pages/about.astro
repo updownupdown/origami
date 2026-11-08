@@ -1,0 +1,36 @@
+---
+import Base from '../layouts/Base.astro';
+import index from '../generated/index.json';
+const base = import.meta.env.BASE_URL;
+const foldable = index.filter((e: any) => e.kind === 'foldable');
+const designers = [...new Set(foldable.map((e: any) => e.designer))].sort();
+---
+<Base title="About">
+  <main class="prose">
+    <p><a href={base}>← All models</a></p>
+    <h1>About</h1>
+    <p>A library of origami models with step-by-step instructions you can turn in 3D. Every picture on this site is rendered from our own fold scripts; we do not copy diagrams or photos from other sites.</p>
+    <h2>Reading the folds</h2>
+    <ul>
+      <li><span class="lv"></span> <b>Valley fold</b>: blue dashed line. Fold towards you, so the crease sinks like a valley.</li>
+      <li><span class="lm"></span> <b>Mountain fold</b>: orange dash-dot line. Fold away from you, so the crease rises like a ridge.</li>
+      <li>Curved arrows show which way the paper moves. Use the target button to return to the best angle for a step.</li>
+      <li>Drag to turn the model, pinch or scroll to zoom, and drag with two fingers (or right-drag) to pan.</li>
+    </ul>
+    <h2>Credits</h2>
+    <p>Every model lists its designer and sources on its Details panel. Traditional models have no known designer. Models marked "Origami project" are our own designs. Link-only entries point to the designer's or publisher's own instructions.</p>
+    <p>Designers in the library: {designers.join(', ')}.</p>
+    <h2>Offline</h2>
+    <p>Install this site from your browser's menu to use it like an app. Models you have opened stay available offline.</p>
+    <h2>For makers</h2>
+    <p>Every model can be downloaded as a <a href="https://github.com/edemaine/fold" rel="noopener">FOLD</a> file, and you can write your own in the <a href={`${base}author/`}>editor</a>. The source is on <a href="https://github.com/updownupdown/origami">GitHub</a>.</p>
+  </main>
+</Base>
+<style>
+  .prose { max-width: 680px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-weight: 600; }
+  h2 { font-weight: 500; margin-top: 28px; }
+  li { margin: 6px 0; }
+  .lv, .lm { display: inline-block; width: 28px; border-top: 2px dashed var(--valley); vertical-align: middle; }
+  .lm { border-top: 2px dotted var(--mountain); }
+</style>

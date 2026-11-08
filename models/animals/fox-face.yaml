@@ -1,0 +1,43 @@
+id: fox-face
+title: Fox face
+family: fox
+variant: Face
+categories: [animals/mammals]
+tags: [fox, face, kids, quick]
+difficulty: 1
+description: A classic first model. Five folds make a pointed fox face with tall ears.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#e8642c", back: "#fbf7ee" }
+steps:
+  - text: Start with a diamond, white side up. Fold the top corner down to the bottom corner.
+    fold: valley
+    line: [B, D]
+    move: A
+  - text: Fold in half from side to side, then unfold to mark the centre.
+    crease: valley
+    line: { bring: B, to: D }
+    move: B
+  - text: Fold the right corner up so it sticks out above the top edge. This makes an ear.
+    fold: valley
+    line: [lerp(O, B, 0.65), C]
+    move: B
+  - text: Repeat on the left side.
+    fold: valley
+    line: [lerp(O, D, 0.65), C]
+    move: D
+  - text: Turn the model over.
+    turn-over: true
+  - text: Fold the tip of the nose behind.
+    fold: mountain
+    line:
+      through: lerp(C, O, 0.18)
+      perpendicular: [C, O]
+    move: C
+finish:
+  camera: hero

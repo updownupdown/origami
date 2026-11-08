@@ -1,0 +1,208 @@
+---
+import Base from '../../layouts/Base.astro';
+import { icon } from '../../lib/icons';
+import { DIFFICULTY, categoryLabel } from '../../lib/categories';
+import index from '../../generated/index.json';
+import fs from 'node:fs';
+
+export function getStaticPaths() {
+  return index.filter((e: any) => e.kind === 'foldable').map((e: any) => ({ params: { id: e.id }, props: { entry: e } }));
+}
+const { entry } = Astro.props as { entry: any };
+const model = JSON.parse(fs.readFileSync(`public/models/${entry.id}.json`, 'utf8'));
+const base = import.meta.env.BASE_URL;
+const variants = index.filter((e: any) => e.kind === 'foldable' && e.family && e.family === entry.family && e.id !== entry.id);
+const desc = `${entry.title}: ${DIFFICULTY[entry.difficulty]} origami, ${entry.steps} steps. ${entry.description}`;
+---
+<Base title={entry.title} description={desc} bodyClass="model-page" image={`${base}thumbs/${entry.id}.png`}>
+  <main class="stage" id="stage" data-id={entry.id}>
+    <div class="canvas" id="canvas" aria-label={`3D view of ${entry.title}`} role="img"></div>
+
+    <div class="tl">
+      <a class="btn icon fab" href={base} aria-label="All models"><Fragment set:html={icon('back')} /></a>
+      <div class="titlecard card">
+        <h1>{entry.title}</h1>
+        <p>{DIFFICULTY[entry.difficulty]} · {model.sheets.reduce((n: number, s: any) => n + s.count, 0) > 1 ? `${model.sheets.reduce((n: number, s: any) => n + s.count, 0)} sheets` : `1 sheet`} · <span data-size={model.sheets[0].w}>{model.sheets[0].w} cm</span></p>
+      </div>
+    </div>
+
+    <div class="tr card">
+      <button class="btn small" id="btn-paper" aria-haspopup="dialog" aria-label="Paper colours">
+        <span class="swatches" id="swatches"></span>
+        <span class="lbl">Paper</span>
+      </button>
+      <button class="btn small" id="btn-info" aria-haspopup="dialog"><Fragment set:html={icon('info')} /><span class="lbl">Details</span></button>
+    </div>
+
+    <div class="rail">
+      <button class="btn icon fab dark" id="btn-best" title="Best angle for this step" aria-label="Best angle for this step"><Fragment set:html={icon('target')} /></button>
+      <button class="btn icon fab" id="btn-in" aria-label="Zoom in"><Fragment set:html={icon('plus')} /></button>
+      <button class="btn icon fab" id="btn-out" aria-label="Zoom out"><Fragment set:html={icon('minus')} /></button>
+      <button class="btn icon fab" id="btn-cp" aria-pressed="false" title="Crease pattern" aria-label="Show crease pattern"><Fragment set:html={icon('grid')} /></button>
+    </div>
+
+    <section class="stepcard card" aria-live="polite">
+      <div class="row">
+        <button class="btn icon" id="btn-prev" aria-label="Previous step"><Fragment set:html={icon('back')} /></button>
+        <div class="txt">
+          <span class="eyebrow" id="step-label">Step 1</span>
+          <p id="step-text"></p>
+          <p class="tip" id="step-tip" hidden></p>
+        </div>
+        <button class="btn icon primary" id="btn-next" aria-label="Next step"><Fragment set:html={icon('next')} /></button>
+      </div>
+      <div class="progress" id="progress"></div>
+      <div class="foot">
+        <button class="btn small" id="btn-steps" aria-expanded="false"><Fragment set:html={icon('list')} />Steps</button>
+        <button class="btn small icon" id="btn-play" aria-label="Replay this fold"><Fragment set:html={icon('replay')} /></button>
+        <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Fold progress" />
+        <span class="legend"><span class="lv"></span>Valley <span class="lm"></span>Mountain</span>
+      </div>
+    </section>
+
+    <aside class="drawer card" id="drawer" hidden>
+      <header><h2>Steps</h2><button class="btn small icon" id="btn-close-steps" aria-label="Close steps"><Fragment set:html={icon('close')} /></button></header>
+      <ol id="steplist"></ol>
+    </aside>
+
+    <div class="cp card" id="cp" hidden>
+      <header><h2>Crease pattern</h2><button class="btn small icon" id="btn-close-cp" aria-label="Close crease pattern"><Fragment set:html={icon('close')} /></button></header>
+      <div id="cp-body"></div>
+      <p class="hint">All creases of the finished model on the unfolded sheet, as seen from the side that faces up at the start.</p>
+    </div>
+
+    <dialog id="dlg-paper" class="card">
+      <header><h2>Paper</h2><button class="btn small icon" data-close aria-label="Close"><Fragment set:html={icon('close')} /></button></header>
+      <p class="hint">Pick the colours of the paper you are using. Sizes stay as listed.</p>
+      <div id="paper-list"></div>
+      <div class="units">
+        <span>Units</span>
+        <button class="btn small" data-unit="cm">cm</button>
+        <button class="btn small" data-unit="in">inches</button>
+      </div>
+    </dialog>
+
+    <dialog id="dlg-info" class="card">
+      <header><h2>{entry.title}</h2><button class="btn small icon" data-close aria-label="Close"><Fragment set:html={icon('close')} /></button></header>
+      {entry.description && <p>{entry.description}</p>}
+      <h3>Materials</h3>
+      <ul class="materials">
+        {model.sheets.map((s: any) => (
+          <li><span class="sw" data-sheet={s.id}></span><span><b>{s.count > 1 ? `${s.count} × ` : ''}{s.name}</b>: <span data-size={s.w} data-size-h={s.h}>{s.w === s.h ? `${s.w} cm square` : `${s.w} × ${s.h} cm`}</span>{s.note ? ` · ${s.note}` : ''}</span></li>
+        ))}
+        {model.tools.map((t: string) => <li><span class="sw tool"></span><span>{t}</span></li>)}
+      </ul>
+      <h3>Credits</h3>
+      <dl class="credits">
+        <dt>Design</dt><dd>{model.credits.designerUrl ? <a href={model.credits.designerUrl} rel="noopener" target="_blank">{model.credits.designer}</a> : model.credits.designer}</dd>
+        {model.credits.sources?.length ? <><dt>Sources</dt><dd>{model.credits.sources.map((s: any, i: number) => <>{i > 0 && ', '}<a href={s.url} target="_blank" rel="noopener">{s.label}</a></>)}</dd></> : null}
+        <dt>Steps written by</dt><dd>{model.credits.script ?? 'Origami project'}</dd>
+        {model.credits.note && <><dt>Note</dt><dd>{model.credits.note}</dd></>}
+      </dl>
+      <p class="cats">{entry.categories.map((c: string) => <span class="chip">{categoryLabel(c)}</span>)}</p>
+      {variants.length > 0 && <>
+        <h3>Other versions</h3>
+        <ul class="variants">{variants.map((v: any) => <li><a href={`${base}models/${v.id}/`}>{v.title}{v.variant ? ` (${v.variant})` : ''}</a> · {DIFFICULTY[v.difficulty]}</li>)}</ul>
+      </>}
+      <p class="actions">
+        <a class="btn small" href={`${base}author/?model=${entry.id}`}><Fragment set:html={icon('edit')} />Open in editor</a>
+        <a class="btn small" href={`${base}fold/${entry.id}.fold`} download><Fragment set:html={icon('download')} />FOLD file</a>
+      </p>
+    </dialog>
+
+    <div class="finish card" id="finish" hidden>
+      <p class="eyebrow">Finished</p>
+      <p id="finish-text"></p>
+      <button class="btn small" id="btn-done" aria-pressed="false"><Fragment set:html={icon('check')} />I folded it</button>
+    </div>
+  </main>
+</Base>
+
+<style is:global>
+  body.model-page { overflow: hidden; overscroll-behavior: none; }
+  .stage { position: fixed; inset: 0; }
+  .canvas { position: absolute; inset: 0; touch-action: none; }
+  .canvas canvas { display: block; }
+  .fab { background: var(--paper-raised); border: none; box-shadow: var(--shadow); }
+  .fab.dark { background: var(--ink); color: var(--paper-raised); }
+  .tl { position: absolute; left: 16px; top: max(16px, env(safe-area-inset-top)); display: flex; gap: 10px; align-items: center; max-width: calc(100% - 200px); }
+  .titlecard { padding: 6px 14px; min-width: 0; }
+  .titlecard h1 { margin: 0; font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .titlecard p { margin: 0; font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
+  .tr { position: absolute; right: 16px; top: max(16px, env(safe-area-inset-top)); display: flex; gap: 6px; padding: 6px; }
+  .tr .btn { border: none; }
+  .swatches { display: inline-flex; gap: 2px; }
+  .swatches i { width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.15); display: block; }
+  .rail { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; }
+  .stepcard { position: absolute; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(640px, calc(100% - 24px)); padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .stepcard .row { display: flex; align-items: center; gap: 12px; }
+  .stepcard .txt { flex: 1; min-width: 0; }
+  .stepcard .txt p { margin: 2px 0 0; font-size: 17px; line-height: 1.35; }
+  .stepcard .tip { font-size: 14px !important; color: var(--ink-soft); }
+  .progress { display: flex; gap: 4px; }
+  .progress button { flex: 1; height: 14px; border: none; background: none; padding: 5px 0; cursor: pointer; }
+  .progress button::after { content: ''; display: block; height: 4px; border-radius: 2px; background: var(--line); }
+  .progress button.past::after { background: var(--ink); }
+  .progress button.now::after { background: var(--valley); }
+  .foot { display: flex; align-items: center; gap: 8px; }
+  .foot input[type=range] { flex: 1; accent-color: var(--ink); min-width: 60px; }
+  .legend { font-size: 12px; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .legend .lv, .legend .lm { width: 22px; height: 0; border-top: 2px dashed var(--valley); display: inline-block; }
+  .legend .lm { border-top: 2px dotted var(--mountain); margin-left: 8px; }
+  .drawer { position: absolute; left: 16px; top: 80px; bottom: 16px; width: 320px; display: flex; flex-direction: column; overflow: hidden; z-index: 5; }
+  .drawer header, .cp header, dialog header { display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 8px 16px; }
+  .drawer h2, .cp h2, dialog h2 { margin: 0; font-size: 18px; font-weight: 600; }
+  .drawer ol { list-style: none; margin: 0; padding: 0 8px 12px; overflow-y: auto; }
+  .drawer li button { width: 100%; display: flex; gap: 10px; align-items: center; text-align: left; padding: 6px 8px; border: none; border-radius: 10px; background: none; cursor: pointer; }
+  .drawer li button:hover { background: var(--paper-sunk); }
+  .drawer li button.now { background: var(--paper-sunk); }
+  .drawer li .n { width: 22px; font-weight: 600; color: var(--ink-faint); font-size: 14px; flex-shrink: 0; }
+  .drawer li button.now .n { color: var(--valley); }
+  .drawer li .th { width: 56px; height: 56px; border-radius: 8px; background: var(--paper); flex-shrink: 0; overflow: hidden; }
+  .drawer li .th svg { width: 100%; height: 100%; }
+  .drawer li .tx { font-size: 14px; line-height: 1.3; }
+  .drawer li .grp { display: block; font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+  .cp { position: absolute; left: 16px; top: 80px; width: 340px; max-width: calc(100% - 32px); z-index: 6; padding-bottom: 12px; }
+  .cp #cp-body { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 0 12px; }
+  .cp #cp-body svg { width: 100%; height: auto; max-width: 300px; }
+  .hint { font-size: 13px; color: var(--ink-soft); margin: 4px 16px 8px; }
+  dialog { border: none; padding: 0 0 16px; width: min(460px, calc(100% - 24px)); max-height: calc(100% - 40px); color: var(--ink); }
+  dialog::backdrop { background: rgba(30, 25, 20, 0.25); }
+  dialog > *:not(header) { margin-left: 16px; margin-right: 16px; }
+  dialog h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); font-weight: 500; margin: 18px 16px 6px; }
+  .materials { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .materials li { display: flex; gap: 10px; align-items: center; font-size: 15px; }
+  .sw { width: 28px; height: 28px; border-radius: 5px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.12); }
+  .sw.tool { background: var(--paper-sunk); }
+  .credits { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 15px; margin-top: 0; }
+  .credits dt { color: var(--ink-soft); }
+  .credits dd { margin: 0; }
+  .cats { display: flex; gap: 6px; flex-wrap: wrap; }
+  .variants { padding-left: 18px; margin-top: 0; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .paper-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .paper-row .nm { flex: 1; font-size: 15px; }
+  .paper-row .nm small { display: block; color: var(--ink-soft); font-size: 12px; }
+  .paper-row label { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--ink-soft); }
+  .paper-row input[type=color] { width: 40px; height: 40px; border: 1px solid var(--line-strong); border-radius: 8px; padding: 2px; background: var(--paper-raised); cursor: pointer; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .presets button { width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.15); cursor: pointer; }
+  .units { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 14px; color: var(--ink-soft); }
+  .finish { position: absolute; left: 50%; top: 90px; transform: translateX(-50%); padding: 12px 18px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .finish p { margin: 0; }
+  @media (max-width: 640px) {
+    .tr .lbl { display: none; }
+    .rail { top: auto; bottom: 230px; transform: none; right: 12px; }
+    .rail #btn-in, .rail #btn-out { display: none; }
+    .legend { display: none; }
+    .drawer { left: 8px; right: 8px; width: auto; top: 70px; bottom: 210px; }
+    .stepcard .txt p { font-size: 16px; }
+    .tl { left: 12px; max-width: calc(100% - 130px); }
+    .tr { right: 12px; }
+  }
+</style>
+
+<script>
+  import { initModelPage } from '../../scripts/model-page';
+  initModelPage();
+</script>

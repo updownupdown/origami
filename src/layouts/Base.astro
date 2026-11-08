@@ -1,0 +1,32 @@
+---
+import '../styles/global.css';
+interface Props { title: string; description?: string; bodyClass?: string; image?: string }
+const { title, description = 'A searchable library of origami models with step-by-step 3D instructions.', bodyClass, image } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const fullTitle = title === 'Origami' ? title : `${title} · Origami`;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    {image && <meta property="og:image" content={new URL(image, Astro.site).href} />}
+    <meta name="theme-color" content="#f6f2ea" />
+    <link rel="manifest" href={`${base}manifest.webmanifest`} />
+    <link rel="icon" href={`${base}icon.svg`} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={`${base}icon-192.png`} />
+    <script is:inline define:vars={{ base }}>
+      window.__BASE__ = base;
+      if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
+        addEventListener('load', () => navigator.serviceWorker.register(base + 'sw.js', { scope: base }));
+      }
+    </script>
+  </head>
+  <body class={bodyClass}>
+    <slot />
+  </body>
+</html>

@@ -1,0 +1,25 @@
+id: waterbomb
+title: Waterbomb base
+kind: base
+categories: [bases]
+difficulty: 1
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+steps:
+  - text: Fold in half from top to bottom.
+    fold: valley
+    line: [mid(A, D), mid(B, C)]
+    move: A
+    mark: { L: mid(A D), R: mid(B C) }
+  - text: Push the left side in between the layers along the diagonal (inside reverse fold).
+    reverse: inside
+    line: [O, D]
+    move: lerp(L, O, 0.2)
+  - text: Repeat on the right side to finish the triangle.
+    reverse: inside
+    line: [O, C]
+    move: lerp(R, O, 0.2)

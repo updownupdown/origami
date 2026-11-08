@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+public/models/
+public/fold/
+public/thumbs/
+src/generated/
+test-results/
+public/search.json
