@@ -35,19 +35,19 @@ const DIFF = [
 const difficultyOf = (s) => (DIFF.find(([re]) => re.test(s ?? '')) ?? [null, 3])[1];
 
 const CATS = [
-  [/dragon|dinosaur|unicorn|pegasus|phoenix|griffin|monster|demon|creature/i, 'animals/fantasy'],
-  [/bird|crane|swan|owl|eagle|parrot|penguin|duck|hen|chicken|rooster|peacock|flamingo|hummingbird|pigeon|dove|crow|raven|heron|stork|toucan/i, 'animals/birds'],
-  [/fish|shark|whale|dolphin|octopus|squid|crab|lobster|shrimp|jellyfish|seahorse|turtle|ray|starfish|sea/i, 'animals/sea'],
-  [/insect|beetle|butterfly|moth|ant|bee|wasp|spider|scorpion|mantis|dragonfly|cicada|grasshopper|cricket|ladybug|stag/i, 'animals/insects'],
-  [/frog|toad|snake|lizard|gecko|chameleon|crocodile|alligator|salamander|newt|tortoise/i, 'animals/reptiles'],
-  [/flower|rose|lily|tulip|leaf|tree|plant|cactus|succulent|iris|orchid|lotus|sunflower/i, 'plants/flowers'],
-  [/box|tray|bowl|dish|container|envelope|wallet/i, 'boxes/boxes'],
-  [/star|cube|polyhedr|icosa|dodeca|octa|sonobe|kusudama|modular/i, 'geometric/modular'],
-  [/tessellation|twist|pleat/i, 'tessellations'],
-  [/santa|christmas|halloween|pumpkin|valentine|heart|easter/i, 'holidays'],
-  [/human|man|woman|person|samurai|knight|ninja|angel|mask|face|hand|skull|figure/i, 'objects/figures'],
-  [/plane|boat|ship|car|train|rocket|tank|helicopter|vehicle/i, 'objects/vehicles'],
-  [/dog|cat|fox|wolf|bear|rabbit|mouse|rat|horse|deer|elephant|giraffe|lion|tiger|cow|pig|sheep|goat|monkey|ape|gorilla|kangaroo|koala|panda|squirrel|bat|hedgehog|camel|rhino|hippo|zebra|moose|bison|otter|raccoon|mammal/i, 'animals/mammals'],
+  [/\b(?:dragon|dinosaur|unicorn|pegasus|phoenix|griffin|monster|demon|creature)(?:s|es)?\b/i, 'animals/mythical'],
+  [/\b(?:bird|crane|swan|owl|eagle|parrot|penguin|duck|hen|chicken|rooster|peacock|flamingo|hummingbird|pigeon|dove|crow|raven|heron|stork|toucan)(?:s|es)?\b/i, 'animals/birds'],
+  [/\b(?:fish|shark|whale|dolphin|octopus|squid|crab|lobster|shrimp|jellyfish|seahorse|turtle|ray|starfish|sea)(?:s|es)?\b/i, 'animals/sea-life'],
+  [/\b(?:insect|beetle|butterfly|moth|ant|bee|wasp|spider|scorpion|mantis|dragonfly|cicada|grasshopper|cricket|ladybug|stag)(?:s|es)?\b/i, 'animals/insects'],
+  [/\b(?:frog|toad|snake|lizard|gecko|chameleon|crocodile|alligator|salamander|newt|tortoise)(?:s|es)?\b/i, 'animals/reptiles-amphibians'],
+  [/\b(?:flower|rose|lily|tulip|leaf|leaves|tree|plant|cactus|succulent|iris|orchid|lotus|sunflower)(?:s|es)?\b/i, 'plants/flowers'],
+  [/\b(?:box|tray|bowl|dish|container|envelope|wallet)(?:s|es)?\b/i, 'boxes/boxes'],
+  [/\b(?:star|cube|polyhedron|polyhedra|icosahedron|dodecahedron|octahedron|sonobe|kusudama|modular)(?:s|es)?\b/i, 'geometric/modular'],
+  [/\b(?:tessellation|twist|pleat)(?:s|es)?\b/i, 'tessellations'],
+  [/\b(?:santa|christmas|halloween|pumpkin|valentine|heart|easter)(?:s|es)?\b/i, 'holidays'],
+  [/\b(?:human|man|woman|person|samurai|knight|ninja|angel|mask|face|hand|skull|figure)(?:s|es)?\b/i, 'objects/toys'],
+  [/\b(?:plane|boat|ship|car|train|rocket|tank|helicopter|vehicle)(?:s|es)?\b/i, 'objects/vehicles'],
+  [/\b(?:dog|cat|fox|wolf|bear|rabbit|mouse|rat|horse|deer|elephant|giraffe|lion|tiger|cow|pig|sheep|goat|monkey|ape|gorilla|kangaroo|koala|panda|squirrel|bat|hedgehog|camel|rhino|hippo|zebra|moose|bison|otter|raccoon|mammal)(?:s|es)?\b/i, 'animals/mammals'],
 ];
 const categoriesOf = (text) => {
   const hit = CATS.filter(([re]) => re.test(text)).map(([, c]) => c);

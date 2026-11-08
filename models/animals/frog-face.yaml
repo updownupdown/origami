@@ -1,0 +1,74 @@
+id: frog-face
+title: Frog face
+family: frog
+variant: Face
+aliases: [toad]
+categories: [animals/reptiles-amphibians]
+tags: [frog, face, pond, kids, quick]
+difficulty: 1
+description: A wide frog face with two round eyes popping up over the top.
+credits:
+  designer: Origami project
+  script: Origami project
+  note: Our own design, built on the traditional animal-face folds.
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#5fbf6a", back: "#fbf7ee" }
+steps:
+  - text: Start with a diamond, white side up. Fold the top corner down to the bottom corner.
+    fold: valley
+    line: [B, D]
+    move: A
+  - text: Fold the right and left corners down to the bottom point.
+    pin: { TOP: O, BOT: C, RM: mid(B C), LM: mid(D C) }
+    ops:
+      - fold: valley
+        line: { bring: B, to: C }
+        move: B
+      - fold: valley
+        line: { bring: D, to: C }
+        move: D
+  - text: Fold both flaps up and out so their points pop over the top. These are the eyes.
+    ops:
+      - fold: valley
+        line: [RM, lerp(TOP BOT 0.35)]
+        move: shift(lerp(BOT TOP 0.04) BOT TOP -0.2)
+        layers: top
+      - fold: valley
+        line: [LM, lerp(TOP BOT 0.35)]
+        move: shift(lerp(BOT TOP 0.04) BOT TOP 0.2)
+        layers: top
+  - text: Fold the bottom point up to make the mouth.
+    fold: valley
+    line:
+      through: lerp(BOT TOP 0.3)
+      perpendicular: [BOT, TOP]
+    move: lerp(BOT TOP 0.02)
+  - text: Fold the side corners behind to round the face.
+    ops:
+      - fold: mountain
+        line:
+          through: lerp(RM TOP 0.1)
+          perpendicular: [RM, mid(TOP BOT)]
+        move: lerp(RM TOP 0.02)
+      - fold: mountain
+        line:
+          through: lerp(LM TOP 0.1)
+          perpendicular: [LM, mid(TOP BOT)]
+        move: lerp(LM TOP 0.02)
+  - text: Fold the tips of the eyes down behind to make them round.
+    ops:
+      - fold: mountain
+        line:
+          through: lerp(B mid(TOP BOT) 0.3)
+          perpendicular: [B, mid(TOP BOT)]
+        move: B
+      - fold: mountain
+        line:
+          through: lerp(D mid(TOP BOT) 0.3)
+          perpendicular: [D, mid(TOP BOT)]
+        move: D
+finish:
+  text: Draw pupils in the eyes and a wide smile.

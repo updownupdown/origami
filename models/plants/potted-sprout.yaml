@@ -1,0 +1,69 @@
+id: potted-sprout
+title: Potted sprout
+family: potted-plant
+variant: Flat sprout
+aliases: [plant pot, house plant, flower pot]
+categories: [plants/potted]
+tags: [plant, pot, sprout, leaves, card, two sheets, our design]
+difficulty: 1
+description: A flat potted plant for cards and walls. A wide pot with a folded rim, and a three-leaf sprout tucked in behind it.
+credits:
+  designer: Origami project
+  script: Origami project
+  note: Our own design. Inspired by the mini pot plants from Paper Kawaii, but folded differently.
+  sources:
+    - label: Inspiration, Paper Kawaii mini pot plants
+      url: https://www.paperkawaii.com/video/mini-origami-pot-plants/
+materials:
+  - id: pot
+    name: Pot
+    size: 15
+    at: [-10, 0]
+    colors: { front: "#c96b3c", back: "#f3e3d3" }
+  - id: plant
+    name: Plant
+    size: 11
+    diamond: true
+    at: [12, 0]
+    colors: { front: "#5fbf6a", back: "#e9f5e3" }
+steps:
+  - text: "Pot: start white side up. Fold the bottom edge up to the top edge."
+    fold: valley
+    sheet: pot
+    pin: { PA: pot.A, PB: pot.B, PC: pot.C, PD: pot.D }
+    line: [mid(pot.A pot.D), mid(pot.B pot.C)]
+    move: pot.D
+  - text: Fold the top strip down to make the rim.
+    fold: valley
+    sheet: pot
+    line: [lerp(PA PD 0.1), lerp(PB PC 0.1)]
+    move: lerp(PA PB 0.5)
+  - text: Fold the left and right sides behind at a slant so the pot narrows at the bottom.
+    ops:
+      - fold: mountain
+        sheet: pot
+        line: [lerp(PA PD 0.1), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.16)]
+        move: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.01)
+      - fold: mountain
+        sheet: pot
+        line: [lerp(PB PC 0.1), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.84)]
+        move: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.99)
+  - text: "Plant: start with a diamond, white side up. Fold the bottom corner up to the top."
+    fold: valley
+    sheet: plant
+    line: [plant.B, plant.D]
+    move: plant.C
+  - text: Fold the right corner up so it points out as a leaf.
+    fold: valley
+    sheet: plant
+    line: [plant.O, lerp(plant.B plant.C 0.25)]
+    move: plant.B
+  - text: Fold the left corner up the same way.
+    fold: valley
+    sheet: plant
+    line: [plant.O, lerp(plant.D plant.C 0.25)]
+    move: plant.D
+  - text: Tuck the bottom of the plant into the pot, behind the rim.
+    place: { sheet: plant, point: plant.O, to: lerp(lerp(PA PD 0.32) lerp(PB PC 0.32) 0.5), layer: below }
+finish:
+  text: Glue the plant in place and stick it on a card.
