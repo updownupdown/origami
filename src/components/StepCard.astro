@@ -1,66 +1,95 @@
 ---
 import { icon } from '../lib/icons';
 ---
-<section class="stepcard card" aria-live="polite">
-  <div class="row">
-    <button class="btn icon" id="btn-prev" aria-label="Previous step"><Fragment set:html={icon('back')} /></button>
+<section class="stepcard card" id="stepcard">
+  <div class="amap" id="amap" hidden>
+    <div class="amap-head">
+      <span class="eyebrow">All parts</span>
+      <button class="btn small icon" id="amap-close" aria-label="Close the map of parts"><Fragment set:html={icon('close')} /></button>
+    </div>
+    <div class="amap-scroll" id="amap-scroll"></div>
+    <p class="amap-note">Each line is one sheet. Lines meet where parts are joined. Tap a stop to go to that step.</p>
+  </div>
+  <div class="row" aria-live="polite">
     <div class="txt">
-      <span class="eyebrow" id="step-label">Step 1</span>
+      <span class="eyebrow" id="step-label"><button class="where" id="step-where" hidden></button><span id="step-count">Step 1</span></span>
       <p id="step-text"></p>
+      <div class="pickup" id="step-pickup" hidden><i id="pickup-swatch"></i><span id="pickup-text"></span></div>
       <p class="tip" id="step-tip" hidden></p>
     </div>
-    <button class="btn icon primary" id="btn-next" aria-label="Next step"><Fragment set:html={icon('next')} /></button>
-  </div>
-  <div class="sliders">
-    <div class="slider one" id="sl-step">
-      <div class="rail"><div class="fill"></div></div>
-      <button class="knob" role="slider" aria-label="This step: drag to fold, tap to replay" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" title="Drag to fold, tap to replay"><Fragment set:html={icon('replay')} /></button>
+    <div class="nav">
+      <button class="btn icon" id="btn-prev" aria-label="Previous step"><Fragment set:html={icon('back')} /></button>
+      <button class="btn icon primary" id="btn-next" aria-label="Next step"><Fragment set:html={icon('next')} /></button>
     </div>
-    <div class="slider all" id="sl-all">
-      <div class="rail"><div class="ticks"></div><div class="seg"></div><div class="fill"></div></div>
-      <button class="knob" role="slider" aria-label="All steps" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="num">1</span></button>
-    </div>
-    <div class="sheetbar" id="sheet-bar" hidden></div>
   </div>
+  <div class="cbar-wrap" id="cbar-wrap">
+    <div class="cbar" id="cbar" role="slider" tabindex="0" aria-label="All steps. Drag to pick a step, tap the knob to replay." aria-valuemin="1" aria-valuemax="1" aria-valuenow="1">
+      <div class="segs" id="cbar-segs"></div>
+      <div class="knob" id="cbar-knob" title="Tap to replay this step"><span class="num">1</span></div>
+    </div>
+  </div>
+  <div class="cbar-bubble" id="cbar-bubble" hidden><div class="pic"></div><span class="cap"></span></div>
   <div class="legend"><span class="lv"></span>Valley <span class="lm"></span>Mountain</div>
 </section>
 
 <style is:global>
-  .stepcard { position: absolute; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(640px, calc(100% - 24px)); padding: 14px 16px 10px; display: flex; flex-direction: column; gap: 8px; }
-  .stepcard .row { display: flex; align-items: center; gap: 12px; }
+  .stepcard { position: absolute; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(640px, calc(100% - 24px)); padding: 14px 16px 8px; display: flex; flex-direction: column; gap: 6px; }
+  .stepcard .row { display: flex; align-items: flex-start; gap: 12px; }
   .stepcard .txt { flex: 1; min-width: 0; }
   .stepcard .txt p { margin: 2px 0 0; font-size: 17px; line-height: 1.35; }
   .stepcard .tip { font-size: 14px !important; color: var(--ink-soft); }
-  .sliders { display: flex; flex-direction: column; gap: 2px; }
-  .slider { position: relative; height: 40px; touch-action: none; cursor: pointer; user-select: none; -webkit-user-select: none; margin: 0 18px; }
-  .slider .rail { position: absolute; left: 0; right: 0; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px; background: var(--line); }
-  .slider .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--ink); }
-  .slider .knob { position: absolute; top: 50%; left: 0; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; border: 2px solid var(--ink); background: var(--paper-raised); color: var(--ink); display: grid; place-items: center; padding: 0; cursor: grab; box-shadow: var(--shadow); font: inherit; }
-  .slider .knob:active { cursor: grabbing; }
-  .slider .knob:focus-visible { outline: 2px solid var(--valley); outline-offset: 2px; }
-  .slider .knob svg { width: 18px; height: 18px; }
-  .slider.one .rail { height: 8px; margin-top: -4px; border-radius: 4px; }
-  .slider.one .fill { background: var(--valley); }
-  .slider.one .knob { border-color: var(--valley); color: var(--valley); }
-  .slider.all { height: 32px; }
-  .slider.all .rail { height: 4px; margin-top: -2px; }
-  .slider.all .knob { width: 28px; height: 28px; margin: -14px 0 0 -14px; background: var(--ink); color: var(--paper-raised); border-color: var(--ink); font-size: 13px; font-weight: 600; }
-  .slider.all .ticks i { position: absolute; top: -3px; width: 2px; height: 10px; margin-left: -1px; border-radius: 1px; background: var(--line-strong); }
-  .slider.all .seg { position: absolute; top: -2px; bottom: -2px; border-radius: 4px; background: color-mix(in srgb, var(--valley) 35%, transparent); }
-  /* Multi-sheet models: which sheet each stretch of steps works on, under the all-steps bar. */
-  .sheetbar { position: relative; height: 22px; margin: -4px 18px 2px; }
-  .sheetbar .run { position: absolute; top: 0; height: 22px; padding: 0 2px; border: 0; background: none; font: inherit; font-size: 12px; color: var(--ink-soft); display: flex; align-items: center; gap: 5px; cursor: pointer; overflow: hidden; white-space: nowrap; border-top: 3px solid var(--run, var(--line-strong)); border-radius: 0; }
-  .sheetbar .run + .run { box-shadow: inset 2px 0 0 var(--paper-raised); }
-  .sheetbar .run i { flex: none; width: 10px; height: 10px; border-radius: 3px; background: var(--run); box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
-  .sheetbar .run span { overflow: hidden; text-overflow: ellipsis; }
-  .sheetbar .run.now { color: var(--ink); font-weight: 600; }
-  .sheetbar .run.asm { --run: var(--ink-soft); }
-  .sheetbar .run.asm i { background: conic-gradient(var(--c1, #ccc) 0 50%, var(--c2, #999) 0); }
+  .stepcard .nav { display: flex; gap: 8px; flex-shrink: 0; }
+  .stepcard .eyebrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .stepcard .where { border: 0; background: var(--paper-sunk); color: var(--ink); font: inherit; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 8px 2px 6px; border-radius: 10px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+  .stepcard .where:hover { background: var(--line); }
+  .stepcard .where i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
+  .stepcard .where.asm i { background: conic-gradient(var(--c1, #ccc) 0 50%, var(--c2, #999) 0); }
+  .stepcard .where::after { content: ''; width: 5px; height: 5px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translateY(-2px); margin-left: 2px; }
+  .stepcard .where[aria-expanded='true']::after { transform: rotate(-135deg) translateY(-1px); }
+  .pickup { margin-top: 8px; display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: 14px; width: fit-content; max-width: 100%; }
+  .pickup i { width: 28px; height: 28px; border-radius: 5px; flex-shrink: 0; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+  .pickup b { font-weight: 600; }
+
+  /* Chapter bar: one bar for every step, split into sheets or step groups. Scrolls sideways when steps get too close. */
+  .cbar-wrap { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; margin: 0 -6px; padding: 0 6px; }
+  .cbar-wrap::-webkit-scrollbar { display: none; }
+  .cbar-wrap.overflow { mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent); }
+  .cbar { position: relative; height: 54px; touch-action: none; cursor: pointer; user-select: none; -webkit-user-select: none; outline: none; }
+  .cbar:focus-visible .knob { outline: 2px solid var(--valley); outline-offset: 2px; }
+  .cbar .seg { position: absolute; top: 14px; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--c) 28%, var(--line)); }
+  .cbar .seg.paper { box-shadow: inset 0 0 0 1px rgba(0,0,0,.14); }
+  .cbar .seg .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 4px; background: var(--c); }
+  .cbar .seg.paper .fill { box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
+  .cbar .seg.asm { background: linear-gradient(90deg, color-mix(in srgb, var(--c1) 30%, var(--line)), color-mix(in srgb, var(--c2) 30%, var(--line))); }
+  .cbar .seg.asm .fill { background: linear-gradient(90deg, var(--c1), var(--c2)); }
+  .cbar .seg i { position: absolute; top: 3px; width: 2px; height: 2px; margin-left: -1px; border-radius: 1px; background: var(--paper-raised); opacity: .75; pointer-events: none; }
+  .cbar .lbl { position: absolute; top: 28px; height: 22px; border: 0; background: none; padding: 0; font: inherit; font-size: 12px; color: var(--ink-soft); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .cbar .lbl.now { color: var(--ink); font-weight: 600; }
+  .cbar .knob { position: absolute; top: 18px; left: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: var(--ink); color: var(--paper-raised); border: 2px solid var(--paper-raised); display: grid; place-items: center; font-size: 13px; font-weight: 600; box-shadow: var(--shadow); transition: left .2s ease; font-variant-numeric: tabular-nums; }
+  .cbar.drag .knob { transition: none; transform: scale(1.12); }
+  @media (prefers-reduced-motion: reduce) { .cbar .knob { transition: none; } }
+  .cbar-bubble { position: absolute; z-index: 3; width: 128px; margin-left: -64px; background: var(--paper-raised); border: 1px solid var(--line-strong); border-radius: 12px; box-shadow: var(--shadow); padding: 6px 6px 5px; text-align: center; font-size: 12px; pointer-events: none; }
+  .cbar-bubble .pic { width: 104px; height: 104px; margin: 0 auto 2px; }
+  .cbar-bubble .pic svg { width: 100%; height: 100%; }
+  .cbar-bubble .cap { display: block; line-height: 1.25; }
+  .cbar-bubble .cap small { display: block; color: var(--ink-soft); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Map of parts (multi-sheet models). */
+  .amap { border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 4px; display: flex; flex-direction: column; gap: 4px; }
+  .amap-head { display: flex; align-items: center; justify-content: space-between; }
+  .amap-scroll { overflow-x: auto; scrollbar-width: thin; }
+  .amap-scroll svg { display: block; }
+  .amap-scroll text { font-family: var(--font); }
+  .amap-scroll .st { cursor: pointer; }
+  .amap-scroll .st:hover circle { stroke-width: 3.5; }
+  .amap-note { margin: 0; font-size: 12px; color: var(--ink-soft); }
+
   .legend { font-size: 12px; color: var(--ink-soft); display: flex; justify-content: center; align-items: center; gap: 6px; white-space: nowrap; }
   .legend .lv, .legend .lm { width: 22px; height: 0; border-top: 2px dashed var(--valley); display: inline-block; }
   .legend .lm { border-top: 2px dotted var(--mountain); margin-left: 8px; }
   @media (max-width: 640px) {
     .legend { display: none; }
     .stepcard .txt p { font-size: 16px; }
+    .stepcard .nav .btn.icon { width: 40px; min-height: 40px; }
   }
 </style>
