@@ -1,0 +1,59 @@
+id: swan
+title: Swan
+family: swan
+categories: [animals/birds]
+tags: [swan, bird, kite base, traditional, kids]
+difficulty: 2
+description: The classic swan from the kite base. A long upright neck, a small head pointing forward and a pointed tail, and it sits up on the table.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#fbf8f1", back: "#d9d4c8" }
+steps:
+  - use: base/kite
+  - text: Turn the paper over, keeping the narrow point at the bottom.
+    turn-over: true
+  - text: Fold the lower right edge to the centre line again, making the point even narrower.
+    fold: valley
+    line:
+      bring: [C, KR]
+      onto: [C, A]
+    move: KR
+  - text: Fold the lower left edge to the centre line the same way.
+    fold: valley
+    line:
+      bring: [C, KL]
+      onto: [C, A]
+    move: KL
+  - text: Fold the narrow point up to meet the top point. This long strip becomes the neck.
+    fold: valley
+    line: { bring: C, to: A }
+    move: C
+  - text: Fold the model in half behind along the centre line, so the neck stays on the outside.
+    fold: mountain
+    line: [A, O]
+    move: shift(O O A 0.8)
+  - text: Turn the model so the folded edge is at the top and the wide end points to the right.
+    rotate: -90
+  - text: Swing the neck up so it stands straight, folding it back around the body at its base (outside reverse fold). Pinch the base flat.
+    reverse: outside
+    line: [lerp(O A 0.24), shift(lerp(O A 0.051) O A -2)]
+    move: shift(lerp(O A 0.6) O A -0.3)
+    layers: outer
+    mark: { NB: lerp(O A 0.24) }
+  - text: Fold the tip of the neck down and forward between its layers to make the head (inside reverse fold).
+    reverse: inside
+    line: [lerp(C NB 0.25), shift(lerp(lerp(C NB 0.25) C 0.57) NB C 1.64)]
+    move: C
+  - text: Spread the body open a little from underneath, so it can sit on its edges.
+    shape:
+      - { line: [O, A], angle: 140 }
+  - text: Set the swan upright on the table, neck up.
+    stand: [paper(8.51 10.61), paper(7.09 17.69)]
+finish:
+  camera: { azimuth: -35, elevation: 18, zoom: 1.1 }
+  text: Your swan is ready to float. Make a pair facing each other.

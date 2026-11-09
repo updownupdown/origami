@@ -1,0 +1,49 @@
+id: angelfish
+title: Angelfish
+family: fish
+aliases: [tropical fish]
+categories: [animals/sea-life]
+tags: [draft, angelfish, tropical fish, fish, sea, aquarium, kids, quick, traditional]
+difficulty: 1
+description: A tall tropical fish with long top and bottom fins and a pleated tail. Quick to fold from a diamond.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    start: front-up
+    colors: { front: "#f2c230", back: "#2b2a28" }
+steps:
+  - text: Start with a diamond, coloured side up. Fold in half from top to bottom and unfold, to mark the middle.
+    pin: { T: A, R: B, BT: C, L: D, M: O }
+    crease: valley
+    line: [D, B]
+    move: A
+  - text: Fold the right corner over to the left, a little past the centre.
+    fold: valley
+    line: { bring: R, to: lerp(M L 0.38) }
+    move: R
+  - text: Fold the corner back out to the right, just right of the centre, so its point sticks out past the edge. This is the tail.
+    fold: valley
+    line:
+      through: lerp(M R 0.19)
+      perpendicular: [L, R]
+    move: lerp(M L 0.36)
+    layers: top
+  - text: Fold the tip of the tail in, so it ends in a straight edge like a fan.
+    fold: valley
+    line:
+      through: lerp(M R 0.68)
+      perpendicular: [L, R]
+    move: lerp(M R 0.74)
+  - text: Fold the left corner in a little to make a blunt nose.
+    fold: valley
+    line:
+      through: lerp(L R 0.07)
+      perpendicular: [L, R]
+    move: L
+finish:
+  camera: { azimuth: 0, elevation: 70, zoom: 1.1 }
+  text: Draw an eye and some dark stripes. Hang a few on threads for a mobile.

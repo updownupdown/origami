@@ -1,0 +1,51 @@
+id: fish
+title: Simple fish
+family: fish
+aliases: [goldfish, easy fish]
+categories: [animals/sea-life]
+tags: [fish, goldfish, sea, ocean, pet, kids, quick, traditional]
+difficulty: 1
+description: A little goldfish with a forked tail, made from a square in five easy folds.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#f08a24", back: "#fbf7ee" }
+steps:
+  - text: Start with a diamond, white side up. Fold the bottom corner up to the top corner.
+    fold: valley
+    line: [B, D]
+    move: C
+  - text: Fold the left and right corners up to the top corner, making a small diamond.
+    pin: { T: A, BOT: O, RC: mid(A B), LC: mid(A D) }
+    ops:
+      - fold: valley
+        line: { bring: B, to: A }
+        move: B
+      - fold: valley
+        line: { bring: D, to: A }
+        move: D
+  - text: Fold both flaps down so their points stick out past the bottom corner, spreading apart. This is the tail.
+    ops:
+      - fold: valley
+        line: [lerp(T RC 0.35), lerp(BOT T 0.45)]
+        move: lerp(lerp(T RC 0.12) BOT 0.06)
+        layers: top
+      - fold: valley
+        line: [lerp(T LC 0.35), lerp(BOT T 0.45)]
+        move: lerp(lerp(T LC 0.12) BOT 0.06)
+        layers: top
+  - text: Fold the top point behind to make a blunt nose.
+    fold: mountain
+    line:
+      through: lerp(BOT T 0.88)
+      perpendicular: [BOT, T]
+    move: lerp(T BOT 0.02)
+  - text: Turn the fish so it swims to the left.
+    rotate: -90
+finish:
+  camera: { azimuth: 0, elevation: 60, zoom: 1.1 }
+  text: Draw on an eye and some scales. Make a few in different colours for a fish bowl picture.

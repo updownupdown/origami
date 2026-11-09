@@ -1,0 +1,61 @@
+id: dove
+title: Dove
+family: dove
+categories: [animals/birds]
+tags: [draft, dove, pigeon, bird, peace, kite base, kids]
+difficulty: 2
+description: A sitting dove from the kite base. A small head with a beak, a pointed tail and a folded wing on each side, opened a little so it stands.
+credits:
+  designer: Origami project
+  script: Origami project
+  note: A simple design in the traditional kite-base style (the same body as the hen), made for this site.
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#f7f7f4", back: "#b9c3cf" }
+steps:
+  - use: base/kite
+  - text: Turn the paper over, keeping the narrow point at the bottom.
+    turn-over: true
+  - text: Fold the narrow point up to meet the top point. This strip becomes the neck and head.
+    fold: valley
+    line: { bring: C, to: A }
+    move: C
+  - text: Fold the model in half behind along the centre line, so the neck stays on the outside.
+    fold: mountain
+    line: [A, O]
+    move: shift(O O A 0.8)
+  - text: Turn the model so the folded edge is at the top and the wide end points to the right.
+    rotate: -90
+  - text: Swing the neck up so it stands straight, folding it back around the body (outside reverse fold). Keep it short.
+    reverse: outside
+    line: [lerp(O A 0.5), shift(lerp(lerp(O A 0.5) O 0.364) O A -2.3)]
+    move: shift(lerp(O A 0.75) O A -0.2)
+    layers: outer
+    mark: { NB: lerp(O A 0.5) }
+  - text: Fold the top of the neck forward between its layers to make a small head and beak (inside reverse fold).
+    reverse: inside
+    line: [lerp(C NB 0.4), shift(lerp(lerp(C NB 0.4) C 0.57) NB C 1.35)]
+    move: C
+  - text: Fold the lower corner of the front layer up along the body to make a wing.
+    fold: valley
+    name: wings
+    line: [shift(lerp(O A 0.047) O A -4.6), shift(lerp(O A 0.755) O A -2.6)]
+    move: shift(lerp(O A 0.41) O A -6.0)
+    layers: top
+  - text: Fold the lower corner of the back layer up behind in the same way, for the other wing.
+    fold: mountain
+    name: wings
+    line: [shift(lerp(O A 0.047) O A -4.6), shift(lerp(O A 0.755) O A -2.6)]
+    move: shift(lerp(O A 0.41) O A -6.0)
+    layers: bottom
+  - text: Spread the body and the wings a little, so the dove can sit up.
+    shape:
+      - { line: [O, A], angle: 150 }
+      - { creases: wings, angle: 150 }
+  - text: Set the dove on the table.
+    stand: [shift(lerp(O A 0.047) O A -4.6), shift(lerp(O A 0.755) O A -2.6)]
+finish:
+  camera: { azimuth: -35, elevation: 18, zoom: 1.1 }
+  text: Your dove is ready. Make it from white paper for a peace dove.

@@ -1,0 +1,47 @@
+id: duck
+title: Duck
+family: duck
+categories: [animals/birds]
+tags: [duck, bird, kite base, traditional, kids, pond]
+difficulty: 2
+description: A little floating duck from the kite base. A short, thick neck, a little bill pointing forward and a pointed tail. It sits up on the table.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#f2c230", back: "#e98f2c" }
+steps:
+  - use: base/kite
+  - text: Turn the paper over, keeping the narrow point at the bottom.
+    turn-over: true
+  - text: Fold the narrow point up to meet the top point.
+    fold: valley
+    line: { bring: C, to: A }
+    move: C
+  - text: Fold the model in half behind along the centre line, so the long point stays on the outside.
+    fold: mountain
+    line: [A, O]
+    move: shift(O O A 0.8)
+  - text: Turn the model so the folded edge is at the top and the wide end points to the right.
+    rotate: -90
+  - text: Swing the neck up so it leans a little forward, folding it back around the body (outside reverse fold). Keep it shorter than a swan's neck.
+    reverse: outside
+    line: [lerp(O A 0.4), shift(lerp(lerp(O A 0.4) O 0.455) O A -2.3)]
+    move: shift(lerp(O A 0.7) O A -0.3)
+    layers: outer
+    mark: { NB: lerp(O A 0.4) }
+  - text: Fold the top of the neck forward between its layers to make the bill (inside reverse fold).
+    reverse: inside
+    line: [lerp(C NB 0.33), shift(lerp(lerp(C NB 0.33) C 0.5) NB C 1.6)]
+    move: C
+  - text: Spread the body open a little from underneath, so it can sit on its edges.
+    shape:
+      - { line: [O, A], angle: 140 }
+  - text: Set the duck upright on the table.
+    stand: [paper(8.51 10.61), paper(7.09 17.69)]
+finish:
+  camera: { azimuth: -35, elevation: 18, zoom: 1.1 }
+  text: Quack! Make a mother duck and a row of ducklings from smaller squares.

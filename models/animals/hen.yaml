@@ -1,0 +1,48 @@
+id: hen
+title: Hen
+family: hen
+categories: [animals/birds]
+tags: [hen, chicken, bird, kite base, traditional, kids, farm, easter]
+difficulty: 2
+description: A plump sitting hen from the kite base, with a short neck, a little head with a beak and her tail held high.
+credits:
+  designer: Origami project
+  script: Origami project
+  note: A simple design in the traditional kite-base style (the same family as the swan and duck), made for this site.
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#b5612e", back: "#ecb84a" }
+steps:
+  - use: base/kite
+  - text: Turn the paper over, keeping the narrow point at the bottom.
+    turn-over: true
+  - text: Fold the narrow point up to meet the top point. This wide strip becomes the neck.
+    fold: valley
+    line: { bring: C, to: A }
+    move: C
+  - text: Fold the model in half behind along the centre line, so the neck stays on the outside.
+    fold: mountain
+    line: [A, O]
+    move: shift(O O A 0.8)
+  - text: Turn the model so the folded edge is at the top and the wide end points to the right.
+    rotate: -90
+  - text: Swing the neck up so it stands straight, folding it back around the body (outside reverse fold). Keep it short.
+    reverse: outside
+    line: [lerp(O A 0.5), shift(lerp(lerp(O A 0.5) O 0.364) O A -2.3)]
+    move: shift(lerp(O A 0.75) O A -0.2)
+    layers: outer
+    mark: { NB: lerp(O A 0.5) }
+  - text: Fold the top of the neck forward between its layers to make the head and beak (inside reverse fold).
+    reverse: inside
+    line: [lerp(C NB 0.4), shift(lerp(lerp(C NB 0.4) C 0.57) NB C 1.35)]
+    move: C
+  - text: Spread the body open a little from underneath, so she can sit on the edges.
+    shape:
+      - { line: [O, A], angle: 140 }
+  - text: Set the hen on the table. The body tips forward and the tail stands up.
+    stand: [paper(6.22 10.61), paper(4.40 15.0)]
+finish:
+  camera: { azimuth: -35, elevation: 18, zoom: 1.1 }
+  text: Your hen is sitting on her nest. Make a few chicks from smaller squares.

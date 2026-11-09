@@ -1,0 +1,75 @@
+id: butterfly
+title: Butterfly
+family: butterfly
+aliases: [easy butterfly, waterbomb butterfly]
+categories: [animals/insects]
+tags: [butterfly, insect, spring, waterbomb base, kids, traditional]
+difficulty: 2
+description: A classic butterfly from the waterbomb base. A small locking fold makes the body, and the wings lift up when it rests.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    colors: { front: "#e0795a", back: "#fbf7ee" }
+steps:
+  - text: White side up, fold in half along both diagonals and unfold.
+    pin: { TL: A, TR: B, BR: C, BL: D, CO: O, LM: mid(A D), RM: mid(B C) }
+    ops:
+      - crease: valley
+        line: [A, C]
+        move: B
+      - crease: valley
+        line: [B, D]
+        move: A
+  - text: Turn over. Fold in half from top to bottom, unfold, and turn back.
+    ops:
+      - turn-over: vertical
+      - crease: valley
+        line: [mid(A D), mid(B C)]
+        move: mid(A B)
+      - turn-over: vertical
+  - text: Bring the left and right edges in along the creases and flatten the top down into a triangle (the waterbomb base).
+    collapse:
+      fixed: lerp(mid(D C) O 0.3)
+      valley:
+        - [A, C]
+        - [B, D]
+      mountain:
+        - [mid(A D), mid(B C)]
+  - text: Fold the bottom corners of the top layer up to the top point.
+    ops:
+      - fold: valley
+        line: { bring: BL, to: CO }
+        move: lerp(BL CO 0.05)
+        layers: top
+      - fold: valley
+        line: { bring: BR, to: CO }
+        move: lerp(BR CO 0.05)
+        layers: top
+  - text: Turn the model over from side to side.
+    turn-over: vertical
+  - text: Fold the top point down so it sticks out past the bottom edge by about a finger's width.
+    pin: { F1: lerp(BL CO 0.4), F2: lerp(BR CO 0.4), TIP: lerp(CO mid(BL BR) 0.02) }
+    fold: valley
+    line: [lerp(lerp(BL BR 0.5) CO 0.4), lerp(lerp(BL BR 0.3) CO 0.4)]
+    move: TIP
+  - text: Fold the little tip up over the bottom edge, to lock the layers together.
+    fold: valley
+    line: [lerp(BL BR 0.3), lerp(BL BR 0.7)]
+    move: lerp(mid(BL BR) CO -0.15)
+    layers: top
+  - text: Fold in half along the body and open it again, so the wings lift up.
+    ops:
+      - crease: valley
+        line: [mid(BL BR), CO]
+        move: lerp(BL CO 0.3)
+        name: body
+      - shape:
+          fixed: lerp(mid(BL BR) CO 0.3)
+          creases:
+            - { creases: body, angle: 70 }
+finish:
+  camera: { azimuth: 0, elevation: 35, zoom: 1.1 }
+  text: Pinch the body to make the wings flap. A row of them looks lovely on a window.

@@ -1,0 +1,59 @@
+id: inchworm
+title: Inchworm
+family: caterpillar
+aliases: [caterpillar, looper, worm]
+categories: [animals/insects]
+tags: [draft, inchworm, caterpillar, worm, bug, rectangle, 3d, kids, traditional]
+difficulty: 1
+description: A long strip that humps its back like an inchworm on the move. Easy pleats from a 2 by 1 rectangle.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    shape: rectangle
+    size: 15x7.5
+    colors: { front: "#7cbf3f", back: "#fbf7ee" }
+steps:
+  - text: Start with the rectangle lying long side down, white side up. Fold it in half from the top edge to the bottom edge.
+    pin: { L: mid(A D), R: mid(B C), BL: D, BR: C }
+    fold: valley
+    line: [mid(A D), mid(B C)]
+    move: A
+  - text: Fold it in half the same way again, to make a long thin strip.
+    fold: valley
+    line: [lerp(BL L 0.5), lerp(BR R 0.5)]
+    move: L
+  - text: Fold the left end under a little to make the head.
+    fold: mountain
+    line:
+      through: lerp(BL BR 0.07)
+      perpendicular: [BL, BR]
+    move: lerp(BL BR 0.01)
+    name: head
+  - text: Crease three folds across the strip, a valley, a mountain and a valley, so the middle can rise into a hump.
+    pin: { P1: lerp(BL BR 0.3), P2: lerp(BL BR 0.5), P3: lerp(BL BR 0.7) }
+    ops:
+      - crease: valley
+        line: { through: P1, perpendicular: [BL, BR] }
+        move: lerp(BL BR 0.9)
+        name: rise
+      - crease: mountain
+        line: { through: P2, perpendicular: [BL, BR] }
+        move: lerp(BL BR 0.9)
+        name: top
+      - crease: valley
+        line: { through: P3, perpendicular: [BL, BR] }
+        move: lerp(BL BR 0.9)
+        name: fall
+  - text: Push the ends together so the back humps up, and let the head point down to the table.
+    shape:
+      fixed: lerp(BL BR 0.15)
+      creases:
+        - { creases: rise, angle: 80 }
+        - { creases: top, angle: 155 }
+        - { creases: fall, angle: 75 }
+        - { creases: head, angle: 110 }
+finish:
+  camera: { azimuth: -20, elevation: 20, zoom: 1.1 }
+  text: Push its tail towards its head and let go to make it inch along.

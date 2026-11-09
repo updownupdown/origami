@@ -1,0 +1,96 @@
+id: jumping-frog
+title: Jumping frog
+family: frog
+aliases: [leap frog, hopping frog, business card frog]
+categories: [animals/reptiles-amphibians]
+tags: [draft, frog, jumping, action, rectangle, toy, kids, traditional]
+difficulty: 2
+description: A frog from a 2 by 1 rectangle with a springy pleat underneath. Press its back and let go to make it hop.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    shape: rectangle
+    size: 7.5x15
+    start: front-up
+    colors: { front: "#4a9a3a", back: "#fbf7ee" }
+steps:
+  - text: Start with the rectangle upright, coloured side up. Fold the top edge to each long side in turn and unfold, making an X at the top.
+    mark: { Q: lerp(A D 0.5), P: lerp(B C 0.5), X: intersect(A lerp(B C 0.5) B lerp(A D 0.5)), M1: lerp(A D 0.25), M2: lerp(B C 0.25) }
+    pin: { TQ: lerp(A D 0.5), TP: lerp(B C 0.5), TX: intersect(A lerp(B C 0.5) B lerp(A D 0.5)), BL: D, BR: C, BM: mid(D C), TM: mid(A B) }
+    ops:
+      - crease: valley
+        line: [A, P]
+        move: B
+      - crease: valley
+        line: [B, Q]
+        move: A
+  - text: Turn over. Fold the top down through the middle of the X, unfold, and turn back.
+    ops:
+      - turn-over: vertical
+      - crease: valley
+        line: [M1, M2]
+        move: A
+      - turn-over: vertical
+  - text: Push the sides of the top in along the creases and flatten it into a triangle (a waterbomb).
+    collapse:
+      fixed: lerp(Q C 0.5)
+      valley:
+        - [A, P]
+        - [B, Q]
+      mountain:
+        - [M1, M2]
+  - text: Fold the sides of the body in to the middle, so they meet under the triangle.
+    ops:
+      - fold: valley
+        line: [lerp(BL BR 0.25), lerp(TQ TP 0.25)]
+        move: lerp(BL TQ 0.5)
+        layers: bottom
+      - fold: valley
+        line: [lerp(BL BR 0.75), lerp(TQ TP 0.75)]
+        move: lerp(BR TP 0.5)
+        layers: bottom
+  - text: Fold the bottom corners of the triangle up to its top point. These are the front legs.
+    ops:
+      - fold: valley
+        line: { bring: TQ, to: TX }
+        move: lerp(TQ TX 0.08)
+        layers: top
+      - fold: valley
+        line: { bring: TP, to: TX }
+        move: lerp(TP TX 0.08)
+        layers: top
+  - text: Fold the bottom ends of the two side flaps out at an angle. These are the back legs.
+    ops:
+      - fold: valley
+        line: [lerp(BM TM 0.3), lerp(BL BR 0.25)]
+        move: lerp(BM BL 0.06)
+        layers: top
+      - fold: valley
+        line: [lerp(BM TM 0.3), lerp(BL BR 0.75)]
+        move: lerp(BM BR 0.06)
+        layers: top
+  - text: Turn the frog over from side to side.
+    turn-over: vertical
+  - text: Fold the back half of the body up over the front.
+    pin: { Y1: lerp(TQ BL 0.5), Y2: lerp(TP BR 0.5), Z1: lerp(TQ BL 0.25), Z2: lerp(TP BR 0.25), BC: lerp(BM TM 0.02), HC: mid(TQ TP) }
+    fold: valley
+    line: [Y1, Y2]
+    move: BC
+    name: spring
+  - text: Fold it back down again, halfway along, so the back legs stick out behind. This pleat is the spring.
+    fold: valley
+    line: [Z1, Z2]
+    move: lerp(mid(Z1 Z2) HC 0.4)
+    layers: top
+    name: spring
+  - text: Turn the frog back over and let the spring open a little, so it sits up ready to jump.
+    ops:
+      - turn-over: vertical
+      - shape:
+          fixed: lerp(TQ TP 0.5)
+          creases:
+            - { creases: spring, angle: 140 }
+finish:
+  text: Press down on the back edge and slide your finger off to make it jump.

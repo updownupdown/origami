@@ -20,15 +20,23 @@ steps:
     fold: valley
     line: [KL, KR]
     move: A
-  - text: Fold in half from left to right, so the flaps end up inside.
-    fold: valley
-    line: [lerp(KL KR 0.5), C]
-    move: KL
+  - text: Fold in half from left to right, so the flaps end up inside. Keep the flaps tucked flat against the body.
+    mark: { HT: lerp(KL KR 0.5), TT: C }
+    ops:
+      - shape: [ { line: [C, KL], angle: 174 }, { line: [C, KR], angle: 174 }, { line: [KL, KR], angle: 174 } ]
+      - fold: valley
+        line: [lerp(KL KR 0.5), C]
+        move: KL
   - text: Turn the model on its side.
     rotate: 90
-  - text: Fold the tail up around the outside of the body (outside reverse fold).
-    reverse: outside
+  - text: Fold the tail up along a slanted line, through all the layers, so it points up past the back.
+    tip: For a neater tail, crease this fold well, then open the body and wrap the tail around the outside instead (an outside reverse fold).
+    pin: { BH: HT, BT: TT }
+    fold: valley
     line: [lerp(C O 0.55), shift(lerp(C O 0.3) O C 2.4)]
     move: lerp(C O 0.03)
+  - text: Stand the whale up on its belly.
+    stand: [BH, lerp(BH BT 0.3)]
 finish:
-  text: Draw an eye and a smile. Spread the flaps a little so it sits up.
+  camera: { azimuth: -20, elevation: 15, zoom: 1.1 }
+  text: Draw an eye and a smile. Give the belly a firm crease so your whale stands up.

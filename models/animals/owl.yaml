@@ -1,0 +1,62 @@
+id: owl
+title: Owl
+family: owl
+categories: [animals/birds]
+tags: [draft, owl, bird, traditional, kids, autumn]
+difficulty: 1
+description: A simple standing owl. Two folded-in wings, a pale face with two big eye shapes and a little beak, and a fold-out stand at the back.
+credits:
+  designer: Origami project
+  script: Origami project
+  note: A simple design in the traditional style, made for this site.
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#8a5a3c", back: "#f3e6cf" }
+steps:
+  - text: Start with a diamond, white side up. Fold in half both ways and unfold.
+    pin: { T: A, BOT: C, L: D, R: B }
+    ops:
+      - crease: valley
+        line: [A, C]
+      - crease: valley
+        line: [B, D]
+  - text: Fold the left and right corners to the centre. These are the wings.
+    ops:
+      - fold: valley
+        line: { bring: L, to: O }
+        move: L
+      - fold: valley
+        line: { bring: R, to: O }
+        move: R
+  - text: Turn the paper over.
+    turn-over: true
+  - text: Fold the top point down to the centre. This is the face.
+    fold: valley
+    line:
+      through: lerp(O T 0.5)
+      perpendicular: [O, T]
+    move: lerp(T O 0.02)
+  - text: Fold the tip back up a little to make the beak.
+    fold: valley
+    line:
+      through: lerp(O T 0.15)
+      perpendicular: [O, T]
+    move: lerp(O T 0.02)
+    layers: top
+  - text: Fold the bottom point up behind. This makes a stand.
+    fold: mountain
+    name: stand
+    line:
+      through: lerp(O BOT 0.6)
+      perpendicular: [O, T]
+    move: lerp(BOT O 0.02)
+  - text: Open the stand so it sticks out straight at the back.
+    shape:
+      - { creases: stand, angle: 90 }
+  - text: Stand the owl up on its stand.
+    stand: [shift(lerp(O BOT 0.6) O BOT 3), shift(lerp(O BOT 0.6) O BOT -3)]
+finish:
+  camera: { azimuth: -20, elevation: 15, zoom: 1.1 }
+  text: Hoo! Draw two dots in the eyes, or make a family of owls from smaller squares.

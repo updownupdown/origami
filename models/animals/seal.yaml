@@ -1,0 +1,52 @@
+id: seal
+title: Seal
+family: seal
+aliases: [sea lion]
+categories: [animals/sea-life]
+tags: [seal, sea lion, sea, ocean, kite base, kids, traditional]
+difficulty: 2
+description: A seal sitting up on its belly with its head held high, from the kite base.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#6f7b86", back: "#fbf7ee" }
+steps:
+  - use: base/kite
+  - text: Fold the top corner down so it lies over the flaps.
+    fold: valley
+    line: [KL, KR]
+    move: A
+    pin: { K1: KL, K2: KR }
+  - text: Fold in half from left to right, so the flaps end up inside.
+    mark: { HT: lerp(KL KR 0.5), TT: C }
+    ops:
+      - shape: [ { line: [C, K1], angle: 174 }, { line: [C, K2], angle: 174 }, { line: [K1, K2], angle: 174 } ]
+      - fold: valley
+        line: [lerp(KL KR 0.5), C]
+        move: KL
+  - text: Turn the model on its side, with the long point to the right.
+    rotate: 90
+  - text: Fold the long point straight up through all the layers. This is the neck.
+    pin: { BH: HT, BT: TT, NB: lerp(TT HT 0.38), NT: shift(lerp(TT HT 0.36) HT TT 5.7) }
+    fold: valley
+    line: { bring: TT, to: NT }
+    move: lerp(TT HT 0.02)
+  - text: Fold the tip of the neck forward to make the head.
+    pin: { HP: lerp(NB NT 0.74) }
+    fold: valley
+    line: { bring: NT, to: shift(HP NB NT -1.6) }
+    move: lerp(NT NB 0.02)
+  - text: Fold the tall back corner down at an angle to round off the seal's back.
+    pin: { RC: KL }
+    fold: valley
+    line: [lerp(BH RC 0.5), lerp(RC BT 0.32)]
+    move: lerp(RC lerp(BH BT 0.2) 0.04)
+  - text: Stand the seal up on its belly.
+    stand: [BH, lerp(BH BT 0.3)]
+finish:
+  camera: { azimuth: -25, elevation: 15, zoom: 1.1 }
+  text: Draw on eyes and a nose. Balance a paper ball on its nose for a circus seal.
