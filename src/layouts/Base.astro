@@ -3,6 +3,7 @@ import '../styles/global.css';
 interface Props { title: string; description?: string; bodyClass?: string; image?: string }
 const { title, description = 'A searchable library of origami models with step-by-step 3D instructions.', bodyClass, image } = Astro.props;
 const base = import.meta.env.BASE_URL;
+const build = (process.env.GITHUB_SHA ?? 'local').slice(0, 7);
 const fullTitle = title === 'Origami' ? title : `${title} · Origami`;
 ---
 <!doctype html>
@@ -15,6 +16,7 @@ const fullTitle = title === 'Origami' ? title : `${title} · Origami`;
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     {image && <meta property="og:image" content={new URL(image, Astro.site).href} />}
+    <meta name="build" content={build} />
     <meta name="theme-color" content="#f6f2ea" />
     <link rel="manifest" href={`${base}manifest.webmanifest`} />
     <link rel="icon" href={`${base}icon.svg`} type="image/svg+xml" />

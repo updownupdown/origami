@@ -22,11 +22,13 @@ import { icon } from '../lib/icons';
       <button class="btn icon primary" id="btn-next" aria-label="Next step"><Fragment set:html={icon('next')} /></button>
     </div>
   </div>
-  <div class="pbar" id="pbar" role="slider" tabindex="0" aria-label="This step. Drag to scrub through the fold; tap the knob to replay it." aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-    <div class="track" id="pbar-track"><div class="fill" id="pbar-fill"></div></div>
-    <button class="knob" id="pbar-knob" tabindex="-1" aria-label="Replay this step" title="Replay this step"><Fragment set:html={icon('replay')} /></button>
+  <div class="prow" id="prow">
+    <button class="btn icon" id="btn-replay" aria-label="Replay this step" title="Replay this step"><Fragment set:html={icon('replay')} /></button>
+    <div class="pbar" id="pbar" role="slider" tabindex="0" aria-label="This step. Drag to scrub through the fold." aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="track" id="pbar-track"><div class="fill" id="pbar-fill"></div></div>
+      <div class="knob" id="pbar-knob"></div>
+    </div>
   </div>
-  <div class="legend"><span class="lv"></span>Valley <span class="lm"></span>Mountain</div>
 </section>
 
 <style is:global>
@@ -47,18 +49,18 @@ import { icon } from '../lib/icons';
   .pickup i { width: 28px; height: 28px; border-radius: 5px; flex-shrink: 0; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
   .pickup b { font-weight: 600; }
 
-  /* This step's progress bar: fills as the step plays; drag to scrub; the knob replays the step. */
-  .pbar { position: relative; height: 40px; margin: 0 15px; touch-action: none; cursor: pointer; user-select: none; -webkit-user-select: none; outline: none; --c: var(--ink); }
-  .pbar[hidden] { display: none; }
+  /* Replay button, then this step's progress bar: fills as the step plays; drag to scrub. */
+  .prow { display: flex; align-items: center; gap: 14px; }
+  .prow[hidden] { display: none; }
+  .pbar { position: relative; flex: 1; height: 40px; margin-right: 8px; touch-action: none; cursor: pointer; user-select: none; -webkit-user-select: none; outline: none; --c: var(--ink); }
   .pbar .track { position: absolute; left: 0; right: 0; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px; background: color-mix(in srgb, var(--c) 22%, var(--line)); }
   .pbar .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--c); }
   .pbar.paper .track, .pbar.paper .fill { box-shadow: inset 0 0 0 1px rgba(0,0,0,.16); }
   .pbar.asm .track { background: linear-gradient(90deg, color-mix(in srgb, var(--c1) 30%, var(--line)), color-mix(in srgb, var(--c2) 30%, var(--line))); }
   .pbar.asm .fill { background: linear-gradient(90deg, var(--c1), var(--c2)); }
-  .pbar .knob { position: absolute; top: 50%; left: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; padding: 0; border-radius: 50%; background: var(--ink); color: var(--paper-raised); border: 2px solid var(--paper-raised); display: grid; place-items: center; box-shadow: var(--shadow); cursor: pointer; }
-  .pbar .knob svg { width: 15px; height: 15px; }
-  .pbar .knob:hover { transform: scale(1.08); }
-  .pbar.drag .knob { transform: scale(1.12); }
+  .pbar .knob { position: absolute; top: 50%; left: 0; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper-raised); box-shadow: var(--shadow); pointer-events: none; transition: transform .12s; }
+  .pbar:hover .knob { transform: scale(1.15); }
+  .pbar.drag .knob { transform: scale(1.3); }
   .pbar:focus-visible .knob { outline: 2px solid var(--valley); outline-offset: 2px; }
 
   /* Map of parts (multi-sheet models). */
@@ -71,11 +73,7 @@ import { icon } from '../lib/icons';
   .amap-scroll .st:hover circle { stroke-width: 3.5; }
   .amap-note { margin: 0; font-size: 12px; color: var(--ink-soft); }
 
-  .legend { font-size: 12px; color: var(--ink-soft); display: flex; justify-content: center; align-items: center; gap: 6px; white-space: nowrap; }
-  .legend .lv, .legend .lm { width: 22px; height: 0; border-top: 2px dashed var(--valley); display: inline-block; }
-  .legend .lm { border-top: 2px dotted var(--mountain); margin-left: 8px; }
   @media (max-width: 640px) {
-    .legend { display: none; }
     .stepcard .txt p { font-size: 16px; }
     .stepcard .nav .btn.icon { width: 40px; min-height: 40px; }
   }
