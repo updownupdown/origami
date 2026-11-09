@@ -1,0 +1,247 @@
+id: masu-box-with-lid
+title: Masu box with lid
+family: masu
+aliases: [masu with lid, lidded box, gift box, square box with lid]
+categories: [boxes/boxes]
+tags: [box, masu, lid, gift, container, traditional, japanese, 3d, two sheets]
+difficulty: 2
+description: Two masu boxes, one folded from slightly bigger paper, make a box with a lid that slips over the top. A lovely little gift box.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: box
+    name: Box
+    size: 15
+    diamond: true
+    at: [-12, 0]
+    colors: { front: "#2f6f9f", back: "#fbf7ee" }
+  - id: lid
+    name: Lid
+    size: 16
+    diamond: true
+    at: [10, 0]
+    colors: { front: "#e2a93b", back: "#fbf7ee" }
+    note: About 1 cm bigger than the box paper, so the lid fits over the box.
+steps:
+  - text: Fold both sheets the same way, one step at a time. Start with diamonds, white side up. Fold each in half edge to edge both ways, and unfold.
+    pin:
+      bE: mid(box.O box.B)
+      bW: mid(box.O box.D)
+      bN: mid(box.O box.A)
+      bS: mid(box.O box.C)
+      bNE: mid(box.A box.B)
+      bSE: mid(box.B box.C)
+      bSW: mid(box.C box.D)
+      bNW: mid(box.D box.A)
+      bfNE: mid(box.O bNE)
+      bfSE: mid(box.O bSE)
+      bfSW: mid(box.O bSW)
+      bfNW: mid(box.O bNW)
+      brEN: mid(bNE bE)
+      brES: mid(bSE bE)
+      brWN: mid(bNW bW)
+      brWS: mid(bSW bW)
+      btNE: mid(bNE bN)
+      btNW: mid(bNW bN)
+      btSE: mid(bSE bS)
+      btSW: mid(bSW bS)
+      bkEN: mid(box.B bNE)
+      bkES: mid(box.B bSE)
+      bkWN: mid(box.D bNW)
+      bkWS: mid(box.D bSW)
+      lE: mid(lid.O lid.B)
+      lW: mid(lid.O lid.D)
+      lN: mid(lid.O lid.A)
+      lS: mid(lid.O lid.C)
+      lNE: mid(lid.A lid.B)
+      lSE: mid(lid.B lid.C)
+      lSW: mid(lid.C lid.D)
+      lNW: mid(lid.D lid.A)
+      lfNE: mid(lid.O lNE)
+      lfSE: mid(lid.O lSE)
+      lfSW: mid(lid.O lSW)
+      lfNW: mid(lid.O lNW)
+      lrEN: mid(lNE lE)
+      lrES: mid(lSE lE)
+      lrWN: mid(lNW lW)
+      lrWS: mid(lSW lW)
+      ltNE: mid(lNE lN)
+      ltNW: mid(lNW lN)
+      ltSE: mid(lSE lS)
+      ltSW: mid(lSW lS)
+      lkEN: mid(lid.B lNE)
+      lkES: mid(lid.B lSE)
+      lkWN: mid(lid.D lNW)
+      lkWS: mid(lid.D lSW)
+    ops:
+      - crease: valley
+        sheet: box
+        line: [bNE, bSW]
+        move: bSE
+      - crease: valley
+        sheet: box
+        line: [bNW, bSE]
+        move: bNE
+      - crease: valley
+        sheet: lid
+        line: [lNE, lSW]
+        move: lSE
+      - crease: valley
+        sheet: lid
+        line: [lNW, lSE]
+        move: lNE
+  - text: Fold the left and right corners to the centre, and unfold.
+    ops:
+      - crease: valley
+        sheet: box
+        line: { bring: box.B, to: box.O }
+        move: lerp(box.O box.B 0.9)
+      - crease: valley
+        sheet: box
+        line: { bring: box.D, to: box.O }
+        move: lerp(box.O box.D 0.9)
+      - crease: valley
+        sheet: lid
+        line: { bring: lid.B, to: lid.O }
+        move: lerp(lid.O lid.B 0.9)
+      - crease: valley
+        sheet: lid
+        line: { bring: lid.D, to: lid.O }
+        move: lerp(lid.O lid.D 0.9)
+  - text: Fold the top and bottom corners to the centre.
+    ops:
+      - fold: valley
+        sheet: box
+        line: { bring: box.A, to: box.O }
+        move: lerp(box.O box.A 0.9)
+      - fold: valley
+        sheet: box
+        line: { bring: box.C, to: box.O }
+        move: lerp(box.O box.C 0.9)
+      - fold: valley
+        sheet: lid
+        line: { bring: lid.A, to: lid.O }
+        move: lerp(lid.O lid.A 0.9)
+      - fold: valley
+        sheet: lid
+        line: { bring: lid.C, to: lid.O }
+        move: lerp(lid.O lid.C 0.9)
+  - text: Fold the top and bottom edges to the centre line, and unfold.
+    ops:
+      - crease: valley
+        sheet: box
+        line: { bring: bN, to: box.O }
+        move: lerp(box.O bN 0.9)
+      - crease: valley
+        sheet: box
+        line: { bring: bS, to: box.O }
+        move: lerp(box.O bS 0.9)
+      - crease: valley
+        sheet: lid
+        line: { bring: lN, to: lid.O }
+        move: lerp(lid.O lN 0.9)
+      - crease: valley
+        sheet: lid
+        line: { bring: lS, to: lid.O }
+        move: lerp(lid.O lS 0.9)
+  - text: Fold the left and right sides in so the creases from step 2 meet the centre line, and unfold.
+    ops:
+      - crease: valley
+        sheet: box
+        line: { bring: bE, to: box.O }
+        move: lerp(box.O bE 0.9)
+      - crease: valley
+        sheet: box
+        line: { bring: bW, to: box.O }
+        move: lerp(box.O bW 0.9)
+      - crease: valley
+        sheet: lid
+        line: { bring: lE, to: lid.O }
+        move: lerp(lid.O lE 0.9)
+      - crease: valley
+        sheet: lid
+        line: { bring: lW, to: lid.O }
+        move: lerp(lid.O lW 0.9)
+  - text: Fold the left and right corners in to the creases from step 2, and unfold.
+    ops:
+      - crease: valley
+        sheet: box
+        line: { bring: box.B, to: bE }
+        move: lerp(bE box.B 0.9)
+      - crease: valley
+        sheet: box
+        line: { bring: box.D, to: bW }
+        move: lerp(bW box.D 0.9)
+      - crease: valley
+        sheet: lid
+        line: { bring: lid.B, to: lE }
+        move: lerp(lE lid.B 0.9)
+      - crease: valley
+        sheet: lid
+        line: { bring: lid.D, to: lW }
+        move: lerp(lW lid.D 0.9)
+  - text: Lift the top and bottom sides of both pieces so they stand straight up.
+    shape:
+      fixed: box.O
+      creases:
+        - { line: [bkWN, bkEN], kind: valley, angle: 94 }
+        - { line: [bkWS, bkES], kind: valley, angle: 94 }
+        - { line: [lkWN, lkEN], kind: valley, angle: 94 }
+        - { line: [lkWS, lkES], kind: valley, angle: 94 }
+    camera: { azimuth: -20, elevation: 45, zoom: 1.3 }
+  - text: Raise the left and right ends. Push each corner in along its diagonal crease so it lies flat against the end wall.
+    shape:
+      fixed: box.O
+      creases:
+        - { line: [bfNE, bkEN], kind: valley, angle: 176 }
+        - { line: [bfSE, bkES], kind: valley, angle: 176 }
+        - { line: [bfNW, bkWN], kind: valley, angle: 176 }
+        - { line: [bfSW, bkWS], kind: valley, angle: 176 }
+        - { line: [btNE, btSE], kind: valley, angle: 90 }
+        - { line: [btNW, btSW], kind: valley, angle: 90 }
+        - { line: [bfNE, bNE], kind: mountain, angle: 176 }
+        - { line: [bfSE, bSE], kind: mountain, angle: 176 }
+        - { line: [bfNW, bNW], kind: mountain, angle: 176 }
+        - { line: [bfSW, bSW], kind: mountain, angle: 176 }
+        - { line: [bNW, bNE], angle: 176 }
+        - { line: [bSW, bSE], angle: 176 }
+        - { line: [lfNE, lkEN], kind: valley, angle: 176 }
+        - { line: [lfSE, lkES], kind: valley, angle: 176 }
+        - { line: [lfNW, lkWN], kind: valley, angle: 176 }
+        - { line: [lfSW, lkWS], kind: valley, angle: 176 }
+        - { line: [ltNE, ltSE], kind: valley, angle: 90 }
+        - { line: [ltNW, ltSW], kind: valley, angle: 90 }
+        - { line: [lfNE, lNE], kind: mountain, angle: 176 }
+        - { line: [lfSE, lSE], kind: mountain, angle: 176 }
+        - { line: [lfNW, lNW], kind: mountain, angle: 176 }
+        - { line: [lfSW, lSW], kind: mountain, angle: 176 }
+        - { line: [lNW, lNE], angle: 176 }
+        - { line: [lSW, lSE], angle: 176 }
+    camera: { azimuth: -20, elevation: 45, zoom: 1.3 }
+  - text: Fold each end flap over the wall and down inside, so its point reaches the centre and locks the corners.
+    shape:
+      fixed: box.O
+      creases:
+        - { line: [brEN, brES], kind: valley, angle: 170 }
+        - { line: [brEN, bNE], kind: mountain, angle: 176 }
+        - { line: [brES, bSE], kind: mountain, angle: 176 }
+        - { line: [brWN, brWS], kind: valley, angle: 170 }
+        - { line: [brWN, bNW], kind: mountain, angle: 176 }
+        - { line: [brWS, bSW], kind: mountain, angle: 176 }
+        - { line: [bkEN, bkES], kind: mountain, angle: 100 }
+        - { line: [bkWN, bkWS], kind: mountain, angle: 100 }
+        - { line: [lrEN, lrES], kind: valley, angle: 170 }
+        - { line: [lrEN, lNE], kind: mountain, angle: 176 }
+        - { line: [lrES, lSE], kind: mountain, angle: 176 }
+        - { line: [lrWN, lrWS], kind: valley, angle: 170 }
+        - { line: [lrWN, lNW], kind: mountain, angle: 176 }
+        - { line: [lrWS, lSW], kind: mountain, angle: 176 }
+        - { line: [lkEN, lkES], kind: mountain, angle: 100 }
+        - { line: [lkWN, lkWS], kind: mountain, angle: 100 }
+    camera: { azimuth: -20, elevation: 45, zoom: 1.3 }
+  - text: Turn the lid upside down and slide it over the box.
+    place: { sheet: lid, point: lid.O, to: box.O, flip: true, layer: above }
+finish:
+  camera: { azimuth: -30, elevation: 30, zoom: 1.4 }
+  text: The lid slides on snugly. Fill the box with sweets or a small gift.

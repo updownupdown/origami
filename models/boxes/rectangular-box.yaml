@@ -1,0 +1,74 @@
+id: rectangular-box
+title: Rectangular box
+family: tray
+aliases: [rectangle box, oblong box, open box, letter paper box, desk tidy]
+categories: [boxes/boxes]
+tags: [box, rectangle, tray, container, desk, traditional, 3d]
+difficulty: 2
+description: An open box with tall walls, folded from a rectangle. The corners tuck in as triangles against the short ends, so it holds pens, cards or sweets.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    shape: rectangle
+    size: 24x20
+    colors: { front: "#7b5ea7", back: "#fbf7ee" }
+steps:
+  - text: White side up, long edges at the top and bottom. Fold the top and bottom edges to the centre, and unfold.
+    ops:
+      - crease: valley
+        line: { bring: paper(12 20), to: paper(12 10) }
+        move: paper(12 19)
+      - crease: valley
+        line: { bring: paper(12 0), to: paper(12 10) }
+        move: paper(12 1)
+  - text: Fold the left and right edges in by the same width as the strips you just made, and unfold. Each corner now has a little square.
+    ops:
+      - crease: valley
+        line: [paper(5 0), paper(5 20)]
+        move: paper(1 10)
+      - crease: valley
+        line: [paper(19 0), paper(19 20)]
+        move: paper(23 10)
+  - text: Mountain-crease each corner square along its diagonal, from the paper's corner to where the creases cross.
+    pattern:
+      mountain:
+        - [paper(0 0), paper(5 5)]
+        - [paper(0 20), paper(5 15)]
+        - [paper(24 0), paper(19 5)]
+        - [paper(24 20), paper(19 15)]
+  - text: Fold all four walls up along the creases. Each corner square folds in half and pokes out as an ear.
+    pattern:
+      fixed: paper(12 10)
+      valley:
+        - [paper(5 5), paper(19 5), 90]
+        - [paper(19 5), paper(19 15), 90]
+        - [paper(19 15), paper(5 15), 90]
+        - [paper(5 15), paper(5 5), 90]
+        - [paper(0 5), paper(5 5), 90]
+        - [paper(5 0), paper(5 5), 90]
+        - [paper(0 15), paper(5 15), 90]
+        - [paper(5 20), paper(5 15), 90]
+        - [paper(24 5), paper(19 5), 90]
+        - [paper(19 0), paper(19 5), 90]
+        - [paper(24 15), paper(19 15), 90]
+        - [paper(19 20), paper(19 15), 90]
+      mountain:
+        - [paper(0 0), paper(5 5), 176]
+        - [paper(0 20), paper(5 15), 176]
+        - [paper(24 0), paper(19 5), 176]
+        - [paper(24 20), paper(19 15), 176]
+    camera: { azimuth: -30, elevation: 40, zoom: 1.2 }
+  - text: Fold the ears flat against the inside of the short end walls, two on each end.
+    shape:
+      fixed: paper(12 10)
+      creases:
+        - { line: [paper(0 5), paper(5 5)], angle: 176 }
+        - { line: [paper(0 15), paper(5 15)], angle: 176 }
+        - { line: [paper(24 5), paper(19 5)], angle: 176 }
+        - { line: [paper(24 15), paper(19 15)], angle: 176 }
+    camera: { azimuth: -30, elevation: 40, zoom: 1.2 }
+finish:
+  camera: { azimuth: -35, elevation: 35, zoom: 1.4 }
+  text: A dab of glue under each triangle makes the box sturdy. Try a sheet of printer paper for a long desk tidy.

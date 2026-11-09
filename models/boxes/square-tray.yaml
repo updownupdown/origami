@@ -1,0 +1,61 @@
+id: square-tray
+title: Square tray
+family: tray
+aliases: [tray, dish, low box, sweet tray, gusset tray]
+categories: [boxes/boxes]
+tags: [tray, box, dish, grid, container, traditional, 3d]
+difficulty: 2
+description: A low square tray folded from a grid. The corners fold into neat triangles that wrap round the walls in a pinwheel and hold them up.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    start: front-up
+    colors: { front: "#5a9e6f", back: "#fbf7ee" }
+steps:
+  - text: Coloured side up. Crease a 6 by 6 grid, folding the paper into sixths both ways.
+    grid: { n: 6 }
+  - text: Mountain fold along both diagonals, and unfold. Only the little corner squares will use these creases.
+    ops:
+      - crease: mountain
+        line: [paper(0 0), paper(15 15)]
+        move: paper(14 1)
+      - crease: mountain
+        line: [paper(0 15), paper(15 0)]
+        move: paper(14 14)
+  - text: Fold the four walls up along the grid lines one square in from each edge. Each corner square folds in half on its diagonal and pops out as a little ear.
+    pattern:
+      fixed: paper(7.5 7.5)
+      valley:
+        - [paper(2.5 2.5), paper(12.5 2.5), 90]
+        - [paper(12.5 2.5), paper(12.5 12.5), 90]
+        - [paper(12.5 12.5), paper(2.5 12.5), 90]
+        - [paper(2.5 12.5), paper(2.5 2.5), 90]
+        - [paper(0 2.5), paper(2.5 2.5), 90]
+        - [paper(2.5 0), paper(2.5 2.5), 90]
+        - [paper(0 12.5), paper(2.5 12.5), 90]
+        - [paper(2.5 15), paper(2.5 12.5), 90]
+        - [paper(15 12.5), paper(12.5 12.5), 90]
+        - [paper(12.5 15), paper(12.5 12.5), 90]
+        - [paper(15 2.5), paper(12.5 2.5), 90]
+        - [paper(12.5 0), paper(12.5 2.5), 90]
+      mountain:
+        - [paper(0 0), paper(2.5 2.5), 176]
+        - [paper(0 15), paper(2.5 12.5), 176]
+        - [paper(15 15), paper(12.5 12.5), 176]
+        - [paper(15 0), paper(12.5 2.5), 176]
+    camera: { azimuth: -30, elevation: 40, zoom: 1.2 }
+  - text: Fold each ear flat against the inside of the wall beside it, all going round the same way like a pinwheel.
+    shape:
+      fixed: paper(7.5 7.5)
+      creases:
+        - { line: [paper(0 2.5), paper(2.5 2.5)], angle: 176 }
+        - { line: [paper(2.5 15), paper(2.5 12.5)], angle: 176 }
+        - { line: [paper(15 12.5), paper(12.5 12.5)], angle: 176 }
+        - { line: [paper(12.5 0), paper(12.5 2.5)], angle: 176 }
+    camera: { azimuth: -30, elevation: 40, zoom: 1.2 }
+finish:
+  camera: { azimuth: -30, elevation: 40, zoom: 1.4 }
+  text: Run a fingernail along the rim to firm up the walls. Fold a second tray from slightly bigger paper for a lid.

@@ -1,0 +1,130 @@
+id: masu-box
+title: Masu box
+family: masu
+aliases: [masu, square box, japanese box, measuring box]
+categories: [boxes/boxes]
+tags: [box, masu, container, gift, traditional, japanese, 3d]
+difficulty: 2
+description: The classic Japanese square box, folded from one sheet with no glue. Its doubled walls make it surprisingly strong.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#c8463d", back: "#fbf7ee" }
+steps:
+  - text: Start with a diamond, white side up. Fold it in half edge to edge both ways, and unfold.
+    pin:
+      E: mid(O B)
+      W: mid(O D)
+      N: mid(O A)
+      S: mid(O C)
+      NE: mid(A B)
+      SE: mid(B C)
+      SW: mid(C D)
+      NW: mid(D A)
+      fNE: mid(O NE)
+      fSE: mid(O SE)
+      fSW: mid(O SW)
+      fNW: mid(O NW)
+      rEN: mid(NE E)
+      rES: mid(SE E)
+      rWN: mid(NW W)
+      rWS: mid(SW W)
+      tNE: mid(NE N)
+      tNW: mid(NW N)
+      tSE: mid(SE S)
+      tSW: mid(SW S)
+      kEN: mid(B NE)
+      kES: mid(B SE)
+      kWN: mid(D NW)
+      kWS: mid(D SW)
+    ops:
+      - crease: valley
+        line: [NE, SW]
+        move: SE
+      - crease: valley
+        line: [NW, SE]
+        move: NE
+  - text: Fold the left and right corners to the centre, and unfold.
+    ops:
+      - crease: valley
+        line: { bring: B, to: O }
+        move: lerp(O B 0.9)
+      - crease: valley
+        line: { bring: D, to: O }
+        move: lerp(O D 0.9)
+  - text: Fold the top and bottom corners to the centre.
+    ops:
+      - fold: valley
+        line: { bring: A, to: O }
+        move: lerp(O A 0.9)
+      - fold: valley
+        line: { bring: C, to: O }
+        move: lerp(O C 0.9)
+  - text: Fold the top and bottom edges to the centre line, and unfold.
+    ops:
+      - crease: valley
+        line: { bring: N, to: O }
+        move: lerp(O N 0.9)
+      - crease: valley
+        line: { bring: S, to: O }
+        move: lerp(O S 0.9)
+  - text: Fold the left and right sides in so the creases from step 2 meet the centre line, and unfold.
+    ops:
+      - crease: valley
+        line: { bring: E, to: O }
+        move: lerp(O E 0.9)
+      - crease: valley
+        line: { bring: W, to: O }
+        move: lerp(O W 0.9)
+  - text: Fold the left and right corners in to the creases from step 2, and unfold.
+    ops:
+      - crease: valley
+        line: { bring: B, to: E }
+        move: lerp(E B 0.9)
+      - crease: valley
+        line: { bring: D, to: W }
+        move: lerp(W D 0.9)
+  - text: Lift the top and bottom sides along the creases so they stand straight up.
+    shape:
+      fixed: O
+      creases:
+        - { line: [kWN, kEN], kind: valley, angle: 94 }
+        - { line: [kWS, kES], kind: valley, angle: 94 }
+    camera: { azimuth: -30, elevation: 40 }
+  - text: Raise the left and right ends. Push each corner in along its diagonal crease so it lies flat against the end wall.
+    shape:
+      fixed: O
+      creases:
+        - { line: [fNE, kEN], kind: valley, angle: 176 }
+        - { line: [fSE, kES], kind: valley, angle: 176 }
+        - { line: [fNW, kWN], kind: valley, angle: 176 }
+        - { line: [fSW, kWS], kind: valley, angle: 176 }
+        - { line: [tNE, tSE], kind: valley, angle: 90 }
+        - { line: [tNW, tSW], kind: valley, angle: 90 }
+        - { line: [fNE, NE], kind: mountain, angle: 176 }
+        - { line: [fSE, SE], kind: mountain, angle: 176 }
+        - { line: [fNW, NW], kind: mountain, angle: 176 }
+        - { line: [fSW, SW], kind: mountain, angle: 176 }
+        - { line: [NW, NE], angle: 176 }
+        - { line: [SW, SE], angle: 176 }
+    camera: { azimuth: -30, elevation: 40 }
+  - text: Fold each end flap over the wall and down into the box, so its point reaches the centre and locks the corners.
+    shape:
+      fixed: O
+      creases:
+        - { line: [rEN, rES], kind: valley, angle: 170 }
+        - { line: [rEN, NE], kind: mountain, angle: 176 }
+        - { line: [rES, SE], kind: mountain, angle: 176 }
+        - { line: [rWN, rWS], kind: valley, angle: 170 }
+        - { line: [rWN, NW], kind: mountain, angle: 176 }
+        - { line: [rWS, SW], kind: mountain, angle: 176 }
+        - { line: [kEN, kES], kind: mountain, angle: 100 }
+        - { line: [kWN, kWS], kind: mountain, angle: 100 }
+    camera: { azimuth: -30, elevation: 40 }
+finish:
+  camera: { azimuth: -30, elevation: 35, zoom: 1.6 }
+  text: Press the corners and rim crisp. Fold a second box from slightly bigger paper for a lid.
