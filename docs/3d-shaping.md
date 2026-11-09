@@ -1,7 +1,13 @@
 # 3D shaping: boxes, standing models and tessellations
 
 Most steps are flat folds. Three ops take a model into 3D. The flat-fold engine keeps the
-flat state as the source of truth, and the paper simulation bends the paper to the angles asked for.
+flat state as the source of truth. Steps with linked folds are posed by rigid-origami kinematics
+(`src/engine/kinematic.ts`): every crease-pattern face stays flat and rigid, loops of creases stay
+closed, and the solver gets as close to the angles asked for as rigid paper allows. Mirror-symmetric
+models stay exactly symmetric. Each step is checked for paper passing through paper. Where staggering
+the folds (one flap after another) can't avoid it, the viewer dissolves from the last clean pose to
+the next one instead of showing the crossing. The bar-and-hinge physics is still there behind the
+viewer's `physics` option, but it is no longer what you see.
 
 ## `shape`: hold creases at an in-between angle
 
@@ -54,8 +60,11 @@ To make a flat (two-layer) animal actually stand, open its body a little before 
 The sheet must be flat (unfolded). Each segment must end on the paper's edge or on another crease
 (the same rule as `collapse`). Use it for tessellations that are not flat-foldable (Resch, Yoshimura),
 for rigid-foldable ones shown part-folded (Miura-ori), and for boxes whose final shape is easiest to
-give as angles on the unfolded crease pattern. Fold angles of exactly 180 put layers on top of each
-other; 170 to 176 reads better.
+give as angles on the unfolded crease pattern. Give true angles: 90 for a wall that stands up, 180 for a flap
+folded flat. The solver keeps layers apart, so there's no need to under-fold (the old 170–176 advice
+was a workaround for the physics). Patterns that aren't rigid-foldable with the angles given (for
+example a waterbomb tessellation at a uniform angle) will miss their targets; the step
+still looks clean, it just stops short of the target.
 
 ## Checking
 
