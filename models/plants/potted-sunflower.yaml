@@ -1,0 +1,146 @@
+id: potted-sunflower
+title: Potted sunflower
+family: potted-plant
+variant: Sunflower
+aliases: [sunflower, flower, flower pot, summer flower]
+categories: [plants/potted]
+tags: [sunflower, flower, plant, pot, summer, kids, six sheets, our design, draft]
+difficulty: 2
+description: A sunny flower on a tall stem, with a pair of leaves, in a two-tone pot. Two yellow squares turned against each other make the eight petals, and a small brown square sits in the middle.
+credits:
+  designer: Origami project (original design)
+  script: Origami project
+  note: Inspired by the potted plants of Paper Kawaii; our own folding sequence.
+  sources:
+    - label: "Inspiration: Paper Kawaii"
+      url: https://www.paperkawaii.com/
+materials:
+  - id: pot
+    name: Pot
+    size: 15
+    at: [-19, 0]
+    colors: { front: "#5b9bd5", back: "#fbf7ee" }
+  - id: stem
+    name: Stem
+    size: 3x15
+    shape: rectangle
+    at: [0, 0]
+    colors: { front: "#4f9d5a", back: "#e6f2df" }
+    note: A strip cut from a 15 cm square.
+  - id: leaves
+    name: Leaves
+    size: 12x3
+    shape: rectangle
+    at: [5, 0]
+    colors: { front: "#5aa865", back: "#e6f2df" }
+    note: A strip cut from a 12 cm square.
+  - id: petals1
+    name: Petals 1
+    size: 10
+    at: [19, 0]
+    colors: { front: "#f6c431", back: "#fbf7ee" }
+  - id: petals2
+    name: Petals 2
+    size: 10
+    at: [31, 0]
+    colors: { front: "#f6c431", back: "#fbf7ee" }
+  - id: centre
+    name: Centre
+    size: 5
+    at: [43, 0]
+    colors: { front: "#7a4a26", back: "#fbf7ee" }
+steps:
+  # ---------- Pot ----------
+  - text: "Pot: start white side up. Fold the bottom edge up to the top edge."
+    pin: { PA: pot.A, PB: pot.B, PC: pot.C, PD: pot.D }
+    mark:
+      BL: lerp(lerp(pot.A pot.D 0.5) lerp(pot.B pot.C 0.5) 0.16)
+      BR: lerp(lerp(pot.A pot.D 0.5) lerp(pot.B pot.C 0.5) 0.84)
+      RIM: lerp(lerp(pot.A pot.D 0.1667) lerp(pot.B pot.C 0.1667) 0.5)
+    fold: valley
+    sheet: pot
+    line: [mid(PA PD), mid(PB PC)]
+    move: PD
+  - text: Fold the top edge of the front layer down a little, to make a white band.
+    fold: valley
+    sheet: pot
+    layers: top
+    line: [lerp(PA PD 0.0833), lerp(PB PC 0.0833)]
+    move: lerp(lerp(PA PD 0.02) lerp(PB PC 0.02) 0.5)
+  - text: Below the band, fold the left and right sides behind at a slant, so the pot gets narrower at the bottom.
+    ops:
+      - fold: mountain
+        sheet: pot
+        name: sides
+        line: [lerp(PA PD 0.1667), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.16)]
+        move: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.01)
+      - fold: mountain
+        sheet: pot
+        name: sides
+        line: [lerp(PB PC 0.1667), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.84)]
+        move: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.99)
+  # ---------- Stem ----------
+  - text: "Stem: start white side up with the strip standing tall. Fold it in half from left to right."
+    pin:
+      SA: stem.A
+      SB: stem.B
+      SC: stem.C
+      SD: stem.D
+      TOP: lerp(lerp(stem.D stem.A 0.95) lerp(stem.C stem.B 0.95) 0.75)
+      LOW: lerp(lerp(stem.D stem.A 0.55) lerp(stem.C stem.B 0.55) 0.75)
+      BASE: lerp(lerp(stem.D stem.A 0.2) lerp(stem.C stem.B 0.2) 0.75)
+    fold: valley
+    sheet: stem
+    line: [mid(SA SB), mid(SD SC)]
+    move: SA
+  # ---------- Leaves ----------
+  - text: "Leaves: start white side up with the strip lying sideways. Fold it in half, bottom edge to top edge."
+    pin: { LA: leaves.A, LB: leaves.B, LC: leaves.C, LD: leaves.D }
+    fold: valley
+    sheet: leaves
+    line: [mid(LA LD), mid(LB LC)]
+    move: LD
+  - text: Fold the top left corner and the bottom right corner behind, to give each end a point.
+    ops:
+      - { fold: mountain, sheet: leaves, line: [mid(LA LD), lerp(LA LB 0.125)], move: lerp(LA LB 0.005) }
+      - { fold: mountain, sheet: leaves, line: [LB, lerp(mid(LA LD) mid(LB LC) 0.875)], move: lerp(mid(LA LD) mid(LB LC) 0.995) }
+  # ---------- Petals ----------
+  - text: "Petals 1: start white side up. Fold all four corners to the middle."
+    ops:
+      - { fold: valley, sheet: petals1, line: { bring: petals1.A, to: petals1.O }, move: petals1.A }
+      - { fold: valley, sheet: petals1, line: { bring: petals1.B, to: petals1.O }, move: petals1.B }
+      - { fold: valley, sheet: petals1, line: { bring: petals1.C, to: petals1.O }, move: petals1.C }
+      - { fold: valley, sheet: petals1, line: { bring: petals1.D, to: petals1.O }, move: petals1.D }
+  - text: "Petals 2: fold the second yellow square the same way, all four corners to the middle."
+    ops:
+      - { fold: valley, sheet: petals2, line: { bring: petals2.A, to: petals2.O }, move: petals2.A }
+      - { fold: valley, sheet: petals2, line: { bring: petals2.B, to: petals2.O }, move: petals2.B }
+      - { fold: valley, sheet: petals2, line: { bring: petals2.C, to: petals2.O }, move: petals2.C }
+      - { fold: valley, sheet: petals2, line: { bring: petals2.D, to: petals2.O }, move: petals2.D }
+  # ---------- Centre ----------
+  - text: "Centre: start white side up. Fold all four corners of the brown square to the middle."
+    ops:
+      - { fold: valley, sheet: centre, line: { bring: centre.A, to: centre.O }, move: centre.A }
+      - { fold: valley, sheet: centre, line: { bring: centre.B, to: centre.O }, move: centre.B }
+      - { fold: valley, sheet: centre, line: { bring: centre.C, to: centre.O }, move: centre.C }
+      - { fold: valley, sheet: centre, line: { bring: centre.D, to: centre.O }, move: centre.D }
+  # ---------- Put it together ----------
+  - text: Slide the leaves in behind the stem, tilted a little, so one leaf points up on each side.
+    place: { sheet: leaves, rotate: 18, point: lerp(mid(LA LD) LB 0.5), to: LOW, layer: below }
+  - text: Lay the first petals on top of the stem, then the second petals on top turned so the points sit in between.
+    ops:
+      - place: { sheet: petals1, point: petals1.O, to: TOP, layer: above }
+      - place: { sheet: petals2, rotate: 45, point: petals2.O, to: TOP, layer: above }
+  - text: Put the brown centre in the middle of the flower.
+    place: { sheet: centre, rotate: 45, point: centre.O, to: TOP, layer: above }
+  - text: Slide the stem into the pot, behind the white band.
+    place: { sheet: pot, point: RIM, to: BASE, layer: above }
+  - text: Open the folded sides of the pot out behind it, so it has some depth.
+    shape:
+      fixed: RIM
+      creases:
+        - { creases: sides, angle: 100 }
+  - text: Stand the pot up on its bottom edge.
+    stand: [BL, BR]
+finish:
+  text: Glue the petals and centre together first, then glue the flower to the stem. A cheerful gift that never needs watering.

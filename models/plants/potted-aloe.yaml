@@ -1,0 +1,113 @@
+id: potted-aloe
+title: Potted aloe
+family: potted-plant
+variant: Aloe
+aliases: [aloe, aloe vera, agave, succulent, spiky plant, house plant, plant pot]
+categories: [plants/potted]
+tags: [aloe, succulent, spiky, plant, pot, leaves, house plant, four sheets, our design, draft]
+difficulty: 1
+description: A spiky aloe with three pointed leaves fanned out in a little pink bowl. Each leaf is a kite with its white tail folded away, so it is all green.
+credits:
+  designer: Origami project (original design)
+  script: Origami project
+  note: Inspired by the potted plants of Paper Kawaii; our own folding sequence.
+  sources:
+    - label: "Inspiration: Paper Kawaii"
+      url: https://www.paperkawaii.com/
+materials:
+  - id: pot
+    name: Pot
+    size: 15
+    at: [-19, 0]
+    colors: { front: "#e79aa5", back: "#fbf7ee" }
+  - id: middle
+    name: Middle leaf
+    size: 10
+    diamond: true
+    at: [2, 0]
+    colors: { front: "#4c8c6a", back: "#eef5e9" }
+  - id: side1
+    name: Side leaf 1
+    size: 9
+    diamond: true
+    at: [19, 0]
+    colors: { front: "#86b98d", back: "#eef5e9" }
+  - id: side2
+    name: Side leaf 2
+    size: 9
+    diamond: true
+    at: [33, 0]
+    colors: { front: "#86b98d", back: "#eef5e9" }
+steps:
+  # ---------- Pot ----------
+  - text: "Pot: start white side up. Fold the bottom edge up to the top edge."
+    pin: { PA: pot.A, PB: pot.B, PC: pot.C, PD: pot.D }
+    mark:
+      BL: lerp(lerp(pot.A pot.D 0.5) lerp(pot.B pot.C 0.5) 0.28)
+      BR: lerp(lerp(pot.A pot.D 0.5) lerp(pot.B pot.C 0.5) 0.72)
+      RIM: lerp(lerp(pot.A pot.D 0.16) lerp(pot.B pot.C 0.16) 0.5)
+    fold: valley
+    sheet: pot
+    line: [mid(PA PD), mid(PB PC)]
+    move: PD
+  - text: Fold the top edge down through both layers to make a deep rim.
+    fold: valley
+    sheet: pot
+    line: [lerp(PA PD 0.14), lerp(PB PC 0.14)]
+    move: lerp(PA PB 0.5)
+  - text: Fold the sides behind at a steep slant, so the pot becomes a round-bottomed bowl.
+    ops:
+      - fold: mountain
+        sheet: pot
+        name: sides
+        line: [lerp(PA PD 0.14), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.28)]
+        move: lerp(lerp(PA PD 0.4) lerp(PB PC 0.4) 0.01)
+      - fold: mountain
+        sheet: pot
+        name: sides
+        line: [lerp(PB PC 0.14), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.72)]
+        move: lerp(lerp(PA PD 0.4) lerp(PB PC 0.4) 0.99)
+  # ---------- Middle leaf ----------
+  - text: "Middle leaf: start with a diamond, white side up. Fold the two upper edges to the centre line."
+    pin: { MA: middle.A, MB: middle.B, MC: middle.C, MD: middle.D }
+    ops:
+      - { fold: valley, sheet: middle, line: { bring: [middle.A, middle.B], onto: [middle.A, middle.C] }, move: middle.B }
+      - { fold: valley, sheet: middle, line: { bring: [middle.A, middle.D], onto: [middle.A, middle.C] }, move: middle.D }
+  - text: Fold the white bottom corner behind, along the bottom of the flaps. Now the leaf is all green.
+    fold: mountain
+    sheet: middle
+    line: [lerp(MC MB 0.5858), lerp(MC MD 0.5858)]
+    move: MC
+  # ---------- Side leaves ----------
+  - text: "Side leaf 1: fold it like the middle leaf. Fold the upper edges to the centre line."
+    pin: { SA: side1.A, SB: side1.B, SC: side1.C, SD: side1.D }
+    ops:
+      - { fold: valley, sheet: side1, line: { bring: [side1.A, side1.B], onto: [side1.A, side1.C] }, move: side1.B }
+      - { fold: valley, sheet: side1, line: { bring: [side1.A, side1.D], onto: [side1.A, side1.C] }, move: side1.D }
+  - text: Fold the white bottom corner behind.
+    fold: mountain
+    sheet: side1
+    line: [lerp(SC SB 0.5858), lerp(SC SD 0.5858)]
+    move: SC
+  - text: "Side leaf 2: fold it just the same. Upper edges to the centre, then the bottom corner behind."
+    pin: { TA: side2.A, TB: side2.B, TC: side2.C, TD: side2.D }
+    ops:
+      - { fold: valley, sheet: side2, line: { bring: [side2.A, side2.B], onto: [side2.A, side2.C] }, move: side2.B }
+      - { fold: valley, sheet: side2, line: { bring: [side2.A, side2.D], onto: [side2.A, side2.C] }, move: side2.D }
+      - { fold: mountain, sheet: side2, line: [lerp(TC TB 0.5858), lerp(TC TD 0.5858)], move: TC }
+  # ---------- Put it together ----------
+  - text: Tuck the two side leaves in behind the middle leaf, leaning out to each side.
+    ops:
+      - place: { sheet: side1, rotate: 42, point: mid(lerp(SC SB 0.5858) lerp(SC SD 0.5858)), to: lerp(mid(lerp(MC MB 0.5858) lerp(MC MD 0.5858)) MA 0.12), layer: below }
+      - place: { sheet: side2, rotate: -42, point: mid(lerp(TC TB 0.5858) lerp(TC TD 0.5858)), to: lerp(mid(lerp(MC MB 0.5858) lerp(MC MD 0.5858)) MA 0.12), layer: below }
+  - text: Slide the leaves into the pot, behind the rim.
+    place: { sheet: pot, point: RIM, to: lerp(mid(lerp(MC MB 0.5858) lerp(MC MD 0.5858)) MA 0.3), layer: above }
+  - text: Open the folded sides of the pot out behind it, so it has some depth.
+    shape:
+      fixed: RIM
+      creases:
+        - { creases: sides, angle: 100 }
+  - text: Stand the pot up on its bottom edge.
+    stand: [BL, BR]
+finish:
+  text: Glue the leaves together at the bottom before you slide them in, and the leaves keep their fan shape.

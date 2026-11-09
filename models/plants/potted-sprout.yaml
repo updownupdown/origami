@@ -42,10 +42,12 @@ steps:
     ops:
       - fold: mountain
         sheet: pot
+        name: sides
         line: [lerp(PA PD 0.1), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.16)]
         move: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.01)
       - fold: mountain
         sheet: pot
+        name: sides
         line: [lerp(PB PC 0.1), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.84)]
         move: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.99)
   - text: "Plant: start with a diamond, white side up. Fold the bottom corner up to the top."
@@ -65,5 +67,12 @@ steps:
     move: plant.D
   - text: Tuck the bottom of the plant into the pot, behind the rim.
     place: { sheet: plant, point: plant.O, to: lerp(lerp(PA PD 0.32) lerp(PB PC 0.32) 0.5), layer: below }
+  - text: Open the folded sides out behind the pot a little, so it has some depth.
+    shape:
+      fixed: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.5)
+      creases:
+        - { creases: sides, angle: 100 }
+  - text: Stand the pot up on its bottom edge.
+    stand: [lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.16), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.84)]
 finish:
   text: Glue the plant in place and stick it on a card.

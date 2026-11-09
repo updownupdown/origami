@@ -1,0 +1,669 @@
+id: resch-triangles
+title: Resch triangle tessellation
+family: resch
+aliases: [ron resch pattern, resch pattern, triangle tessellation]
+categories: [tessellations]
+tags: [resch, triangle, tessellation, twist, geometric, textured]
+difficulty: 4
+description: Little three-pointed stars tuck under the paper and pull the sheet into a field of raised triangles. Ron Resch explored this pattern in the 1960s, and it still turns up in architecture and design.
+credits:
+  designer: Ron Resch
+  script: Origami project
+materials:
+  - id: paper
+    size: 18 x 15.588
+    start: front-up
+    colors: { front: "#8a5bd0", back: "#fbf7ee" }
+steps:
+  - text: Crease a triangle grid across the whole sheet, plus straight lines up the paper through every third column of points.
+    pattern:
+      valley:
+        - [paper(3 0), paper(3 15.588)]
+        - [paper(6 0), paper(6 15.588)]
+        - [paper(9 0), paper(9 15.588)]
+        - [paper(12 0), paper(12 15.588)]
+        - [paper(15 0), paper(15 15.588)]
+      mountain:
+        - [paper(0 1.73205), paper(18 1.73205)]
+        - [paper(0 3.4641), paper(18 3.4641)]
+        - [paper(0 5.19615), paper(18 5.19615)]
+        - [paper(0 6.9282), paper(18 6.9282)]
+        - [paper(0 8.66025), paper(18 8.66025)]
+        - [paper(0 10.3923), paper(18 10.3923)]
+        - [paper(0 12.12436), paper(18 12.12436)]
+        - [paper(0 13.85641), paper(18 13.85641)]
+        - [paper(0 12.12436), paper(1.99974 15.588)]
+        - [paper(0 8.66025), paper(3.99974 15.588)]
+        - [paper(0 5.19615), paper(5.99974 15.588)]
+        - [paper(0 1.73205), paper(7.99974 15.588)]
+        - [paper(1 0), paper(9.99974 15.588)]
+        - [paper(3 0), paper(11.99974 15.588)]
+        - [paper(5 0), paper(13.99974 15.588)]
+        - [paper(7 0), paper(15.99974 15.588)]
+        - [paper(9 0), paper(17.99974 15.588)]
+        - [paper(11 0), paper(18 12.12436)]
+        - [paper(13 0), paper(18 8.66025)]
+        - [paper(15 0), paper(18 5.19615)]
+        - [paper(17 0), paper(18 1.73205)]
+        - [paper(1 0), paper(0 1.73205)]
+        - [paper(3 0), paper(0 5.19615)]
+        - [paper(5 0), paper(0 8.66025)]
+        - [paper(7 0), paper(0 12.12436)]
+        - [paper(9 0), paper(0.00026 15.588)]
+        - [paper(11 0), paper(2.00026 15.588)]
+        - [paper(13 0), paper(4.00026 15.588)]
+        - [paper(15 0), paper(6.00026 15.588)]
+        - [paper(17 0), paper(8.00026 15.588)]
+        - [paper(18 1.73205), paper(10.00026 15.588)]
+        - [paper(18 5.19615), paper(12.00026 15.588)]
+        - [paper(18 8.66025), paper(14.00026 15.588)]
+        - [paper(18 12.12436), paper(16.00026 15.588)]
+  - text: In each star triangle, crease lines from the centre out to the three corners and to the middle of each side.
+    pattern:
+      valley:
+        - [paper(18 0.57735), paper(16 1.73205)]
+        - [paper(12 0.57735), paper(10 1.73205)]
+        - [paper(12 0.57735), paper(14 1.73205)]
+        - [paper(15 2.3094), paper(13 3.4641)]
+        - [paper(15 2.3094), paper(17 3.4641)]
+        - [paper(18 4.04145), paper(16 5.19615)]
+        - [paper(6 0.57735), paper(4 1.73205)]
+        - [paper(6 0.57735), paper(8 1.73205)]
+        - [paper(9 2.3094), paper(7 3.4641)]
+        - [paper(9 2.3094), paper(11 3.4641)]
+        - [paper(12 4.04145), paper(10 5.19615)]
+        - [paper(12 4.04145), paper(14 5.19615)]
+        - [paper(15 5.7735), paper(13 6.9282)]
+        - [paper(15 5.7735), paper(17 6.9282)]
+        - [paper(18 7.50555), paper(16 8.66025)]
+        - [paper(0 0.57735), paper(2 1.73205)]
+        - [paper(3 2.3094), paper(1 3.4641)]
+        - [paper(3 2.3094), paper(5 3.4641)]
+        - [paper(6 4.04145), paper(4 5.19615)]
+        - [paper(6 4.04145), paper(8 5.19615)]
+        - [paper(9 5.7735), paper(7 6.9282)]
+        - [paper(9 5.7735), paper(11 6.9282)]
+        - [paper(12 7.50555), paper(10 8.66025)]
+        - [paper(12 7.50555), paper(14 8.66025)]
+        - [paper(15 9.2376), paper(13 10.3923)]
+        - [paper(15 9.2376), paper(17 10.3923)]
+        - [paper(18 10.96966), paper(16 12.12436)]
+        - [paper(0 4.04145), paper(2 5.19615)]
+        - [paper(3 5.7735), paper(1 6.9282)]
+        - [paper(3 5.7735), paper(5 6.9282)]
+        - [paper(6 7.50555), paper(4 8.66025)]
+        - [paper(6 7.50555), paper(8 8.66025)]
+        - [paper(9 9.2376), paper(7 10.3923)]
+        - [paper(9 9.2376), paper(11 10.3923)]
+        - [paper(12 10.96966), paper(10 12.12436)]
+        - [paper(12 10.96966), paper(14 12.12436)]
+        - [paper(15 12.70171), paper(13 13.85641)]
+        - [paper(15 12.70171), paper(17 13.85641)]
+        - [paper(18 14.43376), paper(16.00079 15.588)]
+        - [paper(0 7.50555), paper(2 8.66025)]
+        - [paper(3 9.2376), paper(1 10.3923)]
+        - [paper(3 9.2376), paper(5 10.3923)]
+        - [paper(6 10.96966), paper(4 12.12436)]
+        - [paper(6 10.96966), paper(8 12.12436)]
+        - [paper(9 12.70171), paper(7 13.85641)]
+        - [paper(9 12.70171), paper(11 13.85641)]
+        - [paper(12 14.43376), paper(10.00079 15.588)]
+        - [paper(12 14.43376), paper(13.99921 15.588)]
+        - [paper(0 10.96966), paper(2 12.12436)]
+        - [paper(3 12.70171), paper(1 13.85641)]
+        - [paper(3 12.70171), paper(5 13.85641)]
+        - [paper(6 14.43376), paper(4.00079 15.588)]
+        - [paper(6 14.43376), paper(7.99921 15.588)]
+        - [paper(0 14.43376), paper(1.99921 15.588)]
+      mountain:
+        - [paper(18 0.57735), paper(17 0)]
+        - [paper(12 0.57735), paper(13 0)]
+        - [paper(12 0.57735), paper(11 0)]
+        - [paper(15 2.3094), paper(16 1.73205)]
+        - [paper(15 2.3094), paper(14 1.73205)]
+        - [paper(18 4.04145), paper(17 3.4641)]
+        - [paper(6 0.57735), paper(7 0)]
+        - [paper(6 0.57735), paper(5 0)]
+        - [paper(9 2.3094), paper(10 1.73205)]
+        - [paper(9 2.3094), paper(8 1.73205)]
+        - [paper(12 4.04145), paper(13 3.4641)]
+        - [paper(12 4.04145), paper(11 3.4641)]
+        - [paper(15 5.7735), paper(16 5.19615)]
+        - [paper(15 5.7735), paper(14 5.19615)]
+        - [paper(18 7.50555), paper(17 6.9282)]
+        - [paper(0 0.57735), paper(1 0)]
+        - [paper(3 2.3094), paper(4 1.73205)]
+        - [paper(3 2.3094), paper(2 1.73205)]
+        - [paper(6 4.04145), paper(7 3.4641)]
+        - [paper(6 4.04145), paper(5 3.4641)]
+        - [paper(9 5.7735), paper(10 5.19615)]
+        - [paper(9 5.7735), paper(8 5.19615)]
+        - [paper(12 7.50555), paper(13 6.9282)]
+        - [paper(12 7.50555), paper(11 6.9282)]
+        - [paper(15 9.2376), paper(16 8.66025)]
+        - [paper(15 9.2376), paper(14 8.66025)]
+        - [paper(18 10.96966), paper(17 10.3923)]
+        - [paper(0 4.04145), paper(1 3.4641)]
+        - [paper(3 5.7735), paper(4 5.19615)]
+        - [paper(3 5.7735), paper(2 5.19615)]
+        - [paper(6 7.50555), paper(7 6.9282)]
+        - [paper(6 7.50555), paper(5 6.9282)]
+        - [paper(9 9.2376), paper(10 8.66025)]
+        - [paper(9 9.2376), paper(8 8.66025)]
+        - [paper(12 10.96966), paper(13 10.3923)]
+        - [paper(12 10.96966), paper(11 10.3923)]
+        - [paper(15 12.70171), paper(16 12.12436)]
+        - [paper(15 12.70171), paper(14 12.12436)]
+        - [paper(18 14.43376), paper(17 13.85641)]
+        - [paper(0 7.50555), paper(1 6.9282)]
+        - [paper(3 9.2376), paper(4 8.66025)]
+        - [paper(3 9.2376), paper(2 8.66025)]
+        - [paper(6 10.96966), paper(7 10.3923)]
+        - [paper(6 10.96966), paper(5 10.3923)]
+        - [paper(9 12.70171), paper(10 12.12436)]
+        - [paper(9 12.70171), paper(8 12.12436)]
+        - [paper(12 14.43376), paper(13 13.85641)]
+        - [paper(12 14.43376), paper(11 13.85641)]
+        - [paper(0 10.96966), paper(1 10.3923)]
+        - [paper(3 12.70171), paper(4 12.12436)]
+        - [paper(3 12.70171), paper(2 12.12436)]
+        - [paper(6 14.43376), paper(7 13.85641)]
+        - [paper(6 14.43376), paper(5 13.85641)]
+        - [paper(0 14.43376), paper(1 13.85641)]
+  - text: Fold the star edges as mountains and the lines to the corners as valleys. Each star sinks a little and twists.
+    shape:
+      fixed: paper(9.32 6.5735)
+      creases:
+      - { line: [paper(17 0), paper(16 1.73205)], kind: mountain, angle: 40 }
+      - { line: [paper(16 1.73205), paper(18 1.73205)], kind: mountain, angle: 40 }
+      - { line: [paper(11 0), paper(10 1.73205)], kind: mountain, angle: 40 }
+      - { line: [paper(10 1.73205), paper(14 1.73205)], kind: mountain, angle: 40 }
+      - { line: [paper(14 1.73205), paper(13 0)], kind: mountain, angle: 40 }
+      - { line: [paper(15 0), paper(13 3.4641)], kind: mountain, angle: 40 }
+      - { line: [paper(13 3.4641), paper(17 3.4641)], kind: mountain, angle: 40 }
+      - { line: [paper(17 3.4641), paper(15 0)], kind: mountain, angle: 40 }
+      - { line: [paper(18 1.73205), paper(16 5.19615)], kind: mountain, angle: 40 }
+      - { line: [paper(16 5.19615), paper(18 5.19615)], kind: mountain, angle: 40 }
+      - { line: [paper(5 0), paper(4 1.73205)], kind: mountain, angle: 40 }
+      - { line: [paper(4 1.73205), paper(8 1.73205)], kind: mountain, angle: 40 }
+      - { line: [paper(8 1.73205), paper(7 0)], kind: mountain, angle: 40 }
+      - { line: [paper(9 0), paper(7 3.4641)], kind: mountain, angle: 40 }
+      - { line: [paper(7 3.4641), paper(11 3.4641)], kind: mountain, angle: 40 }
+      - { line: [paper(11 3.4641), paper(9 0)], kind: mountain, angle: 40 }
+      - { line: [paper(12 1.73205), paper(10 5.19615)], kind: mountain, angle: 40 }
+      - { line: [paper(10 5.19615), paper(14 5.19615)], kind: mountain, angle: 40 }
+      - { line: [paper(14 5.19615), paper(12 1.73205)], kind: mountain, angle: 40 }
+      - { line: [paper(15 3.4641), paper(13 6.9282)], kind: mountain, angle: 40 }
+      - { line: [paper(13 6.9282), paper(17 6.9282)], kind: mountain, angle: 40 }
+      - { line: [paper(17 6.9282), paper(15 3.4641)], kind: mountain, angle: 40 }
+      - { line: [paper(18 5.19615), paper(16 8.66025)], kind: mountain, angle: 40 }
+      - { line: [paper(16 8.66025), paper(18 8.66025)], kind: mountain, angle: 40 }
+      - { line: [paper(0 1.73205), paper(2 1.73205)], kind: mountain, angle: 40 }
+      - { line: [paper(2 1.73205), paper(1 0)], kind: mountain, angle: 40 }
+      - { line: [paper(3 0), paper(1 3.4641)], kind: mountain, angle: 40 }
+      - { line: [paper(1 3.4641), paper(5 3.4641)], kind: mountain, angle: 40 }
+      - { line: [paper(5 3.4641), paper(3 0)], kind: mountain, angle: 40 }
+      - { line: [paper(6 1.73205), paper(4 5.19615)], kind: mountain, angle: 40 }
+      - { line: [paper(4 5.19615), paper(8 5.19615)], kind: mountain, angle: 40 }
+      - { line: [paper(8 5.19615), paper(6 1.73205)], kind: mountain, angle: 40 }
+      - { line: [paper(9 3.4641), paper(7 6.9282)], kind: mountain, angle: 40 }
+      - { line: [paper(7 6.9282), paper(11 6.9282)], kind: mountain, angle: 40 }
+      - { line: [paper(11 6.9282), paper(9 3.4641)], kind: mountain, angle: 40 }
+      - { line: [paper(12 5.19615), paper(10 8.66025)], kind: mountain, angle: 40 }
+      - { line: [paper(10 8.66025), paper(14 8.66025)], kind: mountain, angle: 40 }
+      - { line: [paper(14 8.66025), paper(12 5.19615)], kind: mountain, angle: 40 }
+      - { line: [paper(15 6.9282), paper(13 10.3923)], kind: mountain, angle: 40 }
+      - { line: [paper(13 10.3923), paper(17 10.3923)], kind: mountain, angle: 40 }
+      - { line: [paper(17 10.3923), paper(15 6.9282)], kind: mountain, angle: 40 }
+      - { line: [paper(18 8.66025), paper(16 12.12436)], kind: mountain, angle: 40 }
+      - { line: [paper(16 12.12436), paper(18 12.12436)], kind: mountain, angle: 40 }
+      - { line: [paper(0 5.19615), paper(2 5.19615)], kind: mountain, angle: 40 }
+      - { line: [paper(2 5.19615), paper(0 1.73205)], kind: mountain, angle: 40 }
+      - { line: [paper(3 3.4641), paper(1 6.9282)], kind: mountain, angle: 40 }
+      - { line: [paper(1 6.9282), paper(5 6.9282)], kind: mountain, angle: 40 }
+      - { line: [paper(5 6.9282), paper(3 3.4641)], kind: mountain, angle: 40 }
+      - { line: [paper(6 5.19615), paper(4 8.66025)], kind: mountain, angle: 40 }
+      - { line: [paper(4 8.66025), paper(8 8.66025)], kind: mountain, angle: 40 }
+      - { line: [paper(8 8.66025), paper(6 5.19615)], kind: mountain, angle: 40 }
+      - { line: [paper(9 6.9282), paper(7 10.3923)], kind: mountain, angle: 40 }
+      - { line: [paper(7 10.3923), paper(11 10.3923)], kind: mountain, angle: 40 }
+      - { line: [paper(11 10.3923), paper(9 6.9282)], kind: mountain, angle: 40 }
+      - { line: [paper(12 8.66025), paper(10 12.12436)], kind: mountain, angle: 40 }
+      - { line: [paper(10 12.12436), paper(14 12.12436)], kind: mountain, angle: 40 }
+      - { line: [paper(14 12.12436), paper(12 8.66025)], kind: mountain, angle: 40 }
+      - { line: [paper(15 10.3923), paper(13 13.85641)], kind: mountain, angle: 40 }
+      - { line: [paper(13 13.85641), paper(17 13.85641)], kind: mountain, angle: 40 }
+      - { line: [paper(17 13.85641), paper(15 10.3923)], kind: mountain, angle: 40 }
+      - { line: [paper(18 12.12436), paper(16.00026 15.588)], kind: mountain, angle: 40 }
+      - { line: [paper(0 8.66025), paper(2 8.66025)], kind: mountain, angle: 40 }
+      - { line: [paper(2 8.66025), paper(0 5.19615)], kind: mountain, angle: 40 }
+      - { line: [paper(3 6.9282), paper(1 10.3923)], kind: mountain, angle: 40 }
+      - { line: [paper(1 10.3923), paper(5 10.3923)], kind: mountain, angle: 40 }
+      - { line: [paper(5 10.3923), paper(3 6.9282)], kind: mountain, angle: 40 }
+      - { line: [paper(6 8.66025), paper(4 12.12436)], kind: mountain, angle: 40 }
+      - { line: [paper(4 12.12436), paper(8 12.12436)], kind: mountain, angle: 40 }
+      - { line: [paper(8 12.12436), paper(6 8.66025)], kind: mountain, angle: 40 }
+      - { line: [paper(9 10.3923), paper(7 13.85641)], kind: mountain, angle: 40 }
+      - { line: [paper(7 13.85641), paper(11 13.85641)], kind: mountain, angle: 40 }
+      - { line: [paper(11 13.85641), paper(9 10.3923)], kind: mountain, angle: 40 }
+      - { line: [paper(12 12.12436), paper(10.00026 15.588)], kind: mountain, angle: 40 }
+      - { line: [paper(13.99974 15.588), paper(12 12.12436)], kind: mountain, angle: 40 }
+      - { line: [paper(15 13.85641), paper(14.00026 15.588)], kind: mountain, angle: 40 }
+      - { line: [paper(15.99974 15.588), paper(15 13.85641)], kind: mountain, angle: 40 }
+      - { line: [paper(0 12.12436), paper(2 12.12436)], kind: mountain, angle: 40 }
+      - { line: [paper(2 12.12436), paper(0 8.66025)], kind: mountain, angle: 40 }
+      - { line: [paper(3 10.3923), paper(1 13.85641)], kind: mountain, angle: 40 }
+      - { line: [paper(1 13.85641), paper(5 13.85641)], kind: mountain, angle: 40 }
+      - { line: [paper(5 13.85641), paper(3 10.3923)], kind: mountain, angle: 40 }
+      - { line: [paper(6 12.12436), paper(4.00026 15.588)], kind: mountain, angle: 40 }
+      - { line: [paper(7.99974 15.588), paper(6 12.12436)], kind: mountain, angle: 40 }
+      - { line: [paper(9 13.85641), paper(8.00026 15.588)], kind: mountain, angle: 40 }
+      - { line: [paper(9.99974 15.588), paper(9 13.85641)], kind: mountain, angle: 40 }
+      - { line: [paper(1.99974 15.588), paper(0 12.12436)], kind: mountain, angle: 40 }
+      - { line: [paper(3 13.85641), paper(2.00026 15.588)], kind: mountain, angle: 40 }
+      - { line: [paper(3.99974 15.588), paper(3 13.85641)], kind: mountain, angle: 40 }
+      - { line: [paper(18 0.57735), paper(16 1.73205)], kind: valley, angle: 80 }
+      - { line: [paper(12 0.57735), paper(12 0)], kind: valley, angle: 80 }
+      - { line: [paper(12 0.57735), paper(10 1.73205)], kind: valley, angle: 80 }
+      - { line: [paper(12 0.57735), paper(14 1.73205)], kind: valley, angle: 80 }
+      - { line: [paper(15 2.3094), paper(15 0)], kind: valley, angle: 80 }
+      - { line: [paper(15 2.3094), paper(13 3.4641)], kind: valley, angle: 80 }
+      - { line: [paper(15 2.3094), paper(17 3.4641)], kind: valley, angle: 80 }
+      - { line: [paper(18 4.04145), paper(16 5.19615)], kind: valley, angle: 80 }
+      - { line: [paper(6 0.57735), paper(6 0)], kind: valley, angle: 80 }
+      - { line: [paper(6 0.57735), paper(4 1.73205)], kind: valley, angle: 80 }
+      - { line: [paper(6 0.57735), paper(8 1.73205)], kind: valley, angle: 80 }
+      - { line: [paper(9 2.3094), paper(9 0)], kind: valley, angle: 80 }
+      - { line: [paper(9 2.3094), paper(7 3.4641)], kind: valley, angle: 80 }
+      - { line: [paper(9 2.3094), paper(11 3.4641)], kind: valley, angle: 80 }
+      - { line: [paper(12 4.04145), paper(12 1.73205)], kind: valley, angle: 80 }
+      - { line: [paper(12 4.04145), paper(10 5.19615)], kind: valley, angle: 80 }
+      - { line: [paper(12 4.04145), paper(14 5.19615)], kind: valley, angle: 80 }
+      - { line: [paper(15 5.7735), paper(15 3.4641)], kind: valley, angle: 80 }
+      - { line: [paper(15 5.7735), paper(13 6.9282)], kind: valley, angle: 80 }
+      - { line: [paper(15 5.7735), paper(17 6.9282)], kind: valley, angle: 80 }
+      - { line: [paper(18 7.50555), paper(16 8.66025)], kind: valley, angle: 80 }
+      - { line: [paper(0 0.57735), paper(2 1.73205)], kind: valley, angle: 80 }
+      - { line: [paper(3 2.3094), paper(3 0)], kind: valley, angle: 80 }
+      - { line: [paper(3 2.3094), paper(1 3.4641)], kind: valley, angle: 80 }
+      - { line: [paper(3 2.3094), paper(5 3.4641)], kind: valley, angle: 80 }
+      - { line: [paper(6 4.04145), paper(6 1.73205)], kind: valley, angle: 80 }
+      - { line: [paper(6 4.04145), paper(4 5.19615)], kind: valley, angle: 80 }
+      - { line: [paper(6 4.04145), paper(8 5.19615)], kind: valley, angle: 80 }
+      - { line: [paper(9 5.7735), paper(9 3.4641)], kind: valley, angle: 80 }
+      - { line: [paper(9 5.7735), paper(7 6.9282)], kind: valley, angle: 80 }
+      - { line: [paper(9 5.7735), paper(11 6.9282)], kind: valley, angle: 80 }
+      - { line: [paper(12 7.50555), paper(12 5.19615)], kind: valley, angle: 80 }
+      - { line: [paper(12 7.50555), paper(10 8.66025)], kind: valley, angle: 80 }
+      - { line: [paper(12 7.50555), paper(14 8.66025)], kind: valley, angle: 80 }
+      - { line: [paper(15 9.2376), paper(15 6.9282)], kind: valley, angle: 80 }
+      - { line: [paper(15 9.2376), paper(13 10.3923)], kind: valley, angle: 80 }
+      - { line: [paper(15 9.2376), paper(17 10.3923)], kind: valley, angle: 80 }
+      - { line: [paper(18 10.96966), paper(16 12.12436)], kind: valley, angle: 80 }
+      - { line: [paper(0 4.04145), paper(2 5.19615)], kind: valley, angle: 80 }
+      - { line: [paper(3 5.7735), paper(3 3.4641)], kind: valley, angle: 80 }
+      - { line: [paper(3 5.7735), paper(1 6.9282)], kind: valley, angle: 80 }
+      - { line: [paper(3 5.7735), paper(5 6.9282)], kind: valley, angle: 80 }
+      - { line: [paper(6 7.50555), paper(6 5.19615)], kind: valley, angle: 80 }
+      - { line: [paper(6 7.50555), paper(4 8.66025)], kind: valley, angle: 80 }
+      - { line: [paper(6 7.50555), paper(8 8.66025)], kind: valley, angle: 80 }
+      - { line: [paper(9 9.2376), paper(9 6.9282)], kind: valley, angle: 80 }
+      - { line: [paper(9 9.2376), paper(7 10.3923)], kind: valley, angle: 80 }
+      - { line: [paper(9 9.2376), paper(11 10.3923)], kind: valley, angle: 80 }
+      - { line: [paper(12 10.96966), paper(12 8.66025)], kind: valley, angle: 80 }
+      - { line: [paper(12 10.96966), paper(10 12.12436)], kind: valley, angle: 80 }
+      - { line: [paper(12 10.96966), paper(14 12.12436)], kind: valley, angle: 80 }
+      - { line: [paper(15 12.70171), paper(15 10.3923)], kind: valley, angle: 80 }
+      - { line: [paper(15 12.70171), paper(13 13.85641)], kind: valley, angle: 80 }
+      - { line: [paper(15 12.70171), paper(17 13.85641)], kind: valley, angle: 80 }
+      - { line: [paper(18 14.43376), paper(16.00079 15.588)], kind: valley, angle: 80 }
+      - { line: [paper(0 7.50555), paper(2 8.66025)], kind: valley, angle: 80 }
+      - { line: [paper(3 9.2376), paper(3 6.9282)], kind: valley, angle: 80 }
+      - { line: [paper(3 9.2376), paper(1 10.3923)], kind: valley, angle: 80 }
+      - { line: [paper(3 9.2376), paper(5 10.3923)], kind: valley, angle: 80 }
+      - { line: [paper(6 10.96966), paper(6 8.66025)], kind: valley, angle: 80 }
+      - { line: [paper(6 10.96966), paper(4 12.12436)], kind: valley, angle: 80 }
+      - { line: [paper(6 10.96966), paper(8 12.12436)], kind: valley, angle: 80 }
+      - { line: [paper(9 12.70171), paper(9 10.3923)], kind: valley, angle: 80 }
+      - { line: [paper(9 12.70171), paper(7 13.85641)], kind: valley, angle: 80 }
+      - { line: [paper(9 12.70171), paper(11 13.85641)], kind: valley, angle: 80 }
+      - { line: [paper(12 14.43376), paper(12 12.12436)], kind: valley, angle: 80 }
+      - { line: [paper(12 14.43376), paper(10.00079 15.588)], kind: valley, angle: 80 }
+      - { line: [paper(12 14.43376), paper(13.99921 15.588)], kind: valley, angle: 80 }
+      - { line: [paper(15 15.588), paper(15 13.85641)], kind: valley, angle: 80 }
+      - { line: [paper(0 10.96966), paper(2 12.12436)], kind: valley, angle: 80 }
+      - { line: [paper(3 12.70171), paper(3 10.3923)], kind: valley, angle: 80 }
+      - { line: [paper(3 12.70171), paper(1 13.85641)], kind: valley, angle: 80 }
+      - { line: [paper(3 12.70171), paper(5 13.85641)], kind: valley, angle: 80 }
+      - { line: [paper(6 14.43376), paper(6 12.12436)], kind: valley, angle: 80 }
+      - { line: [paper(6 14.43376), paper(4.00079 15.588)], kind: valley, angle: 80 }
+      - { line: [paper(6 14.43376), paper(7.99921 15.588)], kind: valley, angle: 80 }
+      - { line: [paper(9 15.588), paper(9 13.85641)], kind: valley, angle: 80 }
+      - { line: [paper(0 14.43376), paper(1.99921 15.588)], kind: valley, angle: 80 }
+      - { line: [paper(3 15.588), paper(3 13.85641)], kind: valley, angle: 80 }
+      - { line: [paper(18 0.57735), paper(17 0)], kind: mountain, angle: 27 }
+      - { line: [paper(12 0.57735), paper(12 1.73205)], kind: mountain, angle: 27 }
+      - { line: [paper(12 0.57735), paper(13 0)], kind: mountain, angle: 27 }
+      - { line: [paper(12 0.57735), paper(11 0)], kind: mountain, angle: 27 }
+      - { line: [paper(15 2.3094), paper(15 3.4641)], kind: mountain, angle: 27 }
+      - { line: [paper(15 2.3094), paper(16 1.73205)], kind: mountain, angle: 27 }
+      - { line: [paper(15 2.3094), paper(14 1.73205)], kind: mountain, angle: 27 }
+      - { line: [paper(18 4.04145), paper(17 3.4641)], kind: mountain, angle: 27 }
+      - { line: [paper(6 0.57735), paper(6 1.73205)], kind: mountain, angle: 27 }
+      - { line: [paper(6 0.57735), paper(7 0)], kind: mountain, angle: 27 }
+      - { line: [paper(6 0.57735), paper(5 0)], kind: mountain, angle: 27 }
+      - { line: [paper(9 2.3094), paper(9 3.4641)], kind: mountain, angle: 27 }
+      - { line: [paper(9 2.3094), paper(10 1.73205)], kind: mountain, angle: 27 }
+      - { line: [paper(9 2.3094), paper(8 1.73205)], kind: mountain, angle: 27 }
+      - { line: [paper(12 4.04145), paper(12 5.19615)], kind: mountain, angle: 27 }
+      - { line: [paper(12 4.04145), paper(13 3.4641)], kind: mountain, angle: 27 }
+      - { line: [paper(12 4.04145), paper(11 3.4641)], kind: mountain, angle: 27 }
+      - { line: [paper(15 5.7735), paper(15 6.9282)], kind: mountain, angle: 27 }
+      - { line: [paper(15 5.7735), paper(16 5.19615)], kind: mountain, angle: 27 }
+      - { line: [paper(15 5.7735), paper(14 5.19615)], kind: mountain, angle: 27 }
+      - { line: [paper(18 7.50555), paper(17 6.9282)], kind: mountain, angle: 27 }
+      - { line: [paper(0 0.57735), paper(1 0)], kind: mountain, angle: 27 }
+      - { line: [paper(3 2.3094), paper(3 3.4641)], kind: mountain, angle: 27 }
+      - { line: [paper(3 2.3094), paper(4 1.73205)], kind: mountain, angle: 27 }
+      - { line: [paper(3 2.3094), paper(2 1.73205)], kind: mountain, angle: 27 }
+      - { line: [paper(6 4.04145), paper(6 5.19615)], kind: mountain, angle: 27 }
+      - { line: [paper(6 4.04145), paper(7 3.4641)], kind: mountain, angle: 27 }
+      - { line: [paper(6 4.04145), paper(5 3.4641)], kind: mountain, angle: 27 }
+      - { line: [paper(9 5.7735), paper(9 6.9282)], kind: mountain, angle: 27 }
+      - { line: [paper(9 5.7735), paper(10 5.19615)], kind: mountain, angle: 27 }
+      - { line: [paper(9 5.7735), paper(8 5.19615)], kind: mountain, angle: 27 }
+      - { line: [paper(12 7.50555), paper(12 8.66025)], kind: mountain, angle: 27 }
+      - { line: [paper(12 7.50555), paper(13 6.9282)], kind: mountain, angle: 27 }
+      - { line: [paper(12 7.50555), paper(11 6.9282)], kind: mountain, angle: 27 }
+      - { line: [paper(15 9.2376), paper(15 10.3923)], kind: mountain, angle: 27 }
+      - { line: [paper(15 9.2376), paper(16 8.66025)], kind: mountain, angle: 27 }
+      - { line: [paper(15 9.2376), paper(14 8.66025)], kind: mountain, angle: 27 }
+      - { line: [paper(18 10.96966), paper(17 10.3923)], kind: mountain, angle: 27 }
+      - { line: [paper(0 4.04145), paper(1 3.4641)], kind: mountain, angle: 27 }
+      - { line: [paper(3 5.7735), paper(3 6.9282)], kind: mountain, angle: 27 }
+      - { line: [paper(3 5.7735), paper(4 5.19615)], kind: mountain, angle: 27 }
+      - { line: [paper(3 5.7735), paper(2 5.19615)], kind: mountain, angle: 27 }
+      - { line: [paper(6 7.50555), paper(6 8.66025)], kind: mountain, angle: 27 }
+      - { line: [paper(6 7.50555), paper(7 6.9282)], kind: mountain, angle: 27 }
+      - { line: [paper(6 7.50555), paper(5 6.9282)], kind: mountain, angle: 27 }
+      - { line: [paper(9 9.2376), paper(9 10.3923)], kind: mountain, angle: 27 }
+      - { line: [paper(9 9.2376), paper(10 8.66025)], kind: mountain, angle: 27 }
+      - { line: [paper(9 9.2376), paper(8 8.66025)], kind: mountain, angle: 27 }
+      - { line: [paper(12 10.96966), paper(12 12.12436)], kind: mountain, angle: 27 }
+      - { line: [paper(12 10.96966), paper(13 10.3923)], kind: mountain, angle: 27 }
+      - { line: [paper(12 10.96966), paper(11 10.3923)], kind: mountain, angle: 27 }
+      - { line: [paper(15 12.70171), paper(15 13.85641)], kind: mountain, angle: 27 }
+      - { line: [paper(15 12.70171), paper(16 12.12436)], kind: mountain, angle: 27 }
+      - { line: [paper(15 12.70171), paper(14 12.12436)], kind: mountain, angle: 27 }
+      - { line: [paper(18 14.43376), paper(17 13.85641)], kind: mountain, angle: 27 }
+      - { line: [paper(0 7.50555), paper(1 6.9282)], kind: mountain, angle: 27 }
+      - { line: [paper(3 9.2376), paper(3 10.3923)], kind: mountain, angle: 27 }
+      - { line: [paper(3 9.2376), paper(4 8.66025)], kind: mountain, angle: 27 }
+      - { line: [paper(3 9.2376), paper(2 8.66025)], kind: mountain, angle: 27 }
+      - { line: [paper(6 10.96966), paper(6 12.12436)], kind: mountain, angle: 27 }
+      - { line: [paper(6 10.96966), paper(7 10.3923)], kind: mountain, angle: 27 }
+      - { line: [paper(6 10.96966), paper(5 10.3923)], kind: mountain, angle: 27 }
+      - { line: [paper(9 12.70171), paper(9 13.85641)], kind: mountain, angle: 27 }
+      - { line: [paper(9 12.70171), paper(10 12.12436)], kind: mountain, angle: 27 }
+      - { line: [paper(9 12.70171), paper(8 12.12436)], kind: mountain, angle: 27 }
+      - { line: [paper(12 14.43376), paper(12 15.588)], kind: mountain, angle: 27 }
+      - { line: [paper(12 14.43376), paper(13 13.85641)], kind: mountain, angle: 27 }
+      - { line: [paper(12 14.43376), paper(11 13.85641)], kind: mountain, angle: 27 }
+      - { line: [paper(0 10.96966), paper(1 10.3923)], kind: mountain, angle: 27 }
+      - { line: [paper(3 12.70171), paper(3 13.85641)], kind: mountain, angle: 27 }
+      - { line: [paper(3 12.70171), paper(4 12.12436)], kind: mountain, angle: 27 }
+      - { line: [paper(3 12.70171), paper(2 12.12436)], kind: mountain, angle: 27 }
+      - { line: [paper(6 14.43376), paper(6 15.588)], kind: mountain, angle: 27 }
+      - { line: [paper(6 14.43376), paper(7 13.85641)], kind: mountain, angle: 27 }
+      - { line: [paper(6 14.43376), paper(5 13.85641)], kind: mountain, angle: 27 }
+      - { line: [paper(0 14.43376), paper(1 13.85641)], kind: mountain, angle: 27 }
+  - text: Keep tucking every star under. The small triangles between the stars rise up and line up into a raised pattern.
+    shape:
+      fixed: paper(9.32 6.5735)
+      creases:
+      - { line: [paper(17 0), paper(16 1.73205)], kind: mountain, angle: 75 }
+      - { line: [paper(16 1.73205), paper(18 1.73205)], kind: mountain, angle: 75 }
+      - { line: [paper(11 0), paper(10 1.73205)], kind: mountain, angle: 75 }
+      - { line: [paper(10 1.73205), paper(14 1.73205)], kind: mountain, angle: 75 }
+      - { line: [paper(14 1.73205), paper(13 0)], kind: mountain, angle: 75 }
+      - { line: [paper(15 0), paper(13 3.4641)], kind: mountain, angle: 75 }
+      - { line: [paper(13 3.4641), paper(17 3.4641)], kind: mountain, angle: 75 }
+      - { line: [paper(17 3.4641), paper(15 0)], kind: mountain, angle: 75 }
+      - { line: [paper(18 1.73205), paper(16 5.19615)], kind: mountain, angle: 75 }
+      - { line: [paper(16 5.19615), paper(18 5.19615)], kind: mountain, angle: 75 }
+      - { line: [paper(5 0), paper(4 1.73205)], kind: mountain, angle: 75 }
+      - { line: [paper(4 1.73205), paper(8 1.73205)], kind: mountain, angle: 75 }
+      - { line: [paper(8 1.73205), paper(7 0)], kind: mountain, angle: 75 }
+      - { line: [paper(9 0), paper(7 3.4641)], kind: mountain, angle: 75 }
+      - { line: [paper(7 3.4641), paper(11 3.4641)], kind: mountain, angle: 75 }
+      - { line: [paper(11 3.4641), paper(9 0)], kind: mountain, angle: 75 }
+      - { line: [paper(12 1.73205), paper(10 5.19615)], kind: mountain, angle: 75 }
+      - { line: [paper(10 5.19615), paper(14 5.19615)], kind: mountain, angle: 75 }
+      - { line: [paper(14 5.19615), paper(12 1.73205)], kind: mountain, angle: 75 }
+      - { line: [paper(15 3.4641), paper(13 6.9282)], kind: mountain, angle: 75 }
+      - { line: [paper(13 6.9282), paper(17 6.9282)], kind: mountain, angle: 75 }
+      - { line: [paper(17 6.9282), paper(15 3.4641)], kind: mountain, angle: 75 }
+      - { line: [paper(18 5.19615), paper(16 8.66025)], kind: mountain, angle: 75 }
+      - { line: [paper(16 8.66025), paper(18 8.66025)], kind: mountain, angle: 75 }
+      - { line: [paper(0 1.73205), paper(2 1.73205)], kind: mountain, angle: 75 }
+      - { line: [paper(2 1.73205), paper(1 0)], kind: mountain, angle: 75 }
+      - { line: [paper(3 0), paper(1 3.4641)], kind: mountain, angle: 75 }
+      - { line: [paper(1 3.4641), paper(5 3.4641)], kind: mountain, angle: 75 }
+      - { line: [paper(5 3.4641), paper(3 0)], kind: mountain, angle: 75 }
+      - { line: [paper(6 1.73205), paper(4 5.19615)], kind: mountain, angle: 75 }
+      - { line: [paper(4 5.19615), paper(8 5.19615)], kind: mountain, angle: 75 }
+      - { line: [paper(8 5.19615), paper(6 1.73205)], kind: mountain, angle: 75 }
+      - { line: [paper(9 3.4641), paper(7 6.9282)], kind: mountain, angle: 75 }
+      - { line: [paper(7 6.9282), paper(11 6.9282)], kind: mountain, angle: 75 }
+      - { line: [paper(11 6.9282), paper(9 3.4641)], kind: mountain, angle: 75 }
+      - { line: [paper(12 5.19615), paper(10 8.66025)], kind: mountain, angle: 75 }
+      - { line: [paper(10 8.66025), paper(14 8.66025)], kind: mountain, angle: 75 }
+      - { line: [paper(14 8.66025), paper(12 5.19615)], kind: mountain, angle: 75 }
+      - { line: [paper(15 6.9282), paper(13 10.3923)], kind: mountain, angle: 75 }
+      - { line: [paper(13 10.3923), paper(17 10.3923)], kind: mountain, angle: 75 }
+      - { line: [paper(17 10.3923), paper(15 6.9282)], kind: mountain, angle: 75 }
+      - { line: [paper(18 8.66025), paper(16 12.12436)], kind: mountain, angle: 75 }
+      - { line: [paper(16 12.12436), paper(18 12.12436)], kind: mountain, angle: 75 }
+      - { line: [paper(0 5.19615), paper(2 5.19615)], kind: mountain, angle: 75 }
+      - { line: [paper(2 5.19615), paper(0 1.73205)], kind: mountain, angle: 75 }
+      - { line: [paper(3 3.4641), paper(1 6.9282)], kind: mountain, angle: 75 }
+      - { line: [paper(1 6.9282), paper(5 6.9282)], kind: mountain, angle: 75 }
+      - { line: [paper(5 6.9282), paper(3 3.4641)], kind: mountain, angle: 75 }
+      - { line: [paper(6 5.19615), paper(4 8.66025)], kind: mountain, angle: 75 }
+      - { line: [paper(4 8.66025), paper(8 8.66025)], kind: mountain, angle: 75 }
+      - { line: [paper(8 8.66025), paper(6 5.19615)], kind: mountain, angle: 75 }
+      - { line: [paper(9 6.9282), paper(7 10.3923)], kind: mountain, angle: 75 }
+      - { line: [paper(7 10.3923), paper(11 10.3923)], kind: mountain, angle: 75 }
+      - { line: [paper(11 10.3923), paper(9 6.9282)], kind: mountain, angle: 75 }
+      - { line: [paper(12 8.66025), paper(10 12.12436)], kind: mountain, angle: 75 }
+      - { line: [paper(10 12.12436), paper(14 12.12436)], kind: mountain, angle: 75 }
+      - { line: [paper(14 12.12436), paper(12 8.66025)], kind: mountain, angle: 75 }
+      - { line: [paper(15 10.3923), paper(13 13.85641)], kind: mountain, angle: 75 }
+      - { line: [paper(13 13.85641), paper(17 13.85641)], kind: mountain, angle: 75 }
+      - { line: [paper(17 13.85641), paper(15 10.3923)], kind: mountain, angle: 75 }
+      - { line: [paper(18 12.12436), paper(16.00026 15.588)], kind: mountain, angle: 75 }
+      - { line: [paper(0 8.66025), paper(2 8.66025)], kind: mountain, angle: 75 }
+      - { line: [paper(2 8.66025), paper(0 5.19615)], kind: mountain, angle: 75 }
+      - { line: [paper(3 6.9282), paper(1 10.3923)], kind: mountain, angle: 75 }
+      - { line: [paper(1 10.3923), paper(5 10.3923)], kind: mountain, angle: 75 }
+      - { line: [paper(5 10.3923), paper(3 6.9282)], kind: mountain, angle: 75 }
+      - { line: [paper(6 8.66025), paper(4 12.12436)], kind: mountain, angle: 75 }
+      - { line: [paper(4 12.12436), paper(8 12.12436)], kind: mountain, angle: 75 }
+      - { line: [paper(8 12.12436), paper(6 8.66025)], kind: mountain, angle: 75 }
+      - { line: [paper(9 10.3923), paper(7 13.85641)], kind: mountain, angle: 75 }
+      - { line: [paper(7 13.85641), paper(11 13.85641)], kind: mountain, angle: 75 }
+      - { line: [paper(11 13.85641), paper(9 10.3923)], kind: mountain, angle: 75 }
+      - { line: [paper(12 12.12436), paper(10.00026 15.588)], kind: mountain, angle: 75 }
+      - { line: [paper(13.99974 15.588), paper(12 12.12436)], kind: mountain, angle: 75 }
+      - { line: [paper(15 13.85641), paper(14.00026 15.588)], kind: mountain, angle: 75 }
+      - { line: [paper(15.99974 15.588), paper(15 13.85641)], kind: mountain, angle: 75 }
+      - { line: [paper(0 12.12436), paper(2 12.12436)], kind: mountain, angle: 75 }
+      - { line: [paper(2 12.12436), paper(0 8.66025)], kind: mountain, angle: 75 }
+      - { line: [paper(3 10.3923), paper(1 13.85641)], kind: mountain, angle: 75 }
+      - { line: [paper(1 13.85641), paper(5 13.85641)], kind: mountain, angle: 75 }
+      - { line: [paper(5 13.85641), paper(3 10.3923)], kind: mountain, angle: 75 }
+      - { line: [paper(6 12.12436), paper(4.00026 15.588)], kind: mountain, angle: 75 }
+      - { line: [paper(7.99974 15.588), paper(6 12.12436)], kind: mountain, angle: 75 }
+      - { line: [paper(9 13.85641), paper(8.00026 15.588)], kind: mountain, angle: 75 }
+      - { line: [paper(9.99974 15.588), paper(9 13.85641)], kind: mountain, angle: 75 }
+      - { line: [paper(1.99974 15.588), paper(0 12.12436)], kind: mountain, angle: 75 }
+      - { line: [paper(3 13.85641), paper(2.00026 15.588)], kind: mountain, angle: 75 }
+      - { line: [paper(3.99974 15.588), paper(3 13.85641)], kind: mountain, angle: 75 }
+      - { line: [paper(18 0.57735), paper(16 1.73205)], kind: valley, angle: 150 }
+      - { line: [paper(12 0.57735), paper(12 0)], kind: valley, angle: 150 }
+      - { line: [paper(12 0.57735), paper(10 1.73205)], kind: valley, angle: 150 }
+      - { line: [paper(12 0.57735), paper(14 1.73205)], kind: valley, angle: 150 }
+      - { line: [paper(15 2.3094), paper(15 0)], kind: valley, angle: 150 }
+      - { line: [paper(15 2.3094), paper(13 3.4641)], kind: valley, angle: 150 }
+      - { line: [paper(15 2.3094), paper(17 3.4641)], kind: valley, angle: 150 }
+      - { line: [paper(18 4.04145), paper(16 5.19615)], kind: valley, angle: 150 }
+      - { line: [paper(6 0.57735), paper(6 0)], kind: valley, angle: 150 }
+      - { line: [paper(6 0.57735), paper(4 1.73205)], kind: valley, angle: 150 }
+      - { line: [paper(6 0.57735), paper(8 1.73205)], kind: valley, angle: 150 }
+      - { line: [paper(9 2.3094), paper(9 0)], kind: valley, angle: 150 }
+      - { line: [paper(9 2.3094), paper(7 3.4641)], kind: valley, angle: 150 }
+      - { line: [paper(9 2.3094), paper(11 3.4641)], kind: valley, angle: 150 }
+      - { line: [paper(12 4.04145), paper(12 1.73205)], kind: valley, angle: 150 }
+      - { line: [paper(12 4.04145), paper(10 5.19615)], kind: valley, angle: 150 }
+      - { line: [paper(12 4.04145), paper(14 5.19615)], kind: valley, angle: 150 }
+      - { line: [paper(15 5.7735), paper(15 3.4641)], kind: valley, angle: 150 }
+      - { line: [paper(15 5.7735), paper(13 6.9282)], kind: valley, angle: 150 }
+      - { line: [paper(15 5.7735), paper(17 6.9282)], kind: valley, angle: 150 }
+      - { line: [paper(18 7.50555), paper(16 8.66025)], kind: valley, angle: 150 }
+      - { line: [paper(0 0.57735), paper(2 1.73205)], kind: valley, angle: 150 }
+      - { line: [paper(3 2.3094), paper(3 0)], kind: valley, angle: 150 }
+      - { line: [paper(3 2.3094), paper(1 3.4641)], kind: valley, angle: 150 }
+      - { line: [paper(3 2.3094), paper(5 3.4641)], kind: valley, angle: 150 }
+      - { line: [paper(6 4.04145), paper(6 1.73205)], kind: valley, angle: 150 }
+      - { line: [paper(6 4.04145), paper(4 5.19615)], kind: valley, angle: 150 }
+      - { line: [paper(6 4.04145), paper(8 5.19615)], kind: valley, angle: 150 }
+      - { line: [paper(9 5.7735), paper(9 3.4641)], kind: valley, angle: 150 }
+      - { line: [paper(9 5.7735), paper(7 6.9282)], kind: valley, angle: 150 }
+      - { line: [paper(9 5.7735), paper(11 6.9282)], kind: valley, angle: 150 }
+      - { line: [paper(12 7.50555), paper(12 5.19615)], kind: valley, angle: 150 }
+      - { line: [paper(12 7.50555), paper(10 8.66025)], kind: valley, angle: 150 }
+      - { line: [paper(12 7.50555), paper(14 8.66025)], kind: valley, angle: 150 }
+      - { line: [paper(15 9.2376), paper(15 6.9282)], kind: valley, angle: 150 }
+      - { line: [paper(15 9.2376), paper(13 10.3923)], kind: valley, angle: 150 }
+      - { line: [paper(15 9.2376), paper(17 10.3923)], kind: valley, angle: 150 }
+      - { line: [paper(18 10.96966), paper(16 12.12436)], kind: valley, angle: 150 }
+      - { line: [paper(0 4.04145), paper(2 5.19615)], kind: valley, angle: 150 }
+      - { line: [paper(3 5.7735), paper(3 3.4641)], kind: valley, angle: 150 }
+      - { line: [paper(3 5.7735), paper(1 6.9282)], kind: valley, angle: 150 }
+      - { line: [paper(3 5.7735), paper(5 6.9282)], kind: valley, angle: 150 }
+      - { line: [paper(6 7.50555), paper(6 5.19615)], kind: valley, angle: 150 }
+      - { line: [paper(6 7.50555), paper(4 8.66025)], kind: valley, angle: 150 }
+      - { line: [paper(6 7.50555), paper(8 8.66025)], kind: valley, angle: 150 }
+      - { line: [paper(9 9.2376), paper(9 6.9282)], kind: valley, angle: 150 }
+      - { line: [paper(9 9.2376), paper(7 10.3923)], kind: valley, angle: 150 }
+      - { line: [paper(9 9.2376), paper(11 10.3923)], kind: valley, angle: 150 }
+      - { line: [paper(12 10.96966), paper(12 8.66025)], kind: valley, angle: 150 }
+      - { line: [paper(12 10.96966), paper(10 12.12436)], kind: valley, angle: 150 }
+      - { line: [paper(12 10.96966), paper(14 12.12436)], kind: valley, angle: 150 }
+      - { line: [paper(15 12.70171), paper(15 10.3923)], kind: valley, angle: 150 }
+      - { line: [paper(15 12.70171), paper(13 13.85641)], kind: valley, angle: 150 }
+      - { line: [paper(15 12.70171), paper(17 13.85641)], kind: valley, angle: 150 }
+      - { line: [paper(18 14.43376), paper(16.00079 15.588)], kind: valley, angle: 150 }
+      - { line: [paper(0 7.50555), paper(2 8.66025)], kind: valley, angle: 150 }
+      - { line: [paper(3 9.2376), paper(3 6.9282)], kind: valley, angle: 150 }
+      - { line: [paper(3 9.2376), paper(1 10.3923)], kind: valley, angle: 150 }
+      - { line: [paper(3 9.2376), paper(5 10.3923)], kind: valley, angle: 150 }
+      - { line: [paper(6 10.96966), paper(6 8.66025)], kind: valley, angle: 150 }
+      - { line: [paper(6 10.96966), paper(4 12.12436)], kind: valley, angle: 150 }
+      - { line: [paper(6 10.96966), paper(8 12.12436)], kind: valley, angle: 150 }
+      - { line: [paper(9 12.70171), paper(9 10.3923)], kind: valley, angle: 150 }
+      - { line: [paper(9 12.70171), paper(7 13.85641)], kind: valley, angle: 150 }
+      - { line: [paper(9 12.70171), paper(11 13.85641)], kind: valley, angle: 150 }
+      - { line: [paper(12 14.43376), paper(12 12.12436)], kind: valley, angle: 150 }
+      - { line: [paper(12 14.43376), paper(10.00079 15.588)], kind: valley, angle: 150 }
+      - { line: [paper(12 14.43376), paper(13.99921 15.588)], kind: valley, angle: 150 }
+      - { line: [paper(15 15.588), paper(15 13.85641)], kind: valley, angle: 150 }
+      - { line: [paper(0 10.96966), paper(2 12.12436)], kind: valley, angle: 150 }
+      - { line: [paper(3 12.70171), paper(3 10.3923)], kind: valley, angle: 150 }
+      - { line: [paper(3 12.70171), paper(1 13.85641)], kind: valley, angle: 150 }
+      - { line: [paper(3 12.70171), paper(5 13.85641)], kind: valley, angle: 150 }
+      - { line: [paper(6 14.43376), paper(6 12.12436)], kind: valley, angle: 150 }
+      - { line: [paper(6 14.43376), paper(4.00079 15.588)], kind: valley, angle: 150 }
+      - { line: [paper(6 14.43376), paper(7.99921 15.588)], kind: valley, angle: 150 }
+      - { line: [paper(9 15.588), paper(9 13.85641)], kind: valley, angle: 150 }
+      - { line: [paper(0 14.43376), paper(1.99921 15.588)], kind: valley, angle: 150 }
+      - { line: [paper(3 15.588), paper(3 13.85641)], kind: valley, angle: 150 }
+      - { line: [paper(18 0.57735), paper(17 0)], kind: mountain, angle: 50 }
+      - { line: [paper(12 0.57735), paper(12 1.73205)], kind: mountain, angle: 50 }
+      - { line: [paper(12 0.57735), paper(13 0)], kind: mountain, angle: 50 }
+      - { line: [paper(12 0.57735), paper(11 0)], kind: mountain, angle: 50 }
+      - { line: [paper(15 2.3094), paper(15 3.4641)], kind: mountain, angle: 50 }
+      - { line: [paper(15 2.3094), paper(16 1.73205)], kind: mountain, angle: 50 }
+      - { line: [paper(15 2.3094), paper(14 1.73205)], kind: mountain, angle: 50 }
+      - { line: [paper(18 4.04145), paper(17 3.4641)], kind: mountain, angle: 50 }
+      - { line: [paper(6 0.57735), paper(6 1.73205)], kind: mountain, angle: 50 }
+      - { line: [paper(6 0.57735), paper(7 0)], kind: mountain, angle: 50 }
+      - { line: [paper(6 0.57735), paper(5 0)], kind: mountain, angle: 50 }
+      - { line: [paper(9 2.3094), paper(9 3.4641)], kind: mountain, angle: 50 }
+      - { line: [paper(9 2.3094), paper(10 1.73205)], kind: mountain, angle: 50 }
+      - { line: [paper(9 2.3094), paper(8 1.73205)], kind: mountain, angle: 50 }
+      - { line: [paper(12 4.04145), paper(12 5.19615)], kind: mountain, angle: 50 }
+      - { line: [paper(12 4.04145), paper(13 3.4641)], kind: mountain, angle: 50 }
+      - { line: [paper(12 4.04145), paper(11 3.4641)], kind: mountain, angle: 50 }
+      - { line: [paper(15 5.7735), paper(15 6.9282)], kind: mountain, angle: 50 }
+      - { line: [paper(15 5.7735), paper(16 5.19615)], kind: mountain, angle: 50 }
+      - { line: [paper(15 5.7735), paper(14 5.19615)], kind: mountain, angle: 50 }
+      - { line: [paper(18 7.50555), paper(17 6.9282)], kind: mountain, angle: 50 }
+      - { line: [paper(0 0.57735), paper(1 0)], kind: mountain, angle: 50 }
+      - { line: [paper(3 2.3094), paper(3 3.4641)], kind: mountain, angle: 50 }
+      - { line: [paper(3 2.3094), paper(4 1.73205)], kind: mountain, angle: 50 }
+      - { line: [paper(3 2.3094), paper(2 1.73205)], kind: mountain, angle: 50 }
+      - { line: [paper(6 4.04145), paper(6 5.19615)], kind: mountain, angle: 50 }
+      - { line: [paper(6 4.04145), paper(7 3.4641)], kind: mountain, angle: 50 }
+      - { line: [paper(6 4.04145), paper(5 3.4641)], kind: mountain, angle: 50 }
+      - { line: [paper(9 5.7735), paper(9 6.9282)], kind: mountain, angle: 50 }
+      - { line: [paper(9 5.7735), paper(10 5.19615)], kind: mountain, angle: 50 }
+      - { line: [paper(9 5.7735), paper(8 5.19615)], kind: mountain, angle: 50 }
+      - { line: [paper(12 7.50555), paper(12 8.66025)], kind: mountain, angle: 50 }
+      - { line: [paper(12 7.50555), paper(13 6.9282)], kind: mountain, angle: 50 }
+      - { line: [paper(12 7.50555), paper(11 6.9282)], kind: mountain, angle: 50 }
+      - { line: [paper(15 9.2376), paper(15 10.3923)], kind: mountain, angle: 50 }
+      - { line: [paper(15 9.2376), paper(16 8.66025)], kind: mountain, angle: 50 }
+      - { line: [paper(15 9.2376), paper(14 8.66025)], kind: mountain, angle: 50 }
+      - { line: [paper(18 10.96966), paper(17 10.3923)], kind: mountain, angle: 50 }
+      - { line: [paper(0 4.04145), paper(1 3.4641)], kind: mountain, angle: 50 }
+      - { line: [paper(3 5.7735), paper(3 6.9282)], kind: mountain, angle: 50 }
+      - { line: [paper(3 5.7735), paper(4 5.19615)], kind: mountain, angle: 50 }
+      - { line: [paper(3 5.7735), paper(2 5.19615)], kind: mountain, angle: 50 }
+      - { line: [paper(6 7.50555), paper(6 8.66025)], kind: mountain, angle: 50 }
+      - { line: [paper(6 7.50555), paper(7 6.9282)], kind: mountain, angle: 50 }
+      - { line: [paper(6 7.50555), paper(5 6.9282)], kind: mountain, angle: 50 }
+      - { line: [paper(9 9.2376), paper(9 10.3923)], kind: mountain, angle: 50 }
+      - { line: [paper(9 9.2376), paper(10 8.66025)], kind: mountain, angle: 50 }
+      - { line: [paper(9 9.2376), paper(8 8.66025)], kind: mountain, angle: 50 }
+      - { line: [paper(12 10.96966), paper(12 12.12436)], kind: mountain, angle: 50 }
+      - { line: [paper(12 10.96966), paper(13 10.3923)], kind: mountain, angle: 50 }
+      - { line: [paper(12 10.96966), paper(11 10.3923)], kind: mountain, angle: 50 }
+      - { line: [paper(15 12.70171), paper(15 13.85641)], kind: mountain, angle: 50 }
+      - { line: [paper(15 12.70171), paper(16 12.12436)], kind: mountain, angle: 50 }
+      - { line: [paper(15 12.70171), paper(14 12.12436)], kind: mountain, angle: 50 }
+      - { line: [paper(18 14.43376), paper(17 13.85641)], kind: mountain, angle: 50 }
+      - { line: [paper(0 7.50555), paper(1 6.9282)], kind: mountain, angle: 50 }
+      - { line: [paper(3 9.2376), paper(3 10.3923)], kind: mountain, angle: 50 }
+      - { line: [paper(3 9.2376), paper(4 8.66025)], kind: mountain, angle: 50 }
+      - { line: [paper(3 9.2376), paper(2 8.66025)], kind: mountain, angle: 50 }
+      - { line: [paper(6 10.96966), paper(6 12.12436)], kind: mountain, angle: 50 }
+      - { line: [paper(6 10.96966), paper(7 10.3923)], kind: mountain, angle: 50 }
+      - { line: [paper(6 10.96966), paper(5 10.3923)], kind: mountain, angle: 50 }
+      - { line: [paper(9 12.70171), paper(9 13.85641)], kind: mountain, angle: 50 }
+      - { line: [paper(9 12.70171), paper(10 12.12436)], kind: mountain, angle: 50 }
+      - { line: [paper(9 12.70171), paper(8 12.12436)], kind: mountain, angle: 50 }
+      - { line: [paper(12 14.43376), paper(12 15.588)], kind: mountain, angle: 50 }
+      - { line: [paper(12 14.43376), paper(13 13.85641)], kind: mountain, angle: 50 }
+      - { line: [paper(12 14.43376), paper(11 13.85641)], kind: mountain, angle: 50 }
+      - { line: [paper(0 10.96966), paper(1 10.3923)], kind: mountain, angle: 50 }
+      - { line: [paper(3 12.70171), paper(3 13.85641)], kind: mountain, angle: 50 }
+      - { line: [paper(3 12.70171), paper(4 12.12436)], kind: mountain, angle: 50 }
+      - { line: [paper(3 12.70171), paper(2 12.12436)], kind: mountain, angle: 50 }
+      - { line: [paper(6 14.43376), paper(6 15.588)], kind: mountain, angle: 50 }
+      - { line: [paper(6 14.43376), paper(7 13.85641)], kind: mountain, angle: 50 }
+      - { line: [paper(6 14.43376), paper(5 13.85641)], kind: mountain, angle: 50 }
+      - { line: [paper(0 14.43376), paper(1 13.85641)], kind: mountain, angle: 50 }
+finish:
+  camera: three-quarter
+  text: Press it flat and the stars hide underneath, leaving a smooth field of small triangles on top.

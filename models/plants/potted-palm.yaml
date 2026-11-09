@@ -1,0 +1,127 @@
+id: potted-palm
+title: Potted fan palm
+family: potted-plant
+variant: Fan palm
+aliases: [palm, fan palm, pleated leaf, house plant, plant pot]
+categories: [plants/potted]
+tags: [palm, plant, pot, leaves, pleats, house plant, three sheets, our design, draft]
+difficulty: 2
+description: Two big pleated fan leaves in a cream pot with a rim of brown soil. Each leaf is a diamond pleated from its bottom corner, so it opens like a hand fan and has real depth.
+credits:
+  designer: Origami project (original design)
+  script: Origami project
+  note: Inspired by the potted plants of Paper Kawaii; our own folding sequence.
+  sources:
+    - label: "Inspiration: Paper Kawaii"
+      url: https://www.paperkawaii.com/
+materials:
+  - id: pot
+    name: Pot
+    size: 15
+    at: [-19, 0]
+    colors: { front: "#f2f0e8", back: "#c88b5a" }
+  - id: big
+    name: Big leaf
+    size: 15
+    diamond: true
+    at: [3, 0]
+    colors: { front: "#2f7d4a", back: "#cfe6c6" }
+  - id: small
+    name: Small leaf
+    size: 12
+    diamond: true
+    at: [25, 0]
+    colors: { front: "#4f9d5a", back: "#cfe6c6" }
+steps:
+  # ---------- Pot ----------
+  - text: "Pot: start brown side up. Fold the bottom edge up to the top edge."
+    pin: { PA: pot.A, PB: pot.B, PC: pot.C, PD: pot.D }
+    mark:
+      BL: lerp(lerp(pot.A pot.D 0.5) lerp(pot.B pot.C 0.5) 0.2)
+      BR: lerp(lerp(pot.A pot.D 0.5) lerp(pot.B pot.C 0.5) 0.8)
+      RIM: lerp(lerp(pot.A pot.D 0.14) lerp(pot.B pot.C 0.14) 0.5)
+      TOP: lerp(pot.A pot.B 0.5)
+    fold: valley
+    sheet: pot
+    line: [mid(PA PD), mid(PB PC)]
+    move: PD
+  - text: Fold the top edge of the front layer down a little. The brown shows as a rim of soil.
+    fold: valley
+    sheet: pot
+    layers: top
+    line: [lerp(PA PD 0.07), lerp(PB PC 0.07)]
+    move: lerp(lerp(PA PD 0.02) lerp(PB PC 0.02) 0.5)
+  - text: Below the rim, fold the left and right sides behind at a slant.
+    ops:
+      - fold: mountain
+        sheet: pot
+        name: sides
+        line: [lerp(PA PD 0.14), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.2)]
+        move: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.01)
+      - fold: mountain
+        sheet: pot
+        name: sides
+        line: [lerp(PB PC 0.14), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.8)]
+        move: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.99)
+  # ---------- Big leaf ----------
+  - text: "Big leaf: start with a diamond, white side up. Fold it in half from left to right and unfold, to mark the middle."
+    pin: { GA: big.A, GB: big.B, GC: big.C, GD: big.D }
+    crease: valley
+    sheet: big
+    line: [big.A, big.C]
+    move: big.D
+  - text: Pleat it like a fan. Crease lines from the bottom corner out to the top edges, mountain and valley in turn, then squeeze them part way closed.
+    sheet: big
+    pattern:
+      fixed: lerp(big.C big.A 0.05)
+      angle: 110
+      mountain:
+        - [big.C, lerp(big.D big.A 0.2)]
+        - [big.C, lerp(big.D big.A 0.6)]
+        - [big.C, big.A]
+        - [big.C, lerp(big.A big.B 0.4)]
+        - [big.C, lerp(big.A big.B 0.8)]
+      valley:
+        - [big.C, lerp(big.D big.A 0.4)]
+        - [big.C, lerp(big.D big.A 0.8)]
+        - [big.C, lerp(big.A big.B 0.2)]
+        - [big.C, lerp(big.A big.B 0.6)]
+  # ---------- Small leaf ----------
+  - text: "Small leaf: mark the middle of the smaller diamond the same way."
+    pin: { SA: small.A, SB: small.B, SC: small.C, SD: small.D }
+    crease: valley
+    sheet: small
+    line: [small.A, small.C]
+    move: small.D
+  - text: Pleat it like a fan too, just like the big leaf.
+    sheet: small
+    pattern:
+      fixed: lerp(small.C small.A 0.05)
+      angle: 110
+      mountain:
+        - [small.C, lerp(small.D small.A 0.2)]
+        - [small.C, lerp(small.D small.A 0.6)]
+        - [small.C, small.A]
+        - [small.C, lerp(small.A small.B 0.4)]
+        - [small.C, lerp(small.A small.B 0.8)]
+      valley:
+        - [small.C, lerp(small.D small.A 0.4)]
+        - [small.C, lerp(small.D small.A 0.8)]
+        - [small.C, lerp(small.A small.B 0.2)]
+        - [small.C, lerp(small.A small.B 0.6)]
+  # ---------- Put it together ----------
+  - text: Turn both leaves over, green side up. Set the small leaf behind the big one, leaning the other way.
+    ops:
+      - place: { sheet: big, flip: true, rotate: 18, point: GC, to: GC }
+      - place: { sheet: small, flip: true, rotate: -25, point: SC, to: lerp(GC GA 0.02), layer: below }
+  - text: Set the pot in front, so the pointed ends of the leaves tuck in just behind the rim.
+    place: { sheet: pot, point: TOP, to: lerp(GC GA 0.04), layer: above }
+  - text: Open the folded sides of the pot out behind it, so it has some depth.
+    shape:
+      fixed: RIM
+      creases:
+        - { creases: sides, angle: 100 }
+  - text: Stand the pot up on its bottom edge.
+    stand: [BL, BR]
+finish:
+  text: Pinch the bottoms of the leaves together with a dab of glue, so the fans stay open.

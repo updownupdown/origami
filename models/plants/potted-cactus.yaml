@@ -1,0 +1,136 @@
+id: potted-cactus
+title: Potted cactus
+family: potted-plant
+variant: Cactus with arms
+aliases: [cactus, saguaro, succulent, plant pot]
+categories: [plants/potted]
+tags: [cactus, plant, pot, flower, desert, four sheets, our design, draft]
+difficulty: 2
+description: A little cactus with two stubby arms and a pink flower, standing in a white-rimmed pot. Four pieces of paper, folded one at a time and slotted together.
+credits:
+  designer: Origami project (original design)
+  script: Origami project
+  note: Inspired by the potted plants of Paper Kawaii; our own folding sequence.
+  sources:
+    - label: "Inspiration: Paper Kawaii"
+      url: https://www.paperkawaii.com/
+materials:
+  - id: pot
+    name: Pot
+    size: 15
+    at: [-18, 0]
+    colors: { front: "#c8693a", back: "#fbf7ee" }
+  - id: cactus
+    name: Cactus
+    size: 12
+    at: [0, 0]
+    colors: { front: "#4f9d5a", back: "#e6f2df" }
+  - id: arms
+    name: Arms
+    size: 15x4
+    shape: rectangle
+    at: [15, 0]
+    colors: { front: "#4f9d5a", back: "#e6f2df" }
+    note: A strip cut from a 15 cm square.
+  - id: flower
+    name: Flower
+    size: 4
+    at: [33, 0]
+    colors: { front: "#f27fa5", back: "#fbf7ee" }
+steps:
+  # ---------- Pot ----------
+  - text: "Pot: start white side up. Fold the bottom edge up to the top edge."
+    pin: { PA: pot.A, PB: pot.B, PC: pot.C, PD: pot.D }
+    mark:
+      BL: lerp(lerp(pot.A pot.D 0.5) lerp(pot.B pot.C 0.5) 0.16)
+      BR: lerp(lerp(pot.A pot.D 0.5) lerp(pot.B pot.C 0.5) 0.84)
+      RIM: lerp(lerp(pot.A pot.D 0.1) lerp(pot.B pot.C 0.1) 0.5)
+    fold: valley
+    sheet: pot
+    line: [mid(PA PD), mid(PB PC)]
+    move: PD
+  - text: Fold the top edge of the front layer down a little, to make a white rim.
+    fold: valley
+    sheet: pot
+    layers: top
+    line: [lerp(PA PD 0.05), lerp(PB PC 0.05)]
+    move: lerp(lerp(PA PD 0.02) lerp(PB PC 0.02) 0.5)
+  - text: Fold the left and right sides behind at a slant, so the pot gets narrower at the bottom.
+    ops:
+      - fold: mountain
+        sheet: pot
+        name: sides
+        line: [lerp(PA PD 0.1), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.16)]
+        move: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.01)
+      - fold: mountain
+        sheet: pot
+        name: sides
+        line: [lerp(PB PC 0.1), lerp(lerp(PA PD 0.5) lerp(PB PC 0.5) 0.84)]
+        move: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.99)
+  # ---------- Cactus ----------
+  - text: "Cactus: start white side up. Fold it in half from left to right."
+    pin: { CA: cactus.A, CB: cactus.B, CC: cactus.C, CD: cactus.D }
+    fold: valley
+    sheet: cactus
+    line: [mid(CA CB), mid(CD CC)]
+    move: CA
+  - text: Fold the two top corners behind to round off the top.
+    ops:
+      - fold: mountain
+        sheet: cactus
+        line: [lerp(lerp(CD CC 0.5) lerp(CA CB 0.5) 0.86), lerp(CA CB 0.64)]
+        move: lerp(CA CB 0.51)
+      - fold: mountain
+        sheet: cactus
+        line: [lerp(CC CB 0.86), lerp(CA CB 0.86)]
+        move: lerp(CA CB 0.99)
+  # ---------- Arms ----------
+  - text: "Arms: start white side up with the strip lying sideways. Fold it in half, bottom edge to top edge."
+    pin: { RA: arms.A, RB: arms.B, RC: arms.C, RD: arms.D }
+    fold: valley
+    sheet: arms
+    line: [mid(RA RD), mid(RB RC)]
+    move: RD
+  - text: Fold each end up at a slant, so the ends point straight up. These are the arms.
+    ops:
+      - fold: valley
+        sheet: arms
+        line: [lerp(mid(RA RD) mid(RB RC) 0.7), lerp(RA RB 0.8333)]
+        move: RB
+      - fold: valley
+        sheet: arms
+        line: [lerp(mid(RA RD) mid(RB RC) 0.3), lerp(RA RB 0.1667)]
+        move: RA
+  - text: Fold the outer top corner of each arm behind, to round the tips.
+    ops:
+      - fold: mountain
+        sheet: arms
+        line: [at(12.5 5.9), at(11.9 6.5)]
+        move: at(12.45 6.45)
+      - fold: mountain
+        sheet: arms
+        line: [at(2.5 5.9), at(3.1 6.5)]
+        move: at(2.55 6.45)
+  # ---------- Flower ----------
+  - text: "Flower: start white side up. Fold all four corners to the middle."
+    ops:
+      - { fold: valley, sheet: flower, line: { bring: flower.A, to: flower.O }, move: flower.A }
+      - { fold: valley, sheet: flower, line: { bring: flower.B, to: flower.O }, move: flower.B }
+      - { fold: valley, sheet: flower, line: { bring: flower.C, to: flower.O }, move: flower.C }
+      - { fold: valley, sheet: flower, line: { bring: flower.D, to: flower.O }, move: flower.D }
+  # ---------- Put it together ----------
+  - text: Slide the arms in behind the cactus, a little below the middle.
+    place: { sheet: arms, point: lerp(RA RB 0.5), to: lerp(lerp(CD CC 0.75) lerp(CA CB 0.75) 0.5), layer: below }
+  - text: Tuck the flower behind the top of the cactus so it peeks out like a bloom.
+    place: { sheet: flower, point: flower.O, to: lerp(lerp(CD CC 0.75) lerp(CA CB 0.75) 1.02), layer: below }
+  - text: Slide the cactus into the pot, behind the white rim.
+    place: { sheet: pot, point: RIM, to: lerp(lerp(CD CC 0.75) lerp(CA CB 0.75) 0.2), layer: above }
+  - text: Open the folded sides of the pot out behind it a little, so it has some depth.
+    shape:
+      fixed: RIM
+      creases:
+        - { creases: sides, angle: 100 }
+  - text: Stand the pot up on its bottom edge.
+    stand: [BL, BR]
+finish:
+  text: A dab of glue holds the pieces together. Stand it on a desk or a windowsill.

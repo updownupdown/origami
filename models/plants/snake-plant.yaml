@@ -1,0 +1,114 @@
+id: snake-plant
+title: Potted snake plant
+family: potted-plant
+variant: Snake plant
+aliases: [sansevieria, mother-in-law's tongue, house plant, plant pot]
+categories: [plants/potted]
+tags: [snake plant, plant, pot, leaves, house plant, four sheets, our design, draft]
+difficulty: 2
+description: Three tall, pointed leaves fanned out in a straight-sided pot. Each leaf is a long thin diamond, so the same few folds make all three.
+credits:
+  designer: Origami project (original design)
+  script: Origami project
+  note: Inspired by the potted plants of Paper Kawaii; our own folding sequence.
+  sources:
+    - label: "Inspiration: Paper Kawaii"
+      url: https://www.paperkawaii.com/
+materials:
+  - id: pot
+    name: Pot
+    size: 15
+    at: [-18, 0]
+    colors: { front: "#33557f", back: "#fbf7ee" }
+  - id: tall
+    name: Tall leaf
+    size: 6x15
+    shape: rectangle
+    at: [2, 0]
+    colors: { front: "#2f6f45", back: "#d7e7b0" }
+    note: A strip cut from a 15 cm square.
+  - id: left
+    name: Short leaf 1
+    size: 5x12
+    shape: rectangle
+    at: [11, 0]
+    colors: { front: "#3d8350", back: "#d7e7b0" }
+  - id: right
+    name: Short leaf 2
+    size: 5x12
+    shape: rectangle
+    at: [19, 0]
+    colors: { front: "#3d8350", back: "#d7e7b0" }
+steps:
+  # ---------- Pot ----------
+  - text: "Pot: start white side up. Fold the bottom edge up to the top edge."
+    pin: { PA: pot.A, PB: pot.B, PC: pot.C, PD: pot.D }
+    mark:
+      BL: lerp(lerp(pot.A pot.D 0.5) lerp(pot.B pot.C 0.5) 0.2)
+      BR: lerp(lerp(pot.A pot.D 0.5) lerp(pot.B pot.C 0.5) 0.8)
+      RIM: lerp(lerp(pot.A pot.D 0.15) lerp(pot.B pot.C 0.15) 0.5)
+    fold: valley
+    sheet: pot
+    line: [mid(PA PD), mid(PB PC)]
+    move: PD
+  - text: Fold the top edge down through both layers, to make a thick rim.
+    fold: valley
+    sheet: pot
+    line: [lerp(PA PD 0.12), lerp(PB PC 0.12)]
+    move: lerp(PA PB 0.5)
+  - text: Fold the left and right sides straight behind, a fifth of the way in from each side.
+    ops:
+      - fold: mountain
+        sheet: pot
+        name: sides
+        line: [lerp(PA PB 0.2), lerp(PD PC 0.2)]
+        move: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.01)
+      - fold: mountain
+        sheet: pot
+        name: sides
+        line: [lerp(PA PB 0.8), lerp(PD PC 0.8)]
+        move: lerp(lerp(PA PD 0.3) lerp(PB PC 0.3) 0.99)
+  # ---------- Tall leaf ----------
+  - text: "Tall leaf: start white side up with the strip standing tall. Fold it in half from left to right."
+    pin: { TA: tall.A, TB: tall.B, TC: tall.C, TD: tall.D }
+    fold: valley
+    sheet: tall
+    line: [mid(TA TB), mid(TD TC)]
+    move: TA
+  - text: Fold the two top corners behind, so the leaf ends in a point.
+    ops:
+      - { fold: mountain, sheet: tall, line: [at(3 13.5), at(4.5 15)], move: at(3.05 14.95) }
+      - { fold: mountain, sheet: tall, line: [at(6 13.5), at(4.5 15)], move: at(5.95 14.95) }
+  # ---------- Short leaves ----------
+  - text: "Short leaf 1: fold it the same way. Fold it in half from left to right."
+    pin: { LA: left.A, LB: left.B, LC: left.C, LD: left.D }
+    fold: valley
+    sheet: left
+    line: [mid(LA LB), mid(LD LC)]
+    move: LA
+  - text: Fold the two top corners behind to make the point.
+    ops:
+      - { fold: mountain, sheet: left, line: [at(2.5 10.75), at(3.75 12)], move: at(2.55 11.95) }
+      - { fold: mountain, sheet: left, line: [at(5 10.75), at(3.75 12)], move: at(4.95 11.95) }
+  - text: "Short leaf 2: fold it just like the first one. Fold it in half, then fold the top corners behind."
+    pin: { RA: right.A, RB: right.B, RC: right.C, RD: right.D }
+    ops:
+      - { fold: valley, sheet: right, line: [mid(RA RB), mid(RD RC)], move: RA }
+      - { fold: mountain, sheet: right, line: [at(2.5 10.75), at(3.75 12)], move: at(2.55 11.95) }
+      - { fold: mountain, sheet: right, line: [at(5 10.75), at(3.75 12)], move: at(4.95 11.95) }
+  # ---------- Put it together ----------
+  - text: Fan the two short leaves out behind the tall one, one leaning left and one leaning right.
+    ops:
+      - place: { sheet: left, rotate: 17, point: lerp(lerp(LD LA 0.2) lerp(LC LB 0.2) 0.75), to: lerp(lerp(TD TA 0.2) lerp(TC TB 0.2) 0.55), layer: below }
+      - place: { sheet: right, rotate: -17, point: lerp(lerp(RD RA 0.2) lerp(RC RB 0.2) 0.75), to: lerp(lerp(TD TA 0.2) lerp(TC TB 0.2) 0.95), layer: below }
+  - text: Slide the leaves into the pot, behind the rim.
+    place: { sheet: pot, point: RIM, to: lerp(lerp(TD TA 0.17) lerp(TC TB 0.17) 0.75), layer: above }
+  - text: Open the folded sides of the pot out behind it, so it has some depth.
+    shape:
+      fixed: RIM
+      creases:
+        - { creases: sides, angle: 95 }
+  - text: Stand the pot up on its bottom edge.
+    stand: [BL, BR]
+finish:
+  text: A little glue inside the pot keeps the leaves standing tall.

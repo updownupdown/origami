@@ -1,0 +1,527 @@
+id: huffman-rectangular-weave
+title: Huffman rectangular weave
+family: weave
+aliases: [rectangular weave, huffman weave, woven tessellation]
+categories: [tessellations]
+tags: [huffman, weave, tessellation, grid, geometric, 3d]
+difficulty: 5
+description: Pleats rise and dip past each other so the sheet looks like strips of paper woven over and under. One of the 3D tessellations of David Huffman, better known for Huffman coding.
+credits:
+  designer: David A. Huffman
+  script: Origami project
+materials:
+  - id: paper
+    size: 16
+    start: front-up
+    colors: { front: "#c8553d", back: "#fbf7ee" }
+steps:
+  - text: Crease a 16 by 16 grid. Make every line bend both ways.
+    grid: { n: 16 }
+  - text: Add the short diagonal creases at the corners of each strip, as mountains.
+    pattern:
+      mountain:
+        - [paper(3 1), paper(4 0)]
+        - [paper(3 2), paper(4 3)]
+        - [paper(0 3), paper(1 4)]
+        - [paper(2 4), paper(3 3)]
+        - [paper(0 8), paper(1 7)]
+        - [paper(2 7), paper(3 8)]
+        - [paper(3 4), paper(4 5)]
+        - [paper(3 7), paper(4 6)]
+        - [paper(7 5), paper(8 4)]
+        - [paper(7 6), paper(8 7)]
+        - [paper(4 4), paper(5 3)]
+        - [paper(6 3), paper(7 4)]
+        - [paper(4 7), paper(5 8)]
+        - [paper(6 8), paper(7 7)]
+        - [paper(7 3), paper(8 2)]
+        - [paper(7 0), paper(8 1)]
+        - [paper(11 1), paper(12 0)]
+        - [paper(11 2), paper(12 3)]
+        - [paper(8 3), paper(9 4)]
+        - [paper(10 4), paper(11 3)]
+        - [paper(8 8), paper(9 7)]
+        - [paper(10 7), paper(11 8)]
+        - [paper(11 4), paper(12 5)]
+        - [paper(11 7), paper(12 6)]
+        - [paper(15 5), paper(16 4)]
+        - [paper(15 6), paper(16 7)]
+        - [paper(12 4), paper(13 3)]
+        - [paper(14 3), paper(15 4)]
+        - [paper(12 7), paper(13 8)]
+        - [paper(14 8), paper(15 7)]
+        - [paper(15 3), paper(16 2)]
+        - [paper(15 0), paper(16 1)]
+        - [paper(3 9), paper(4 8)]
+        - [paper(3 10), paper(4 11)]
+        - [paper(0 11), paper(1 12)]
+        - [paper(2 12), paper(3 11)]
+        - [paper(0 16), paper(1 15)]
+        - [paper(2 15), paper(3 16)]
+        - [paper(3 12), paper(4 13)]
+        - [paper(3 15), paper(4 14)]
+        - [paper(7 13), paper(8 12)]
+        - [paper(7 14), paper(8 15)]
+        - [paper(4 12), paper(5 11)]
+        - [paper(6 11), paper(7 12)]
+        - [paper(4 15), paper(5 16)]
+        - [paper(6 16), paper(7 15)]
+        - [paper(7 11), paper(8 10)]
+        - [paper(7 8), paper(8 9)]
+        - [paper(11 9), paper(12 8)]
+        - [paper(11 10), paper(12 11)]
+        - [paper(8 11), paper(9 12)]
+        - [paper(10 12), paper(11 11)]
+        - [paper(8 16), paper(9 15)]
+        - [paper(10 15), paper(11 16)]
+        - [paper(11 12), paper(12 13)]
+        - [paper(11 15), paper(12 14)]
+        - [paper(15 13), paper(16 12)]
+        - [paper(15 14), paper(16 15)]
+        - [paper(12 12), paper(13 11)]
+        - [paper(14 11), paper(15 12)]
+        - [paper(12 15), paper(13 16)]
+        - [paper(14 16), paper(15 15)]
+        - [paper(15 11), paper(16 10)]
+        - [paper(15 8), paper(16 9)]
+  - text: Start folding the pleats. Each strip of the weave rises as its edges fold, and the strips next to it sink.
+    shape:
+      fixed: paper(8.3 8.6)
+      creases:
+      - { line: [paper(3 1), paper(4 0)], kind: mountain, angle: 126 }
+      - { line: [paper(3 2), paper(4 3)], kind: mountain, angle: 126 }
+      - { line: [paper(0 3), paper(1 4)], kind: mountain, angle: 126 }
+      - { line: [paper(2 4), paper(3 3)], kind: mountain, angle: 126 }
+      - { line: [paper(0 8), paper(1 7)], kind: mountain, angle: 126 }
+      - { line: [paper(2 7), paper(3 8)], kind: mountain, angle: 126 }
+      - { line: [paper(3 4), paper(4 5)], kind: mountain, angle: 126 }
+      - { line: [paper(3 7), paper(4 6)], kind: mountain, angle: 126 }
+      - { line: [paper(7 5), paper(8 4)], kind: mountain, angle: 126 }
+      - { line: [paper(7 6), paper(8 7)], kind: mountain, angle: 126 }
+      - { line: [paper(4 4), paper(5 3)], kind: mountain, angle: 126 }
+      - { line: [paper(6 3), paper(7 4)], kind: mountain, angle: 126 }
+      - { line: [paper(4 7), paper(5 8)], kind: mountain, angle: 126 }
+      - { line: [paper(6 8), paper(7 7)], kind: mountain, angle: 126 }
+      - { line: [paper(7 3), paper(8 2)], kind: mountain, angle: 126 }
+      - { line: [paper(7 0), paper(8 1)], kind: mountain, angle: 126 }
+      - { line: [paper(11 1), paper(12 0)], kind: mountain, angle: 126 }
+      - { line: [paper(11 2), paper(12 3)], kind: mountain, angle: 126 }
+      - { line: [paper(8 3), paper(9 4)], kind: mountain, angle: 126 }
+      - { line: [paper(10 4), paper(11 3)], kind: mountain, angle: 126 }
+      - { line: [paper(8 8), paper(9 7)], kind: mountain, angle: 126 }
+      - { line: [paper(10 7), paper(11 8)], kind: mountain, angle: 126 }
+      - { line: [paper(11 4), paper(12 5)], kind: mountain, angle: 126 }
+      - { line: [paper(11 7), paper(12 6)], kind: mountain, angle: 126 }
+      - { line: [paper(15 5), paper(16 4)], kind: mountain, angle: 126 }
+      - { line: [paper(15 6), paper(16 7)], kind: mountain, angle: 126 }
+      - { line: [paper(12 4), paper(13 3)], kind: mountain, angle: 126 }
+      - { line: [paper(14 3), paper(15 4)], kind: mountain, angle: 126 }
+      - { line: [paper(12 7), paper(13 8)], kind: mountain, angle: 126 }
+      - { line: [paper(14 8), paper(15 7)], kind: mountain, angle: 126 }
+      - { line: [paper(15 3), paper(16 2)], kind: mountain, angle: 126 }
+      - { line: [paper(15 0), paper(16 1)], kind: mountain, angle: 126 }
+      - { line: [paper(3 9), paper(4 8)], kind: mountain, angle: 126 }
+      - { line: [paper(3 10), paper(4 11)], kind: mountain, angle: 126 }
+      - { line: [paper(0 11), paper(1 12)], kind: mountain, angle: 126 }
+      - { line: [paper(2 12), paper(3 11)], kind: mountain, angle: 126 }
+      - { line: [paper(0 16), paper(1 15)], kind: mountain, angle: 126 }
+      - { line: [paper(2 15), paper(3 16)], kind: mountain, angle: 126 }
+      - { line: [paper(3 12), paper(4 13)], kind: mountain, angle: 126 }
+      - { line: [paper(3 15), paper(4 14)], kind: mountain, angle: 126 }
+      - { line: [paper(7 13), paper(8 12)], kind: mountain, angle: 126 }
+      - { line: [paper(7 14), paper(8 15)], kind: mountain, angle: 126 }
+      - { line: [paper(4 12), paper(5 11)], kind: mountain, angle: 126 }
+      - { line: [paper(6 11), paper(7 12)], kind: mountain, angle: 126 }
+      - { line: [paper(4 15), paper(5 16)], kind: mountain, angle: 126 }
+      - { line: [paper(6 16), paper(7 15)], kind: mountain, angle: 126 }
+      - { line: [paper(7 11), paper(8 10)], kind: mountain, angle: 126 }
+      - { line: [paper(7 8), paper(8 9)], kind: mountain, angle: 126 }
+      - { line: [paper(11 9), paper(12 8)], kind: mountain, angle: 126 }
+      - { line: [paper(11 10), paper(12 11)], kind: mountain, angle: 126 }
+      - { line: [paper(8 11), paper(9 12)], kind: mountain, angle: 126 }
+      - { line: [paper(10 12), paper(11 11)], kind: mountain, angle: 126 }
+      - { line: [paper(8 16), paper(9 15)], kind: mountain, angle: 126 }
+      - { line: [paper(10 15), paper(11 16)], kind: mountain, angle: 126 }
+      - { line: [paper(11 12), paper(12 13)], kind: mountain, angle: 126 }
+      - { line: [paper(11 15), paper(12 14)], kind: mountain, angle: 126 }
+      - { line: [paper(15 13), paper(16 12)], kind: mountain, angle: 126 }
+      - { line: [paper(15 14), paper(16 15)], kind: mountain, angle: 126 }
+      - { line: [paper(12 12), paper(13 11)], kind: mountain, angle: 126 }
+      - { line: [paper(14 11), paper(15 12)], kind: mountain, angle: 126 }
+      - { line: [paper(12 15), paper(13 16)], kind: mountain, angle: 126 }
+      - { line: [paper(14 16), paper(15 15)], kind: mountain, angle: 126 }
+      - { line: [paper(15 11), paper(16 10)], kind: mountain, angle: 126 }
+      - { line: [paper(15 8), paper(16 9)], kind: mountain, angle: 126 }
+      - { line: [paper(0 1), paper(3 1)], kind: mountain, angle: 63 }
+      - { line: [paper(0 2), paper(3 2)], kind: mountain, angle: 63 }
+      - { line: [paper(1 4), paper(1 7)], kind: mountain, angle: 63 }
+      - { line: [paper(2 4), paper(2 7)], kind: mountain, angle: 63 }
+      - { line: [paper(4 6), paper(7 6)], kind: mountain, angle: 63 }
+      - { line: [paper(4 5), paper(7 5)], kind: mountain, angle: 63 }
+      - { line: [paper(5 0), paper(5 3)], kind: mountain, angle: 63 }
+      - { line: [paper(6 0), paper(6 3)], kind: mountain, angle: 63 }
+      - { line: [paper(8 1), paper(11 1)], kind: mountain, angle: 63 }
+      - { line: [paper(8 2), paper(11 2)], kind: mountain, angle: 63 }
+      - { line: [paper(9 4), paper(9 7)], kind: mountain, angle: 63 }
+      - { line: [paper(10 4), paper(10 7)], kind: mountain, angle: 63 }
+      - { line: [paper(12 6), paper(15 6)], kind: mountain, angle: 63 }
+      - { line: [paper(12 5), paper(15 5)], kind: mountain, angle: 63 }
+      - { line: [paper(13 0), paper(13 3)], kind: mountain, angle: 63 }
+      - { line: [paper(14 0), paper(14 3)], kind: mountain, angle: 63 }
+      - { line: [paper(0 9), paper(3 9)], kind: mountain, angle: 63 }
+      - { line: [paper(0 10), paper(3 10)], kind: mountain, angle: 63 }
+      - { line: [paper(1 12), paper(1 15)], kind: mountain, angle: 63 }
+      - { line: [paper(2 12), paper(2 15)], kind: mountain, angle: 63 }
+      - { line: [paper(4 14), paper(7 14)], kind: mountain, angle: 63 }
+      - { line: [paper(4 13), paper(7 13)], kind: mountain, angle: 63 }
+      - { line: [paper(5 8), paper(5 11)], kind: mountain, angle: 63 }
+      - { line: [paper(6 8), paper(6 11)], kind: mountain, angle: 63 }
+      - { line: [paper(8 9), paper(11 9)], kind: mountain, angle: 63 }
+      - { line: [paper(8 10), paper(11 10)], kind: mountain, angle: 63 }
+      - { line: [paper(9 12), paper(9 15)], kind: mountain, angle: 63 }
+      - { line: [paper(10 12), paper(10 15)], kind: mountain, angle: 63 }
+      - { line: [paper(12 14), paper(15 14)], kind: mountain, angle: 63 }
+      - { line: [paper(12 13), paper(15 13)], kind: mountain, angle: 63 }
+      - { line: [paper(13 8), paper(13 11)], kind: mountain, angle: 63 }
+      - { line: [paper(14 8), paper(14 11)], kind: mountain, angle: 63 }
+      - { line: [paper(9 15), paper(10 15)], kind: mountain, angle: 63 }
+      - { line: [paper(1 15), paper(2 15)], kind: mountain, angle: 63 }
+      - { line: [paper(5 11), paper(6 11)], kind: mountain, angle: 63 }
+      - { line: [paper(13 11), paper(14 11)], kind: mountain, angle: 63 }
+      - { line: [paper(9 12), paper(10 12)], kind: mountain, angle: 63 }
+      - { line: [paper(1 12), paper(2 12)], kind: mountain, angle: 63 }
+      - { line: [paper(5 8), paper(6 8)], kind: mountain, angle: 63 }
+      - { line: [paper(13 8), paper(14 8)], kind: mountain, angle: 63 }
+      - { line: [paper(9 7), paper(10 7)], kind: mountain, angle: 63 }
+      - { line: [paper(1 7), paper(2 7)], kind: mountain, angle: 63 }
+      - { line: [paper(5 3), paper(6 3)], kind: mountain, angle: 63 }
+      - { line: [paper(13 3), paper(14 3)], kind: mountain, angle: 63 }
+      - { line: [paper(9 4), paper(10 4)], kind: mountain, angle: 63 }
+      - { line: [paper(1 4), paper(2 4)], kind: mountain, angle: 63 }
+      - { line: [paper(15 5), paper(15 6)], kind: mountain, angle: 63 }
+      - { line: [paper(15 13), paper(15 14)], kind: mountain, angle: 63 }
+      - { line: [paper(11 9), paper(11 10)], kind: mountain, angle: 63 }
+      - { line: [paper(11 1), paper(11 2)], kind: mountain, angle: 63 }
+      - { line: [paper(12 5), paper(12 6)], kind: mountain, angle: 63 }
+      - { line: [paper(12 13), paper(12 14)], kind: mountain, angle: 63 }
+      - { line: [paper(8 9), paper(8 10)], kind: mountain, angle: 63 }
+      - { line: [paper(8 1), paper(8 2)], kind: mountain, angle: 63 }
+      - { line: [paper(7 5), paper(7 6)], kind: mountain, angle: 63 }
+      - { line: [paper(7 13), paper(7 14)], kind: mountain, angle: 63 }
+      - { line: [paper(3 9), paper(3 10)], kind: mountain, angle: 63 }
+      - { line: [paper(3 1), paper(3 2)], kind: mountain, angle: 63 }
+      - { line: [paper(4 5), paper(4 6)], kind: mountain, angle: 63 }
+      - { line: [paper(4 13), paper(4 14)], kind: mountain, angle: 63 }
+      - { line: [paper(12 15), paper(15 15)], kind: valley, angle: 126 }
+      - { line: [paper(4 15), paper(7 15)], kind: valley, angle: 126 }
+      - { line: [paper(0 11), paper(3 11)], kind: valley, angle: 126 }
+      - { line: [paper(8 11), paper(11 11)], kind: valley, angle: 126 }
+      - { line: [paper(12 12), paper(15 12)], kind: valley, angle: 126 }
+      - { line: [paper(4 12), paper(7 12)], kind: valley, angle: 126 }
+      - { line: [paper(0 8), paper(3 8)], kind: valley, angle: 126 }
+      - { line: [paper(8 8), paper(11 8)], kind: valley, angle: 126 }
+      - { line: [paper(12 7), paper(15 7)], kind: valley, angle: 126 }
+      - { line: [paper(4 7), paper(7 7)], kind: valley, angle: 126 }
+      - { line: [paper(0 3), paper(3 3)], kind: valley, angle: 126 }
+      - { line: [paper(8 3), paper(11 3)], kind: valley, angle: 126 }
+      - { line: [paper(12 4), paper(15 4)], kind: valley, angle: 126 }
+      - { line: [paper(4 4), paper(7 4)], kind: valley, angle: 126 }
+      - { line: [paper(15 0), paper(15 3)], kind: valley, angle: 126 }
+      - { line: [paper(15 8), paper(15 11)], kind: valley, angle: 126 }
+      - { line: [paper(11 12), paper(11 15)], kind: valley, angle: 126 }
+      - { line: [paper(11 4), paper(11 7)], kind: valley, angle: 126 }
+      - { line: [paper(12 0), paper(12 3)], kind: valley, angle: 126 }
+      - { line: [paper(12 8), paper(12 11)], kind: valley, angle: 126 }
+      - { line: [paper(8 12), paper(8 15)], kind: valley, angle: 126 }
+      - { line: [paper(8 4), paper(8 7)], kind: valley, angle: 126 }
+      - { line: [paper(7 0), paper(7 3)], kind: valley, angle: 126 }
+      - { line: [paper(7 8), paper(7 11)], kind: valley, angle: 126 }
+      - { line: [paper(3 12), paper(3 15)], kind: valley, angle: 126 }
+      - { line: [paper(3 4), paper(3 7)], kind: valley, angle: 126 }
+      - { line: [paper(4 0), paper(4 3)], kind: valley, angle: 126 }
+      - { line: [paper(4 8), paper(4 11)], kind: valley, angle: 126 }
+      - { line: [paper(15 15), paper(16 15)], kind: valley, angle: 63 }
+      - { line: [paper(10 15), paper(12 15)], kind: valley, angle: 63 }
+      - { line: [paper(7 15), paper(9 15)], kind: valley, angle: 63 }
+      - { line: [paper(2 15), paper(4 15)], kind: valley, angle: 63 }
+      - { line: [paper(0 15), paper(1 15)], kind: valley, angle: 63 }
+      - { line: [paper(3 11), paper(5 11)], kind: valley, angle: 63 }
+      - { line: [paper(6 11), paper(8 11)], kind: valley, angle: 63 }
+      - { line: [paper(11 11), paper(13 11)], kind: valley, angle: 63 }
+      - { line: [paper(14 11), paper(16 11)], kind: valley, angle: 63 }
+      - { line: [paper(15 12), paper(16 12)], kind: valley, angle: 63 }
+      - { line: [paper(10 12), paper(12 12)], kind: valley, angle: 63 }
+      - { line: [paper(7 12), paper(9 12)], kind: valley, angle: 63 }
+      - { line: [paper(2 12), paper(4 12)], kind: valley, angle: 63 }
+      - { line: [paper(0 12), paper(1 12)], kind: valley, angle: 63 }
+      - { line: [paper(3 8), paper(5 8)], kind: valley, angle: 63 }
+      - { line: [paper(6 8), paper(8 8)], kind: valley, angle: 63 }
+      - { line: [paper(11 8), paper(13 8)], kind: valley, angle: 63 }
+      - { line: [paper(14 8), paper(16 8)], kind: valley, angle: 63 }
+      - { line: [paper(15 7), paper(16 7)], kind: valley, angle: 63 }
+      - { line: [paper(10 7), paper(12 7)], kind: valley, angle: 63 }
+      - { line: [paper(7 7), paper(9 7)], kind: valley, angle: 63 }
+      - { line: [paper(2 7), paper(4 7)], kind: valley, angle: 63 }
+      - { line: [paper(0 7), paper(1 7)], kind: valley, angle: 63 }
+      - { line: [paper(3 3), paper(5 3)], kind: valley, angle: 63 }
+      - { line: [paper(6 3), paper(8 3)], kind: valley, angle: 63 }
+      - { line: [paper(11 3), paper(13 3)], kind: valley, angle: 63 }
+      - { line: [paper(14 3), paper(16 3)], kind: valley, angle: 63 }
+      - { line: [paper(15 4), paper(16 4)], kind: valley, angle: 63 }
+      - { line: [paper(10 4), paper(12 4)], kind: valley, angle: 63 }
+      - { line: [paper(7 4), paper(9 4)], kind: valley, angle: 63 }
+      - { line: [paper(2 4), paper(4 4)], kind: valley, angle: 63 }
+      - { line: [paper(0 4), paper(1 4)], kind: valley, angle: 63 }
+      - { line: [paper(15 3), paper(15 5)], kind: valley, angle: 63 }
+      - { line: [paper(15 6), paper(15 8)], kind: valley, angle: 63 }
+      - { line: [paper(15 11), paper(15 13)], kind: valley, angle: 63 }
+      - { line: [paper(15 14), paper(15 16)], kind: valley, angle: 63 }
+      - { line: [paper(11 15), paper(11 16)], kind: valley, angle: 63 }
+      - { line: [paper(11 10), paper(11 12)], kind: valley, angle: 63 }
+      - { line: [paper(11 7), paper(11 9)], kind: valley, angle: 63 }
+      - { line: [paper(11 2), paper(11 4)], kind: valley, angle: 63 }
+      - { line: [paper(11 0), paper(11 1)], kind: valley, angle: 63 }
+      - { line: [paper(12 3), paper(12 5)], kind: valley, angle: 63 }
+      - { line: [paper(12 6), paper(12 8)], kind: valley, angle: 63 }
+      - { line: [paper(12 11), paper(12 13)], kind: valley, angle: 63 }
+      - { line: [paper(12 14), paper(12 16)], kind: valley, angle: 63 }
+      - { line: [paper(8 15), paper(8 16)], kind: valley, angle: 63 }
+      - { line: [paper(8 10), paper(8 12)], kind: valley, angle: 63 }
+      - { line: [paper(8 7), paper(8 9)], kind: valley, angle: 63 }
+      - { line: [paper(8 2), paper(8 4)], kind: valley, angle: 63 }
+      - { line: [paper(8 0), paper(8 1)], kind: valley, angle: 63 }
+      - { line: [paper(7 3), paper(7 5)], kind: valley, angle: 63 }
+      - { line: [paper(7 6), paper(7 8)], kind: valley, angle: 63 }
+      - { line: [paper(7 11), paper(7 13)], kind: valley, angle: 63 }
+      - { line: [paper(7 14), paper(7 16)], kind: valley, angle: 63 }
+      - { line: [paper(3 15), paper(3 16)], kind: valley, angle: 63 }
+      - { line: [paper(3 10), paper(3 12)], kind: valley, angle: 63 }
+      - { line: [paper(3 7), paper(3 9)], kind: valley, angle: 63 }
+      - { line: [paper(3 2), paper(3 4)], kind: valley, angle: 63 }
+      - { line: [paper(3 0), paper(3 1)], kind: valley, angle: 63 }
+      - { line: [paper(4 3), paper(4 5)], kind: valley, angle: 63 }
+      - { line: [paper(4 6), paper(4 8)], kind: valley, angle: 63 }
+      - { line: [paper(4 11), paper(4 13)], kind: valley, angle: 63 }
+      - { line: [paper(4 14), paper(4 16)], kind: valley, angle: 63 }
+  - text: Fold everything further. Strips crossing one way pass over, the others tuck under, and the sheet looks woven.
+    shape:
+      fixed: paper(8.3 8.6)
+      creases:
+      - { line: [paper(3 1), paper(4 0)], kind: mountain, angle: 165.6 }
+      - { line: [paper(3 2), paper(4 3)], kind: mountain, angle: 165.6 }
+      - { line: [paper(0 3), paper(1 4)], kind: mountain, angle: 165.6 }
+      - { line: [paper(2 4), paper(3 3)], kind: mountain, angle: 165.6 }
+      - { line: [paper(0 8), paper(1 7)], kind: mountain, angle: 165.6 }
+      - { line: [paper(2 7), paper(3 8)], kind: mountain, angle: 165.6 }
+      - { line: [paper(3 4), paper(4 5)], kind: mountain, angle: 165.6 }
+      - { line: [paper(3 7), paper(4 6)], kind: mountain, angle: 165.6 }
+      - { line: [paper(7 5), paper(8 4)], kind: mountain, angle: 165.6 }
+      - { line: [paper(7 6), paper(8 7)], kind: mountain, angle: 165.6 }
+      - { line: [paper(4 4), paper(5 3)], kind: mountain, angle: 165.6 }
+      - { line: [paper(6 3), paper(7 4)], kind: mountain, angle: 165.6 }
+      - { line: [paper(4 7), paper(5 8)], kind: mountain, angle: 165.6 }
+      - { line: [paper(6 8), paper(7 7)], kind: mountain, angle: 165.6 }
+      - { line: [paper(7 3), paper(8 2)], kind: mountain, angle: 165.6 }
+      - { line: [paper(7 0), paper(8 1)], kind: mountain, angle: 165.6 }
+      - { line: [paper(11 1), paper(12 0)], kind: mountain, angle: 165.6 }
+      - { line: [paper(11 2), paper(12 3)], kind: mountain, angle: 165.6 }
+      - { line: [paper(8 3), paper(9 4)], kind: mountain, angle: 165.6 }
+      - { line: [paper(10 4), paper(11 3)], kind: mountain, angle: 165.6 }
+      - { line: [paper(8 8), paper(9 7)], kind: mountain, angle: 165.6 }
+      - { line: [paper(10 7), paper(11 8)], kind: mountain, angle: 165.6 }
+      - { line: [paper(11 4), paper(12 5)], kind: mountain, angle: 165.6 }
+      - { line: [paper(11 7), paper(12 6)], kind: mountain, angle: 165.6 }
+      - { line: [paper(15 5), paper(16 4)], kind: mountain, angle: 165.6 }
+      - { line: [paper(15 6), paper(16 7)], kind: mountain, angle: 165.6 }
+      - { line: [paper(12 4), paper(13 3)], kind: mountain, angle: 165.6 }
+      - { line: [paper(14 3), paper(15 4)], kind: mountain, angle: 165.6 }
+      - { line: [paper(12 7), paper(13 8)], kind: mountain, angle: 165.6 }
+      - { line: [paper(14 8), paper(15 7)], kind: mountain, angle: 165.6 }
+      - { line: [paper(15 3), paper(16 2)], kind: mountain, angle: 165.6 }
+      - { line: [paper(15 0), paper(16 1)], kind: mountain, angle: 165.6 }
+      - { line: [paper(3 9), paper(4 8)], kind: mountain, angle: 165.6 }
+      - { line: [paper(3 10), paper(4 11)], kind: mountain, angle: 165.6 }
+      - { line: [paper(0 11), paper(1 12)], kind: mountain, angle: 165.6 }
+      - { line: [paper(2 12), paper(3 11)], kind: mountain, angle: 165.6 }
+      - { line: [paper(0 16), paper(1 15)], kind: mountain, angle: 165.6 }
+      - { line: [paper(2 15), paper(3 16)], kind: mountain, angle: 165.6 }
+      - { line: [paper(3 12), paper(4 13)], kind: mountain, angle: 165.6 }
+      - { line: [paper(3 15), paper(4 14)], kind: mountain, angle: 165.6 }
+      - { line: [paper(7 13), paper(8 12)], kind: mountain, angle: 165.6 }
+      - { line: [paper(7 14), paper(8 15)], kind: mountain, angle: 165.6 }
+      - { line: [paper(4 12), paper(5 11)], kind: mountain, angle: 165.6 }
+      - { line: [paper(6 11), paper(7 12)], kind: mountain, angle: 165.6 }
+      - { line: [paper(4 15), paper(5 16)], kind: mountain, angle: 165.6 }
+      - { line: [paper(6 16), paper(7 15)], kind: mountain, angle: 165.6 }
+      - { line: [paper(7 11), paper(8 10)], kind: mountain, angle: 165.6 }
+      - { line: [paper(7 8), paper(8 9)], kind: mountain, angle: 165.6 }
+      - { line: [paper(11 9), paper(12 8)], kind: mountain, angle: 165.6 }
+      - { line: [paper(11 10), paper(12 11)], kind: mountain, angle: 165.6 }
+      - { line: [paper(8 11), paper(9 12)], kind: mountain, angle: 165.6 }
+      - { line: [paper(10 12), paper(11 11)], kind: mountain, angle: 165.6 }
+      - { line: [paper(8 16), paper(9 15)], kind: mountain, angle: 165.6 }
+      - { line: [paper(10 15), paper(11 16)], kind: mountain, angle: 165.6 }
+      - { line: [paper(11 12), paper(12 13)], kind: mountain, angle: 165.6 }
+      - { line: [paper(11 15), paper(12 14)], kind: mountain, angle: 165.6 }
+      - { line: [paper(15 13), paper(16 12)], kind: mountain, angle: 165.6 }
+      - { line: [paper(15 14), paper(16 15)], kind: mountain, angle: 165.6 }
+      - { line: [paper(12 12), paper(13 11)], kind: mountain, angle: 165.6 }
+      - { line: [paper(14 11), paper(15 12)], kind: mountain, angle: 165.6 }
+      - { line: [paper(12 15), paper(13 16)], kind: mountain, angle: 165.6 }
+      - { line: [paper(14 16), paper(15 15)], kind: mountain, angle: 165.6 }
+      - { line: [paper(15 11), paper(16 10)], kind: mountain, angle: 165.6 }
+      - { line: [paper(15 8), paper(16 9)], kind: mountain, angle: 165.6 }
+      - { line: [paper(0 1), paper(3 1)], kind: mountain, angle: 82.8 }
+      - { line: [paper(0 2), paper(3 2)], kind: mountain, angle: 82.8 }
+      - { line: [paper(1 4), paper(1 7)], kind: mountain, angle: 82.8 }
+      - { line: [paper(2 4), paper(2 7)], kind: mountain, angle: 82.8 }
+      - { line: [paper(4 6), paper(7 6)], kind: mountain, angle: 82.8 }
+      - { line: [paper(4 5), paper(7 5)], kind: mountain, angle: 82.8 }
+      - { line: [paper(5 0), paper(5 3)], kind: mountain, angle: 82.8 }
+      - { line: [paper(6 0), paper(6 3)], kind: mountain, angle: 82.8 }
+      - { line: [paper(8 1), paper(11 1)], kind: mountain, angle: 82.8 }
+      - { line: [paper(8 2), paper(11 2)], kind: mountain, angle: 82.8 }
+      - { line: [paper(9 4), paper(9 7)], kind: mountain, angle: 82.8 }
+      - { line: [paper(10 4), paper(10 7)], kind: mountain, angle: 82.8 }
+      - { line: [paper(12 6), paper(15 6)], kind: mountain, angle: 82.8 }
+      - { line: [paper(12 5), paper(15 5)], kind: mountain, angle: 82.8 }
+      - { line: [paper(13 0), paper(13 3)], kind: mountain, angle: 82.8 }
+      - { line: [paper(14 0), paper(14 3)], kind: mountain, angle: 82.8 }
+      - { line: [paper(0 9), paper(3 9)], kind: mountain, angle: 82.8 }
+      - { line: [paper(0 10), paper(3 10)], kind: mountain, angle: 82.8 }
+      - { line: [paper(1 12), paper(1 15)], kind: mountain, angle: 82.8 }
+      - { line: [paper(2 12), paper(2 15)], kind: mountain, angle: 82.8 }
+      - { line: [paper(4 14), paper(7 14)], kind: mountain, angle: 82.8 }
+      - { line: [paper(4 13), paper(7 13)], kind: mountain, angle: 82.8 }
+      - { line: [paper(5 8), paper(5 11)], kind: mountain, angle: 82.8 }
+      - { line: [paper(6 8), paper(6 11)], kind: mountain, angle: 82.8 }
+      - { line: [paper(8 9), paper(11 9)], kind: mountain, angle: 82.8 }
+      - { line: [paper(8 10), paper(11 10)], kind: mountain, angle: 82.8 }
+      - { line: [paper(9 12), paper(9 15)], kind: mountain, angle: 82.8 }
+      - { line: [paper(10 12), paper(10 15)], kind: mountain, angle: 82.8 }
+      - { line: [paper(12 14), paper(15 14)], kind: mountain, angle: 82.8 }
+      - { line: [paper(12 13), paper(15 13)], kind: mountain, angle: 82.8 }
+      - { line: [paper(13 8), paper(13 11)], kind: mountain, angle: 82.8 }
+      - { line: [paper(14 8), paper(14 11)], kind: mountain, angle: 82.8 }
+      - { line: [paper(9 15), paper(10 15)], kind: mountain, angle: 82.8 }
+      - { line: [paper(1 15), paper(2 15)], kind: mountain, angle: 82.8 }
+      - { line: [paper(5 11), paper(6 11)], kind: mountain, angle: 82.8 }
+      - { line: [paper(13 11), paper(14 11)], kind: mountain, angle: 82.8 }
+      - { line: [paper(9 12), paper(10 12)], kind: mountain, angle: 82.8 }
+      - { line: [paper(1 12), paper(2 12)], kind: mountain, angle: 82.8 }
+      - { line: [paper(5 8), paper(6 8)], kind: mountain, angle: 82.8 }
+      - { line: [paper(13 8), paper(14 8)], kind: mountain, angle: 82.8 }
+      - { line: [paper(9 7), paper(10 7)], kind: mountain, angle: 82.8 }
+      - { line: [paper(1 7), paper(2 7)], kind: mountain, angle: 82.8 }
+      - { line: [paper(5 3), paper(6 3)], kind: mountain, angle: 82.8 }
+      - { line: [paper(13 3), paper(14 3)], kind: mountain, angle: 82.8 }
+      - { line: [paper(9 4), paper(10 4)], kind: mountain, angle: 82.8 }
+      - { line: [paper(1 4), paper(2 4)], kind: mountain, angle: 82.8 }
+      - { line: [paper(15 5), paper(15 6)], kind: mountain, angle: 82.8 }
+      - { line: [paper(15 13), paper(15 14)], kind: mountain, angle: 82.8 }
+      - { line: [paper(11 9), paper(11 10)], kind: mountain, angle: 82.8 }
+      - { line: [paper(11 1), paper(11 2)], kind: mountain, angle: 82.8 }
+      - { line: [paper(12 5), paper(12 6)], kind: mountain, angle: 82.8 }
+      - { line: [paper(12 13), paper(12 14)], kind: mountain, angle: 82.8 }
+      - { line: [paper(8 9), paper(8 10)], kind: mountain, angle: 82.8 }
+      - { line: [paper(8 1), paper(8 2)], kind: mountain, angle: 82.8 }
+      - { line: [paper(7 5), paper(7 6)], kind: mountain, angle: 82.8 }
+      - { line: [paper(7 13), paper(7 14)], kind: mountain, angle: 82.8 }
+      - { line: [paper(3 9), paper(3 10)], kind: mountain, angle: 82.8 }
+      - { line: [paper(3 1), paper(3 2)], kind: mountain, angle: 82.8 }
+      - { line: [paper(4 5), paper(4 6)], kind: mountain, angle: 82.8 }
+      - { line: [paper(4 13), paper(4 14)], kind: mountain, angle: 82.8 }
+      - { line: [paper(12 15), paper(15 15)], kind: valley, angle: 165.6 }
+      - { line: [paper(4 15), paper(7 15)], kind: valley, angle: 165.6 }
+      - { line: [paper(0 11), paper(3 11)], kind: valley, angle: 165.6 }
+      - { line: [paper(8 11), paper(11 11)], kind: valley, angle: 165.6 }
+      - { line: [paper(12 12), paper(15 12)], kind: valley, angle: 165.6 }
+      - { line: [paper(4 12), paper(7 12)], kind: valley, angle: 165.6 }
+      - { line: [paper(0 8), paper(3 8)], kind: valley, angle: 165.6 }
+      - { line: [paper(8 8), paper(11 8)], kind: valley, angle: 165.6 }
+      - { line: [paper(12 7), paper(15 7)], kind: valley, angle: 165.6 }
+      - { line: [paper(4 7), paper(7 7)], kind: valley, angle: 165.6 }
+      - { line: [paper(0 3), paper(3 3)], kind: valley, angle: 165.6 }
+      - { line: [paper(8 3), paper(11 3)], kind: valley, angle: 165.6 }
+      - { line: [paper(12 4), paper(15 4)], kind: valley, angle: 165.6 }
+      - { line: [paper(4 4), paper(7 4)], kind: valley, angle: 165.6 }
+      - { line: [paper(15 0), paper(15 3)], kind: valley, angle: 165.6 }
+      - { line: [paper(15 8), paper(15 11)], kind: valley, angle: 165.6 }
+      - { line: [paper(11 12), paper(11 15)], kind: valley, angle: 165.6 }
+      - { line: [paper(11 4), paper(11 7)], kind: valley, angle: 165.6 }
+      - { line: [paper(12 0), paper(12 3)], kind: valley, angle: 165.6 }
+      - { line: [paper(12 8), paper(12 11)], kind: valley, angle: 165.6 }
+      - { line: [paper(8 12), paper(8 15)], kind: valley, angle: 165.6 }
+      - { line: [paper(8 4), paper(8 7)], kind: valley, angle: 165.6 }
+      - { line: [paper(7 0), paper(7 3)], kind: valley, angle: 165.6 }
+      - { line: [paper(7 8), paper(7 11)], kind: valley, angle: 165.6 }
+      - { line: [paper(3 12), paper(3 15)], kind: valley, angle: 165.6 }
+      - { line: [paper(3 4), paper(3 7)], kind: valley, angle: 165.6 }
+      - { line: [paper(4 0), paper(4 3)], kind: valley, angle: 165.6 }
+      - { line: [paper(4 8), paper(4 11)], kind: valley, angle: 165.6 }
+      - { line: [paper(15 15), paper(16 15)], kind: valley, angle: 82.8 }
+      - { line: [paper(10 15), paper(12 15)], kind: valley, angle: 82.8 }
+      - { line: [paper(7 15), paper(9 15)], kind: valley, angle: 82.8 }
+      - { line: [paper(2 15), paper(4 15)], kind: valley, angle: 82.8 }
+      - { line: [paper(0 15), paper(1 15)], kind: valley, angle: 82.8 }
+      - { line: [paper(3 11), paper(5 11)], kind: valley, angle: 82.8 }
+      - { line: [paper(6 11), paper(8 11)], kind: valley, angle: 82.8 }
+      - { line: [paper(11 11), paper(13 11)], kind: valley, angle: 82.8 }
+      - { line: [paper(14 11), paper(16 11)], kind: valley, angle: 82.8 }
+      - { line: [paper(15 12), paper(16 12)], kind: valley, angle: 82.8 }
+      - { line: [paper(10 12), paper(12 12)], kind: valley, angle: 82.8 }
+      - { line: [paper(7 12), paper(9 12)], kind: valley, angle: 82.8 }
+      - { line: [paper(2 12), paper(4 12)], kind: valley, angle: 82.8 }
+      - { line: [paper(0 12), paper(1 12)], kind: valley, angle: 82.8 }
+      - { line: [paper(3 8), paper(5 8)], kind: valley, angle: 82.8 }
+      - { line: [paper(6 8), paper(8 8)], kind: valley, angle: 82.8 }
+      - { line: [paper(11 8), paper(13 8)], kind: valley, angle: 82.8 }
+      - { line: [paper(14 8), paper(16 8)], kind: valley, angle: 82.8 }
+      - { line: [paper(15 7), paper(16 7)], kind: valley, angle: 82.8 }
+      - { line: [paper(10 7), paper(12 7)], kind: valley, angle: 82.8 }
+      - { line: [paper(7 7), paper(9 7)], kind: valley, angle: 82.8 }
+      - { line: [paper(2 7), paper(4 7)], kind: valley, angle: 82.8 }
+      - { line: [paper(0 7), paper(1 7)], kind: valley, angle: 82.8 }
+      - { line: [paper(3 3), paper(5 3)], kind: valley, angle: 82.8 }
+      - { line: [paper(6 3), paper(8 3)], kind: valley, angle: 82.8 }
+      - { line: [paper(11 3), paper(13 3)], kind: valley, angle: 82.8 }
+      - { line: [paper(14 3), paper(16 3)], kind: valley, angle: 82.8 }
+      - { line: [paper(15 4), paper(16 4)], kind: valley, angle: 82.8 }
+      - { line: [paper(10 4), paper(12 4)], kind: valley, angle: 82.8 }
+      - { line: [paper(7 4), paper(9 4)], kind: valley, angle: 82.8 }
+      - { line: [paper(2 4), paper(4 4)], kind: valley, angle: 82.8 }
+      - { line: [paper(0 4), paper(1 4)], kind: valley, angle: 82.8 }
+      - { line: [paper(15 3), paper(15 5)], kind: valley, angle: 82.8 }
+      - { line: [paper(15 6), paper(15 8)], kind: valley, angle: 82.8 }
+      - { line: [paper(15 11), paper(15 13)], kind: valley, angle: 82.8 }
+      - { line: [paper(15 14), paper(15 16)], kind: valley, angle: 82.8 }
+      - { line: [paper(11 15), paper(11 16)], kind: valley, angle: 82.8 }
+      - { line: [paper(11 10), paper(11 12)], kind: valley, angle: 82.8 }
+      - { line: [paper(11 7), paper(11 9)], kind: valley, angle: 82.8 }
+      - { line: [paper(11 2), paper(11 4)], kind: valley, angle: 82.8 }
+      - { line: [paper(11 0), paper(11 1)], kind: valley, angle: 82.8 }
+      - { line: [paper(12 3), paper(12 5)], kind: valley, angle: 82.8 }
+      - { line: [paper(12 6), paper(12 8)], kind: valley, angle: 82.8 }
+      - { line: [paper(12 11), paper(12 13)], kind: valley, angle: 82.8 }
+      - { line: [paper(12 14), paper(12 16)], kind: valley, angle: 82.8 }
+      - { line: [paper(8 15), paper(8 16)], kind: valley, angle: 82.8 }
+      - { line: [paper(8 10), paper(8 12)], kind: valley, angle: 82.8 }
+      - { line: [paper(8 7), paper(8 9)], kind: valley, angle: 82.8 }
+      - { line: [paper(8 2), paper(8 4)], kind: valley, angle: 82.8 }
+      - { line: [paper(8 0), paper(8 1)], kind: valley, angle: 82.8 }
+      - { line: [paper(7 3), paper(7 5)], kind: valley, angle: 82.8 }
+      - { line: [paper(7 6), paper(7 8)], kind: valley, angle: 82.8 }
+      - { line: [paper(7 11), paper(7 13)], kind: valley, angle: 82.8 }
+      - { line: [paper(7 14), paper(7 16)], kind: valley, angle: 82.8 }
+      - { line: [paper(3 15), paper(3 16)], kind: valley, angle: 82.8 }
+      - { line: [paper(3 10), paper(3 12)], kind: valley, angle: 82.8 }
+      - { line: [paper(3 7), paper(3 9)], kind: valley, angle: 82.8 }
+      - { line: [paper(3 2), paper(3 4)], kind: valley, angle: 82.8 }
+      - { line: [paper(3 0), paper(3 1)], kind: valley, angle: 82.8 }
+      - { line: [paper(4 3), paper(4 5)], kind: valley, angle: 82.8 }
+      - { line: [paper(4 6), paper(4 8)], kind: valley, angle: 82.8 }
+      - { line: [paper(4 11), paper(4 13)], kind: valley, angle: 82.8 }
+      - { line: [paper(4 14), paper(4 16)], kind: valley, angle: 82.8 }
+finish:
+  camera: three-quarter
+  text: Tilt it under a lamp. The shadows make the over and under of the weave stand out.
