@@ -277,13 +277,29 @@ export class StepControls {
   show(i: number, play = true) {
     if (!this.viewer) return;
     this.stopRepeats();
-    const back = i < this.cur;
-    this.cur = Math.max(0, Math.min(this.count, i));
-    this.viewer.showStep(this.cur, { play: false, camera: this.opts.camera ?? true });
+    const v = this.viewer;
+    const target = Math.max(0, Math.min(this.count, i));
+    // Going back one step: first unfold what this step did (straight back to its start, which is where
+    // the step before ends), then that step unfolds to its own start and plays.
+    if (play && target === this.cur - 1 && this.cur < this.count && v.t > 0) {
+      const from = this.cur;
+      this.label(target);
+      this.cur = target;
+      v.rewind(() => { if (this.cur === target && from !== target) this.land(target, true); });
+      return;
+    }
+    this.land(target, play);
+  }
+
+  private land(i: number, play: boolean) {
+    const v = this.viewer!;
+    const back = i < v.step;
+    this.cur = i;
+    v.showStep(this.cur, { play: false, camera: this.opts.camera ?? true });
     // Going back: start from where the paper is now (the end of this step) and unfold it.
-    if (back && play && this.cur < this.count) this.viewer.setT(1);
+    if (back && play && this.cur < this.count) v.setT(1);
     this.label(this.cur);
-    this.frame(this.viewer.t);
+    this.frame(v.t);
     this.opts.onLand?.(this.cur);
     if (play) this.playRepeats();
   }

@@ -1003,7 +1003,7 @@ export class Kinematics {
 }
 
 /** Per face: rotation by slerp, translation linearly (keeps every face rigid between frames). */
-function blendXf(A: Float64Array, B: Float64Array, w: number): Float64Array {
+export function blendXf(A: Float64Array, B: Float64Array, w: number): Float64Array {
   const out = new Float64Array(A.length);
   for (let o = 0; o < A.length; o += 12) {
     const D = new Float64Array(12);
