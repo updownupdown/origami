@@ -1,0 +1,97 @@
+id: dog
+title: Standing dog
+family: dog
+variant: Whole dog
+aliases: [puppy]
+categories: [animals/mammals]
+tags: [dog, puppy, two sheets, kids, traditional]
+difficulty: 2
+description: A whole puppy in two pieces. A triangle body with a white belly and a tail held high, topped with the classic floppy-eared dog face.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: body
+    name: Body
+    size: 15
+    diamond: true
+    at: [-12, 0]
+    colors: { front: "#c9a27a", back: "#fbf7ee" }
+  - id: head
+    name: Head
+    size: 11
+    diamond: true
+    at: [10, 2]
+    colors: { front: "#c9a27a", back: "#fbf7ee" }
+steps:
+  - text: "Body: start with a diamond, white side up. Fold the top corner down to the bottom corner."
+    fold: valley
+    sheet: body
+    line: [body.B, body.D]
+    move: body.A
+    pin: { SL: body.D, SR: body.B, SB: body.C, SM: body.O }
+  - text: Fold the bottom point up on the front, and behind on the back, to make a white belly.
+    pin:
+      BL: intersect(lerp(SM SB 0.57) shift(lerp(SM SB 0.57) SM SB 1) SL SB)
+      BR: intersect(lerp(SM SB 0.57) shift(lerp(SM SB 0.57) SM SB 1) SR SB)
+    ops:
+      - fold: valley
+        sheet: body
+        line: [BL, BR]
+        move: lerp(SB SM 0.02)
+        layers: top
+      - fold: mountain
+        sheet: body
+        line: [BL, BR]
+        move: lerp(SB SM 0.02)
+  - text: Fold the right corner up through both layers to make the tail.
+    pin: { TQ: lerp(SR SL 0.14) }
+    fold: valley
+    sheet: body
+    line: [TQ, shift(lerp(TQ SL 0.05) SL SR -2.29)]
+    move: lerp(SR SL 0.03)
+  - text: "Head: start with a diamond, white side up. Fold the top corner down to the bottom corner."
+    fold: valley
+    sheet: head
+    line: [head.B, head.D]
+    move: head.A
+    pin: { HO: head.O, HC: head.C }
+  - text: Fold in half and unfold to mark the centre.
+    crease: valley
+    sheet: head
+    line: { bring: head.B, to: head.D }
+    move: head.B
+  - text: Fold the right and left corners down to make floppy ears.
+    ops:
+      - fold: valley
+        sheet: head
+        line: [lerp(HO head.B 0.3), lerp(head.B HC 0.28)]
+        move: head.B
+      - fold: valley
+        sheet: head
+        line: [lerp(HO head.D 0.3), lerp(head.D HC 0.28)]
+        move: head.D
+  - text: Fold the top layer of the bottom point up to make the nose.
+    fold: valley
+    sheet: head
+    line:
+      through: lerp(HC HO 0.25)
+      perpendicular: [HC, HO]
+    move: HC
+    layers: top
+  - text: Fold the rest of the point behind.
+    fold: mountain
+    sheet: head
+    line:
+      through: lerp(HC HO 0.18)
+      perpendicular: [HC, HO]
+    move: lerp(HC HO 0.05)
+  - text: Glue the head onto the front corner of the body.
+    place: { sheet: head, point: lerp(HO HC 0.45), to: shift(lerp(SL SR 0.13) SL SR 0.5), layer: above }
+  - text: Open the body a little and stand the dog on its legs.
+    ops:
+      - shape: [ { line: [SL, TQ], angle: 145 } ]
+      - stand: [BL, BR]
+finish:
+  camera: three-quarter
+  text: Draw eyes and a nose on your puppy.

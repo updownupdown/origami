@@ -1,0 +1,76 @@
+id: cat
+title: Sitting cat
+family: cat
+variant: Whole cat
+categories: [animals/mammals]
+tags: [cat, kitten, two sheets, kids, traditional]
+difficulty: 1
+description: A whole cat in two pieces. A triangle body that sits up with its tail raised, and the classic cat face for the head.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: body
+    name: Body
+    size: 15
+    diamond: true
+    at: [-12, 0]
+    colors: { front: "#e8913a", back: "#fbf1e3" }
+  - id: head
+    name: Head
+    size: 10
+    at: [10, 2]
+    colors: { front: "#e8913a", back: "#fbf1e3" }
+steps:
+  - text: "Body: start with a diamond, white side up. Fold the top corner down to the bottom corner."
+    fold: valley
+    sheet: body
+    line: [body.B, body.D]
+    move: body.A
+    pin: { SL: body.D, SR: body.B, SB: body.C, SM: body.O }
+  - text: Fold the right corner up through both layers to make the tail.
+    pin: { TQ: lerp(SR SL 0.1886) }
+    mark: { TQM: lerp(SR SL 0.1886), TPM: intersect(TQ shift(lerp(TQ SL 0.0581) SL SR -2.29) SB SR) }
+    fold: valley
+    sheet: body
+    line: [TQ, shift(lerp(TQ SL 0.0581) SL SR -2.29)]
+    move: lerp(SR SL 0.02)
+  - text: Turn the model so its lower right edge lies along the bottom. The head paper turns into a diamond.
+    rotate: -45
+  - text: "Head: start with a diamond, white side up. Fold the top corner down to the bottom corner."
+    fold: valley
+    sheet: head
+    line: [head.B, head.D]
+    move: head.A
+    pin: { HO: head.O, HC: head.C }
+  - text: Fold in half and unfold to mark the centre.
+    crease: valley
+    sheet: head
+    line: { bring: head.B, to: head.D }
+    move: head.B
+  - text: Fold the right and left corners up so they point straight up. These are the ears.
+    ops:
+      - fold: valley
+        sheet: head
+        line: [lerp(HO head.B 0.55), HC]
+        move: head.B
+      - fold: valley
+        sheet: head
+        line: [lerp(HO head.D 0.55), HC]
+        move: head.D
+  - text: Fold the bottom point behind to make the chin.
+    fold: mountain
+    sheet: head
+    line:
+      through: lerp(HC HO 0.3)
+      perpendicular: [HC, HO]
+    move: HC
+  - text: Glue the head onto the top corner of the body.
+    place: { sheet: head, point: lerp(HO HC 0.55), to: lerp(body.D body.C 0.07), layer: above }
+  - text: Open the body a little and sit the cat up.
+    ops:
+      - shape: [ { line: [body.D, TQM], angle: 150 } ]
+      - stand: [body.C, TPM]
+finish:
+  camera: three-quarter
+  text: Draw a face and whiskers.

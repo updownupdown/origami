@@ -1,0 +1,112 @@
+id: pig
+title: Standing pig
+family: pig
+variant: Whole pig
+aliases: [piglet, piggy]
+categories: [animals/mammals]
+tags: [pig, piglet, farm, two sheets, kids, traditional]
+difficulty: 2
+description: A whole piglet in two pieces. A round little body with a tail that flicks up, and the piglet face with its turned-up snout.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: body
+    name: Body
+    size: 15
+    diamond: true
+    at: [-12, 0]
+    colors: { front: "#e889c0", back: "#f6c9de" }
+  - id: head
+    name: Head
+    size: 11
+    diamond: true
+    at: [10, 2]
+    colors: { front: "#e889c0", back: "#f6c9de" }
+steps:
+  - text: "Body: start with a diamond, white side up. Fold the top corner down to the bottom corner."
+    fold: valley
+    sheet: body
+    line: [body.B, body.D]
+    move: body.A
+    pin: { SL: body.D, SR: body.B, SB: body.C, SM: body.O }
+  - text: Fold the bottom point up on the front, and behind on the back, to make a white belly.
+    pin:
+      BL: intersect(lerp(SM SB 0.57) shift(lerp(SM SB 0.57) SM SB 1) SL SB)
+      BR: intersect(lerp(SM SB 0.57) shift(lerp(SM SB 0.57) SM SB 1) SR SB)
+    ops:
+      - fold: valley
+        sheet: body
+        line: [BL, BR]
+        move: lerp(SB SM 0.02)
+        layers: top
+      - fold: mountain
+        sheet: body
+        line: [BL, BR]
+        move: lerp(SB SM 0.02)
+  - text: Fold the back corner up through both layers to make a little tail.
+    pin: { TQ: lerp(SR SL 0.12) }
+    fold: valley
+    sheet: body
+    line: [TQ, shift(lerp(TQ SL 0.05) SL SR -2.29)]
+    move: lerp(SR SL 0.02)
+  - text: "Head: start with a diamond, white side up. Fold the top corner down to the bottom corner."
+    fold: valley
+    sheet: head
+    line: [head.B, head.D]
+    move: head.A
+    pin: { HO: head.O, HC: head.C }
+  - text: Fold in half and unfold to mark the centre.
+    crease: valley
+    sheet: head
+    line: { bring: head.B, to: head.D }
+    move: head.B
+  - text: Fold the right and left corners down at a slant for floppy ears.
+    ops:
+      - fold: valley
+        sheet: head
+        line: [lerp(HO head.B 0.42), lerp(head.B HC 0.18)]
+        move: head.B
+      - fold: valley
+        sheet: head
+        line: [lerp(HO head.D 0.42), lerp(head.D HC 0.18)]
+        move: head.D
+  - text: Fold the top layer of the bottom point up to make the snout.
+    fold: valley
+    sheet: head
+    line:
+      through: lerp(HC HO 0.4)
+      perpendicular: [HC, HO]
+    move: HC
+    layers: top
+  - text: Fold the tip of the snout back down a little.
+    fold: valley
+    sheet: head
+    line:
+      through: lerp(HC HO 0.62)
+      perpendicular: [HC, HO]
+    move: lerp(HC HO 0.72)
+    layers: top
+  - text: Fold the rest of the bottom point behind.
+    fold: mountain
+    sheet: head
+    line:
+      through: lerp(HC HO 0.32)
+      perpendicular: [HC, HO]
+    move: lerp(HC HO 0.1)
+  - text: Fold the top edge behind to round the head.
+    fold: mountain
+    sheet: head
+    line:
+      through: lerp(HO HC 0.1)
+      perpendicular: [HC, HO]
+    move: HO
+  - text: Glue the head onto the front corner of the body.
+    place: { sheet: head, point: lerp(HO HC 0.45), to: shift(lerp(SL SR 0.13) SL SR 0.3), layer: above }
+  - text: Open the body a little and stand the pig on its legs.
+    ops:
+      - shape: [ { line: [SL, TQ], angle: 145 } ]
+      - stand: [BL, BR]
+finish:
+  camera: three-quarter
+  text: Add two nostrils to the snout and curl the tail around a pencil.

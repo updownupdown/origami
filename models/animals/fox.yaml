@@ -1,0 +1,76 @@
+id: fox
+title: Sitting fox
+family: fox
+variant: Whole fox
+categories: [animals/mammals]
+tags: [fox, two sheets, kids, traditional]
+difficulty: 1
+description: A whole fox in two pieces. A sitting triangle body with a big pale tail, and the classic pointed fox face on top.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: body
+    name: Body
+    size: 15
+    diamond: true
+    at: [-12, 0]
+    colors: { front: "#e8642c", back: "#fbf7ee" }
+  - id: head
+    name: Head
+    size: 10
+    at: [10, 2]
+    colors: { front: "#e8642c", back: "#fbf7ee" }
+steps:
+  - text: "Body: start with a diamond, white side up. Fold the top corner down to the bottom corner."
+    fold: valley
+    sheet: body
+    line: [body.B, body.D]
+    move: body.A
+    pin: { SL: body.D, SR: body.B, SB: body.C, SM: body.O }
+  - text: Fold the right corner up through both layers to make a big bushy tail.
+    pin: { TQ: lerp(SR SL 0.2357) }
+    mark: { TQM: lerp(SR SL 0.2357), TPM: intersect(TQ shift(lerp(TQ SL 0.0617) SL SR -2.29) SB SR) }
+    fold: valley
+    sheet: body
+    line: [TQ, shift(lerp(TQ SL 0.0617) SL SR -2.29)]
+    move: lerp(SR SL 0.02)
+  - text: Turn the model so its lower right edge lies along the bottom. The head paper turns into a diamond.
+    rotate: -45
+  - text: "Head: start with a diamond, white side up. Fold the top corner down to the bottom corner."
+    fold: valley
+    sheet: head
+    line: [head.B, head.D]
+    move: head.A
+    pin: { HO: head.O, HC: head.C }
+  - text: Fold in half and unfold to mark the centre.
+    crease: valley
+    sheet: head
+    line: { bring: head.B, to: head.D }
+    move: head.B
+  - text: Fold the right and left corners up so they stick out above the top edge. These are the ears.
+    ops:
+      - fold: valley
+        sheet: head
+        line: [lerp(HO head.B 0.65), HC]
+        move: head.B
+      - fold: valley
+        sheet: head
+        line: [lerp(HO head.D 0.65), HC]
+        move: head.D
+  - text: Fold the tip of the nose behind.
+    fold: mountain
+    sheet: head
+    line:
+      through: lerp(HC HO 0.18)
+      perpendicular: [HC, HO]
+    move: HC
+  - text: Glue the head onto the top corner of the body.
+    place: { sheet: head, point: lerp(HO HC 0.45), to: lerp(body.D body.C 0.07), layer: above }
+  - text: Open the body a little and sit the fox up.
+    ops:
+      - shape: [ { line: [body.D, TQM], angle: 150 } ]
+      - stand: [body.C, TPM]
+finish:
+  camera: three-quarter
+  text: Draw on eyes and a black nose.

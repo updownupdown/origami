@@ -1,0 +1,103 @@
+id: giraffe
+title: Giraffe
+family: giraffe
+categories: [animals/mammals]
+tags: [giraffe, safari, two sheets, kids, kite base]
+difficulty: 2
+description: A tall giraffe in two pieces. A slim kite folded into a long neck with a little head, set on a standing triangle body with a white belly.
+credits:
+  designer: Origami project
+  script: Origami project
+  note: Our own design, built from the traditional kite base and the classic two-piece animal body.
+materials:
+  - id: body
+    name: Body
+    size: 15
+    diamond: true
+    at: [-12, 0]
+    colors: { front: "#e8b04a", back: "#fbf7ee" }
+  - id: neck
+    name: Neck
+    size: 15
+    diamond: true
+    at: [10, 0]
+    colors: { front: "#e8b04a", back: "#fbf7ee" }
+steps:
+  - text: "Body: start with a diamond, white side up. Fold the top corner down to the bottom corner."
+    fold: valley
+    sheet: body
+    line: [body.B, body.D]
+    move: body.A
+    pin: { SL: body.D, SR: body.B, SB: body.C, SM: body.O }
+  - text: Fold the bottom point up on the front, and behind on the back, to make a white belly between the legs.
+    pin:
+      BL: intersect(lerp(SM SB 0.52) shift(lerp(SM SB 0.52) SM SB 1) SL SB)
+      BR: intersect(lerp(SM SB 0.52) shift(lerp(SM SB 0.52) SM SB 1) SR SB)
+    ops:
+      - fold: valley
+        sheet: body
+        line: [BL, BR]
+        move: lerp(SB SM 0.02)
+        layers: top
+      - fold: mountain
+        sheet: body
+        line: [BL, BR]
+        move: lerp(SB SM 0.02)
+  - text: Fold the back corner down through both layers to make a little tail.
+    pin: { TQ: lerp(SR SL 0.165) }
+    fold: valley
+    sheet: body
+    line: [TQ, shift(lerp(TQ SR 0.43) SL SR -1.26)]
+    move: lerp(SR SL 0.02)
+  - text: "Neck: start with a diamond, white side up. Fold the lower edges to the centre line to make a kite."
+    pin: { NA: neck.A, NC: neck.C, NB: neck.B, ND: neck.D }
+    ops:
+      - fold: valley
+        sheet: neck
+        line:
+          bring: [NC, NB]
+          onto: [NC, NA]
+        move: NB
+      - fold: valley
+        sheet: neck
+        line:
+          bring: [NC, ND]
+          onto: [NC, NA]
+        move: ND
+  - text: Fold the lower edges to the centre line again, so the kite gets long and thin.
+    mark:
+      KR: intersect(NC mid(NB lerp(NC NA 0.70710678)) NA NB)
+      KL: intersect(NC mid(ND lerp(NC NA 0.70710678)) NA ND)
+    ops:
+      - fold: valley
+        sheet: neck
+        line:
+          bring: [NC, KR]
+          onto: [NC, NA]
+        move: lerp(KR NC 0.1)
+      - fold: valley
+        sheet: neck
+        line:
+          bring: [NC, KL]
+          onto: [NC, NA]
+        move: lerp(KL NC 0.1)
+  - text: Fold the neck in half from right to left along the centre line.
+    fold: valley
+    sheet: neck
+    line: [NA, NC]
+    move: shift(lerp(NA NC 0.4) NA NC -0.3)
+  - text: Fold the narrow tip to the side to make the head.
+    pin: { PH: lerp(NC NA 0.17) }
+    fold: valley
+    sheet: neck
+    line: [PH, shift(lerp(PH NC -0.5) NA NC -1.8)]
+    move: lerp(NC NA 0.02)
+  - text: Tuck the wide end of the neck into the front of the body, with the head up and leaning forward.
+    place: { sheet: neck, point: lerp(NA NC 0.12), to: shift(lerp(SL SR 0.12) SL SR -0.8), rotate: 190, layer: above }
+  - text: Open the body a little and stand the giraffe on its legs.
+    ops:
+      - shape: [ { line: [SL, TQ], angle: 145 } ]
+      - stand: [BL, BR]
+finish:
+  camera: three-quarter
+  text: Draw on some brown patches and two little horns.
