@@ -23,7 +23,7 @@ steps:
   - text: Fold in half from left to right, so the flaps end up inside. Keep the flaps tucked flat against the body.
     mark: { HT: lerp(KL KR 0.5), TT: C }
     ops:
-      - shape: [ { line: [C, KL], angle: 174 }, { line: [C, KR], angle: 174 }, { line: [KL, KR], angle: 174 } ]
+      - shape: [ { line: [C, KL], angle: 180 }, { line: [C, KR], angle: 180 }, { line: [KL, KR], angle: 180 } ]
       - fold: valley
         line: [lerp(KL KR 0.5), C]
         move: KL

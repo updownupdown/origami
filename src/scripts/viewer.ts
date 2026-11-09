@@ -3,13 +3,17 @@
 // The flat-fold engine describes each step exactly (where every face lies when
 // folded flat). Steps of plain folds are drawn straight from that exact pose:
 // flaps turn rigidly about their hinges and each layer sits a paper thickness
-// above the one below. Collapses and 3D shaping run a paper simulation (see
-// engine/sim.ts) whose result is placed onto the exact pose.
+// above the one below. Collapses, 3D shaping and every step after the paper has
+// been shaped are posed by rigid-origami kinematics (engine/kinematic.ts): faces stay
+// flat and rigid, creases close up exactly, and the motion follows the fold angles the
+// script asks for, so the same step always looks the same. The physics simulation
+// (engine/sim.ts) is kept behind the `physics` option.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { CameraSpec, CompiledModel, Phase, PhaseFace } from '../engine/types';
 import { stateBefore } from '../engine/svg';
 import { FoldSim, alignRigid, matchFaces, type SimMesh } from '../engine/sim';
+import { Kinematics } from '../engine/kinematic';
 
 type V2 = [number, number];
 const apply = (m: number[], p: V2): V2 => [m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5]];
@@ -77,6 +81,11 @@ class FlatPhase {
   /** Paper-world position (x, y, z) of paper point p on face i at time t, with the model's tilt (standing). */
   pose(i: number, t: number, p: V2, out: THREE.Vector3): THREE.Vector3 {
     this.poseFlat(i, t, p, out);
+    return this.tilt(t, out);
+  }
+
+  /** Applies the model's tilt (standing) at time t of the phase to a paper-world point, in place. */
+  tilt(t: number, out: THREE.Vector3): THREE.Vector3 {
     const tl = this.phase.tilt;
     if (!tl) return out;
     const ang = ((tl.a0 + (tl.a1 - tl.a0) * ease(t)) * Math.PI) / 180;
@@ -254,6 +263,22 @@ class SheetView {
     this.shownKey = key;
     this.lines.geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(out), 1));
   }
+  /** Fades the sheet (1 = solid). Used to dissolve across a step where paper would pass through paper. */
+  setOpacity(o: number) {
+    const solid = o >= 0.999;
+    for (const m of [this.front.material, this.back.material] as THREE.MeshStandardMaterial[]) {
+      if (m.transparent !== !solid) { m.transparent = !solid; m.needsUpdate = true; }
+      m.opacity = o;
+      m.depthWrite = solid;
+    }
+    for (const l of [this.lines, ...this.lines.children] as THREE.LineSegments[]) {
+      const lm = l.material as THREE.LineBasicMaterial;
+      lm.userData.base ??= lm.opacity;
+      lm.opacity = lm.userData.base * o;
+    }
+    this.front.visible = this.back.visible = this.lines.visible = o > 0.001;
+    this.front.castShadow = this.back.castShadow = solid;
+  }
   setColors(c: { front: string; back: string }) {
     (this.front.material as THREE.MeshStandardMaterial).color.set(c.front);
     (this.back.material as THREE.MeshStandardMaterial).color.set(c.back);
@@ -279,6 +304,8 @@ export interface ViewerOptions {
   onFrame?: (t: number) => void;
   /** Called when a playing step reaches its end. */
   onEnd?: () => void;
+  /** Use the bar-and-hinge physics simulation for 3D steps instead of exact kinematics. */
+  physics?: boolean;
 }
 
 export class FoldViewer {
@@ -287,7 +314,10 @@ export class FoldViewer {
   camera: THREE.PerspectiveCamera;
   controls: OrbitControls;
   sim: FoldSim;
+  kin: Kinematics;
   sheets: SheetView[];
+  /** Second copy of each sheet, shown only while dissolving across a span where paper would cross. */
+  ghosts: SheetView[];
   model3d = new THREE.Group();
   overlays = new THREE.Group();
   phases: FlatPhase[] = [];
@@ -377,12 +407,20 @@ export class FoldViewer {
 
     this.sim = new FoldSim(model);
     this.born = this.sim.meshes.map((_, i) => this.sim.creaseBorn(i));
+    this.kin = new Kinematics(model, this.sim.meshes, this.sim.angles, this.born);
     // Simulated steps (collapses, 3D shaping) start from paper folded almost flat, like the exact poses.
     this.sim.setRest([0.98, 1, 1]);
     this.sheets = this.sim.meshes.map((m) => {
       const sh = model.sheets.find((s) => s.id === m.sheet)!;
       const v = new SheetView(m, this.colors[m.sheet] ?? { front: sh.front, back: sh.back });
       this.model3d.add(v.front, v.back, v.lines);
+      return v;
+    });
+    this.ghosts = this.sim.meshes.map((m) => {
+      const sh = model.sheets.find((s) => s.id === m.sheet)!;
+      const v = new SheetView(m, this.colors[m.sheet] ?? { front: sh.front, back: sh.back });
+      this.model3d.add(v.front, v.back, v.lines);
+      v.setOpacity(0);
       return v;
     });
     this.weights = this.sim.meshes.map((m) => new Float64Array(m.n));
@@ -429,15 +467,17 @@ export class FoldViewer {
       this.vertMatch = this.sim.meshes.map((m, si) => [Int32Array.from(m.vertFace, (f) => this.faceMatch[si][0][f])]);
     }
     this.phases.forEach((v, k) => this.buildOverlay(v, k));
-    this.sim.ensureStep(this.step);
-    this.sim.load(this.sim.stateAt(this.step, 1));
     this.exact = this.exactStep();
+    if (this.opts.physics) {
+      this.sim.ensureStep(this.step);
+      this.sim.load(this.sim.stateAt(this.step, 1));
+    } else if (!this.exact) this.kin.ensureStep(this.step);
     this.place = [];
 
     if (camera) this.userCamera = false;
     this.t = play ? 0 : finished || !phases.length ? 1 : 0;
     this.applyT();
-    if (finished || this.opts.thumbnail) this.simBudget = 3000;
+    if ((finished || this.opts.thumbnail) && this.opts.physics) this.simBudget = 3000;
     this.updateMesh(0);
     if (camera) this.bestAngle(!this.opts.thumbnail);
     this.playing = play && phases.length > 0;
@@ -624,6 +664,42 @@ export class FoldViewer {
       this.placeOnTable(minY);
       return;
     }
+    if (!this.opts.physics) {
+      // Exact rigid kinematics: the pose for this time, straight from the solved frames.
+      this.simBudget = 0;
+      fp.prepare(local);
+      // Where no rigid motion keeps the paper apart, dissolve from the last clean pose to the next one
+      // instead of letting paper pass through paper.
+      const span = this.step < this.stepCount ? this.kin.spans[this.step]?.find(([a, b]) => this.t > a && this.t < b) : undefined;
+      const v = new THREE.Vector3(), w = new THREE.Vector3();
+      let minY = Infinity;
+      const pose = (t: number, views: SheetView[]) => {
+        const X = this.kin.frameAt(this.step, t);
+        X.forEach((Xs, si) => {
+          const raw = this.kin.positions(si, Xs);
+          const P = views[si].pos;
+          for (let i = 0; i < raw.length / 3; i++) {
+            fp.tilt(local, v.set(raw[3 * i], raw[3 * i + 1], raw[3 * i + 2]));
+            toThree(v, w);
+            P[3 * i] = w.x; P[3 * i + 1] = w.y; P[3 * i + 2] = w.z;
+          }
+          minY = Math.min(minY, this.finishSheet(si, fp, index, local, views[si]));
+        });
+      };
+      if (span) {
+        const e = smooth(span[0], span[1], this.t);
+        pose(span[1], this.sheets);
+        pose(span[0], this.ghosts);
+        this.sheets.forEach((sv) => sv.setOpacity(e));
+        this.ghosts.forEach((sv) => sv.setOpacity(1 - e));
+      } else {
+        pose(this.t, this.sheets);
+        this.sheets.forEach((sv) => sv.setOpacity(1));
+        this.ghosts.forEach((sv) => sv.setOpacity(0));
+      }
+      this.placeOnTable(minY);
+      return;
+    }
     if (this.step < this.stepCount && this.sim.loadFrame(this.step, this.t)) {
       // Replaying the recorded fold: exact and repeatable, no solver needed.
       iters = 0;
@@ -668,7 +744,7 @@ export class FoldViewer {
    * so the simulated step meets the exactly drawn steps before and after it without a jump.
    */
   private chainEnds(): { c0: Float64Array; c1: Float64Array }[] | null {
-    if (this.exact || this.step >= this.stepCount) return null;
+    if (this.exact || this.step >= this.stepCount || !this.opts.physics) return null;
     const atStart = this.step === 0 || this.exactStep(this.step - 1), atEnd = this.exactStep(this.step + 1);
     if (!atStart && !atEnd) return null;
     const F = this.sim.frames[this.step];
@@ -700,9 +776,9 @@ export class FoldViewer {
   }
 
   /** Adds layer thickness to sheet si's placed positions, updates its creases, and returns its lowest point. */
-  private finishSheet(si: number, fp: FlatPhase, index: number, local: number): number {
+  private finishSheet(si: number, fp: FlatPhase, index: number, local: number, sh = this.sheets[si]): number {
     const mesh = this.sim.meshes[si], n = mesh.n, T = mesh.tris, nt = T.length / 3;
-    const sh = this.sheets[si], P = sh.pos;
+    const P = sh.pos;
     const faceMatch = this.faceMatch[si][Math.min(index, this.faceMatch[si].length - 1)];
     // Layers that lie flat on each other would z-fight or cross. Lift each crease-pattern face off
     // the layers below it, as one rigid piece, along its own "up" (the side that faced up in the
@@ -772,7 +848,7 @@ export class FoldViewer {
   play(speed = 1) {
     this.t = 0;
     this.phaseSeconds = 1.6 / speed;
-    if (this.step < this.stepCount) this.sim.load(this.sim.stateAt(this.step));
+    if (this.step < this.stepCount && this.opts.physics) this.sim.load(this.sim.stateAt(this.step));
     this.playing = true;
     this.applyT();
   }
@@ -781,7 +857,7 @@ export class FoldViewer {
 
   setColors(colors: Colors) {
     this.colors = colors;
-    this.sheets.forEach((s) => { const c = colors[s.mesh.sheet]; if (c) s.setColors(c); });
+    [...this.sheets, ...this.ghosts].forEach((s) => { const c = colors[s.mesh.sheet]; if (c) s.setColors(c); });
     this.dirty = true;
   }
 
@@ -942,7 +1018,7 @@ export class FoldViewer {
     cancelAnimationFrame(this.raf);
     this.resizeObs.disconnect();
     for (const p of this.phases) p.dispose();
-    for (const s of this.sheets) s.dispose();
+    for (const s of [...this.sheets, ...this.ghosts]) s.dispose();
     this.table.traverse((o) => { const m = o as THREE.Mesh; m.geometry?.dispose(); (m.material as THREE.Material | undefined)?.dispose(); });
     this.controls.dispose();
     this.renderer.dispose();

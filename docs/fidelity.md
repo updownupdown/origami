@@ -55,6 +55,11 @@ simulation in the browser, in the style of Amanda Ghassaei's *Origami Simulator*
 It costs more CPU and can be unstable at 180°, so it would sit behind a "realistic" toggle
 and the exact flat-fold engine would stay the source of truth.
 
+Status: this was built, and then replaced as the default for linked folds by rigid kinematics
+(see [3D shaping](3d-shaping.md)). Physics picks a branch at random at flat states, which made
+symmetric models lopsided, and it has no collision handling. It stays behind the viewer's
+`physics` option for paper that really has to bend.
+
 ## 5. Paper thickness
 
 Today layers are drawn a fixed tiny distance apart. Better thickness means offsetting each

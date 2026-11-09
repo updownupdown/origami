@@ -185,60 +185,60 @@ steps:
     shape:
       fixed: box.O
       creases:
-        - { line: [bkWN, bkEN], kind: valley, angle: 94 }
-        - { line: [bkWS, bkES], kind: valley, angle: 94 }
-        - { line: [lkWN, lkEN], kind: valley, angle: 94 }
-        - { line: [lkWS, lkES], kind: valley, angle: 94 }
+        - { line: [bkWN, bkEN], kind: valley, angle: 90 }
+        - { line: [bkWS, bkES], kind: valley, angle: 90 }
+        - { line: [lkWN, lkEN], kind: valley, angle: 90 }
+        - { line: [lkWS, lkES], kind: valley, angle: 90 }
     camera: { azimuth: -20, elevation: 45, zoom: 1.3 }
   - text: Raise the left and right ends. Push each corner in along its diagonal crease so it lies flat against the end wall.
     shape:
       fixed: box.O
       creases:
-        - { line: [bfNE, bkEN], kind: valley, angle: 176 }
-        - { line: [bfSE, bkES], kind: valley, angle: 176 }
-        - { line: [bfNW, bkWN], kind: valley, angle: 176 }
-        - { line: [bfSW, bkWS], kind: valley, angle: 176 }
+        - { line: [bfNE, bkEN], kind: valley, angle: 180 }
+        - { line: [bfSE, bkES], kind: valley, angle: 180 }
+        - { line: [bfNW, bkWN], kind: valley, angle: 180 }
+        - { line: [bfSW, bkWS], kind: valley, angle: 180 }
         - { line: [btNE, btSE], kind: valley, angle: 90 }
         - { line: [btNW, btSW], kind: valley, angle: 90 }
-        - { line: [bfNE, bNE], kind: mountain, angle: 176 }
-        - { line: [bfSE, bSE], kind: mountain, angle: 176 }
-        - { line: [bfNW, bNW], kind: mountain, angle: 176 }
-        - { line: [bfSW, bSW], kind: mountain, angle: 176 }
-        - { line: [bNW, bNE], angle: 176 }
-        - { line: [bSW, bSE], angle: 176 }
-        - { line: [lfNE, lkEN], kind: valley, angle: 176 }
-        - { line: [lfSE, lkES], kind: valley, angle: 176 }
-        - { line: [lfNW, lkWN], kind: valley, angle: 176 }
-        - { line: [lfSW, lkWS], kind: valley, angle: 176 }
+        - { line: [bfNE, bNE], kind: mountain, angle: 180 }
+        - { line: [bfSE, bSE], kind: mountain, angle: 180 }
+        - { line: [bfNW, bNW], kind: mountain, angle: 180 }
+        - { line: [bfSW, bSW], kind: mountain, angle: 180 }
+        - { line: [bNW, bNE], angle: 180 }
+        - { line: [bSW, bSE], angle: 180 }
+        - { line: [lfNE, lkEN], kind: valley, angle: 180 }
+        - { line: [lfSE, lkES], kind: valley, angle: 180 }
+        - { line: [lfNW, lkWN], kind: valley, angle: 180 }
+        - { line: [lfSW, lkWS], kind: valley, angle: 180 }
         - { line: [ltNE, ltSE], kind: valley, angle: 90 }
         - { line: [ltNW, ltSW], kind: valley, angle: 90 }
-        - { line: [lfNE, lNE], kind: mountain, angle: 176 }
-        - { line: [lfSE, lSE], kind: mountain, angle: 176 }
-        - { line: [lfNW, lNW], kind: mountain, angle: 176 }
-        - { line: [lfSW, lSW], kind: mountain, angle: 176 }
-        - { line: [lNW, lNE], angle: 176 }
-        - { line: [lSW, lSE], angle: 176 }
+        - { line: [lfNE, lNE], kind: mountain, angle: 180 }
+        - { line: [lfSE, lSE], kind: mountain, angle: 180 }
+        - { line: [lfNW, lNW], kind: mountain, angle: 180 }
+        - { line: [lfSW, lSW], kind: mountain, angle: 180 }
+        - { line: [lNW, lNE], angle: 180 }
+        - { line: [lSW, lSE], angle: 180 }
     camera: { azimuth: -20, elevation: 45, zoom: 1.3 }
   - text: Fold each end flap over the wall and down inside, so its point reaches the centre and locks the corners.
     shape:
       fixed: box.O
       creases:
-        - { line: [brEN, brES], kind: valley, angle: 170 }
-        - { line: [brEN, bNE], kind: mountain, angle: 176 }
-        - { line: [brES, bSE], kind: mountain, angle: 176 }
-        - { line: [brWN, brWS], kind: valley, angle: 170 }
-        - { line: [brWN, bNW], kind: mountain, angle: 176 }
-        - { line: [brWS, bSW], kind: mountain, angle: 176 }
-        - { line: [bkEN, bkES], kind: mountain, angle: 100 }
-        - { line: [bkWN, bkWS], kind: mountain, angle: 100 }
-        - { line: [lrEN, lrES], kind: valley, angle: 170 }
-        - { line: [lrEN, lNE], kind: mountain, angle: 176 }
-        - { line: [lrES, lSE], kind: mountain, angle: 176 }
-        - { line: [lrWN, lrWS], kind: valley, angle: 170 }
-        - { line: [lrWN, lNW], kind: mountain, angle: 176 }
-        - { line: [lrWS, lSW], kind: mountain, angle: 176 }
-        - { line: [lkEN, lkES], kind: mountain, angle: 100 }
-        - { line: [lkWN, lkWS], kind: mountain, angle: 100 }
+        - { line: [brEN, brES], kind: valley, angle: 180 }
+        - { line: [brEN, bNE], kind: mountain, angle: 180 }
+        - { line: [brES, bSE], kind: mountain, angle: 180 }
+        - { line: [brWN, brWS], kind: valley, angle: 180 }
+        - { line: [brWN, bNW], kind: mountain, angle: 180 }
+        - { line: [brWS, bSW], kind: mountain, angle: 180 }
+        - { line: [bkEN, bkES], kind: mountain, angle: 90 }
+        - { line: [bkWN, bkWS], kind: mountain, angle: 90 }
+        - { line: [lrEN, lrES], kind: valley, angle: 180 }
+        - { line: [lrEN, lNE], kind: mountain, angle: 180 }
+        - { line: [lrES, lSE], kind: mountain, angle: 180 }
+        - { line: [lrWN, lrWS], kind: valley, angle: 180 }
+        - { line: [lrWN, lNW], kind: mountain, angle: 180 }
+        - { line: [lrWS, lSW], kind: mountain, angle: 180 }
+        - { line: [lkEN, lkES], kind: mountain, angle: 90 }
+        - { line: [lkWN, lkWS], kind: mountain, angle: 90 }
     camera: { azimuth: -20, elevation: 45, zoom: 1.3 }
   - text: Turn the lid upside down and slide it over the box.
     place: { sheet: lid, point: lid.O, to: box.O, flip: true, layer: above }
