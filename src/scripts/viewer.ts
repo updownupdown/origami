@@ -589,12 +589,13 @@ export class FoldViewer {
   /**
    * Whether the current step is drawn from the exact flat-fold pose. Flaps then turn rigidly about
    * their hinges, flat paper stays perfectly flat, and creases not made yet cannot show. Collapses
-   * (chain) and 3D shaping or standing are not rigid hinge motions, so those steps, and every step
-   * after the paper has been shaped, replay the simulation instead.
+   * (chain) and 3D shaping are not rigid hinge motions, so those steps, and every step after the
+   * paper has been shaped, replay the simulation instead.
    */
   private exactStep(i = this.step): boolean {
     const steps = this.model.steps;
-    const shaped = (k: number) => steps[k].phases.some((p) => p.motion === 'shape' || p.motion === 'stand');
+    // Standing a flat-folded model up only tilts it (part of the exact pose); shaping makes it 3D.
+    const shaped = (k: number) => steps[k].phases.some((p) => p.motion === 'shape');
     for (let k = 0; k < Math.min(i + 1, steps.length); k++) if (shaped(k)) return false;
     if (i >= steps.length) return true;
     return !steps[i].phases.some((p) => p.motion === 'chain');
