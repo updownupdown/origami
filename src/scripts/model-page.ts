@@ -89,12 +89,6 @@ export async function initModelPage() {
     $('steplist').querySelector('.now')?.scrollIntoView({ block: 'center' });
   });
 
-  // Flatness: how firmly the folds are pressed.
-  const flat = $<HTMLInputElement>('flatness');
-  flat.value = String(Math.round(viewer.flatness * 100));
-  let flatTimer = 0;
-  flat.addEventListener('input', () => { clearTimeout(flatTimer); flatTimer = window.setTimeout(() => viewer.setFlatness(Number(flat.value) / 100), 120); });
-
   $('btn-best').addEventListener('click', () => viewer.bestAngle());
   $('btn-in').addEventListener('click', () => viewer.zoomBy(1.25));
   $('btn-out').addEventListener('click', () => viewer.zoomBy(0.8));

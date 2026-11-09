@@ -42,11 +42,6 @@ const desc = `${entry.title}: ${DIFFICULTY[entry.difficulty]} origami, ${entry.s
       <button class="btn icon fab" id="btn-out" aria-label="Zoom out"><Fragment set:html={icon('minus')} /></button>
     </div>
 
-    <div class="flat card" title="How flat the folds are pressed">
-      <span class="fl-lbl">Flat</span>
-      <input type="range" id="flatness" min="0" max="100" value="75" aria-label="Flatness: how firmly the folds are pressed" />
-      <span class="fl-lbl">Open</span>
-    </div>
 
     <StepCard />
 
@@ -147,9 +142,6 @@ const desc = `${entry.title}: ${DIFFICULTY[entry.difficulty]} origami, ${entry.s
   #steplist li.runhead small { font-weight: 400; color: var(--ink-soft); font-size: 13px; }
   #steplist li .grp { display: block; font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; }
   #steplist li.fin .th { display: grid; place-items: center; font-size: 40px; color: var(--valley); }
-  .flat { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; }
-  .flat .fl-lbl { font-size: 11px; color: var(--ink-soft); }
-  .flat input { writing-mode: vertical-lr; direction: rtl; width: 28px; height: 150px; accent-color: var(--ink); margin: 0; cursor: pointer; }
   dialog::backdrop { background: rgba(30, 25, 20, 0.25); }
   dialog > *:not(header) { margin-left: 16px; margin-right: 16px; }
   dialog h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); font-weight: 500; margin: 18px 16px 6px; }
@@ -182,8 +174,6 @@ const desc = `${entry.title}: ${DIFFICULTY[entry.difficulty]} origami, ${entry.s
   @media (max-width: 640px) {
     .tr .lbl { display: none; }
     .rail { top: auto; bottom: 250px; transform: none; right: 12px; }
-    .flat { top: auto; bottom: 250px; transform: none; left: 12px; }
-    .flat input { height: 110px; }
     .rail #btn-in, .rail #btn-out { display: none; }
       .tl { left: 12px; max-width: calc(100% - 130px); }
     .tr { right: 12px; }

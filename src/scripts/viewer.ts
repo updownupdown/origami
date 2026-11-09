@@ -1,11 +1,10 @@
 // Three.js renderer for compiled fold steps.
 //
 // The flat-fold engine describes each step exactly (where every face lies when
-// folded flat). For display, each sheet is one connected mesh run through a
-// paper simulation (see engine/sim.ts) with folds resting a little short of
-// flat, so the model looks like real paper. The flat poses are still used to
-// place the paper in the scene (turning over, rotating, which side stays put)
-// and to draw the fold lines and arrows.
+// folded flat). Steps of plain folds are drawn straight from that exact pose:
+// flaps turn rigidly about their hinges and each layer sits a paper thickness
+// above the one below. Collapses and 3D shaping run a paper simulation (see
+// engine/sim.ts) whose result is placed onto the exact pose.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { CameraSpec, CompiledModel, Phase, PhaseFace } from '../engine/types';
@@ -186,11 +185,33 @@ class SheetView {
   front: THREE.Mesh;
   back: THREE.Mesh;
   lines: THREE.LineSegments;
+  /** Positions of the mesh vertices (used for the crease lines and framing). */
   pos: Float32Array;
+  posAttr: THREE.BufferAttribute;
+  /**
+   * The drawn surface has its own copy of each vertex per crease-pattern face, so every face can be
+   * lifted off the layers below it as one rigid piece (no kinks inside a face).
+   */
+  rpos: Float32Array;
+  /** For each drawn vertex: its mesh vertex, and its crease-pattern face. */
+  rvert: Int32Array;
+  rface: Int32Array;
   constructor(public mesh: SimMesh, colors: { front: string; back: string }) {
     this.pos = new Float32Array(mesh.n * 3);
-    this.geo.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
-    this.geo.setIndex(new THREE.BufferAttribute(new Uint32Array(mesh.tris), 1));
+    this.posAttr = new THREE.BufferAttribute(this.pos, 3);
+    const key = new Map<number, number>(), rv: number[] = [], rf: number[] = [], idx: number[] = [];
+    const nf = Math.max(1, ...Array.from(mesh.triFace)) + 1;
+    for (let k = 0; k < mesh.tris.length; k++) {
+      const v = mesh.tris[k], f = mesh.triFace[Math.floor(k / 3)], kk = v * nf + f;
+      let r = key.get(kk);
+      if (r === undefined) { r = rv.length; key.set(kk, r); rv.push(v); rf.push(f); }
+      idx.push(r);
+    }
+    this.rvert = Int32Array.from(rv);
+    this.rface = Int32Array.from(rf);
+    this.rpos = new Float32Array(rv.length * 3);
+    this.geo.setAttribute('position', new THREE.BufferAttribute(this.rpos, 3));
+    this.geo.setIndex(new THREE.BufferAttribute(new Uint32Array(idx), 1));
     const mk = (color: string, side: THREE.Side) => new THREE.MeshStandardMaterial({
       color, side, flatShading: true, roughness: 0.92, metalness: 0,
       polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
@@ -205,7 +226,7 @@ class SheetView {
       const out: number[] = [];
       for (let k = 0; k < mesh.lineKind.length; k++) if (mesh.lineKind[k] === kind) out.push(mesh.lines[2 * k], mesh.lines[2 * k + 1]);
       const g = new THREE.BufferGeometry();
-      g.setAttribute('position', this.geo.getAttribute('position'));
+      g.setAttribute('position', this.posAttr);
       g.setIndex(new THREE.BufferAttribute(new Uint32Array(out), 1));
       return g;
     };
@@ -294,14 +315,12 @@ export class FoldViewer {
   private floors = new Map<number, number>();
   /** First step that folds each crease, per sheet (creases appear only once they are made). */
   private born: Int32Array[] = [];
-  /** Start and end offsets for the exact (kinematic) playback of the current step, per sheet. */
-  private kin: { d0: Float32Array; d1: Float32Array }[] | null = null;
+  /** True when the current step is drawn from the exact flat-fold pose (see exactStep). */
+  private exact = false;
   /** Smoothed placement of the simulated paper (rotation as a quaternion, and translation). */
   private place: { q: THREE.Quaternion; t: THREE.Vector3 }[] = [];
   /** True once the person has turned the camera themselves during this step. */
   userCamera = false;
-  /** 0 = folds rest open, 1 = pressed completely flat. */
-  flatness = 0.75;
   /** For each sheet and phase, the phase face index of every mesh vertex. */
   private vertMatch: Int32Array[][] = [];
   /** For each sheet and phase, the phase face index of every crease-pattern face. */
@@ -358,9 +377,8 @@ export class FoldViewer {
 
     this.sim = new FoldSim(model);
     this.born = this.sim.meshes.map((_, i) => this.sim.creaseBorn(i));
-    try { const f = Number(localStorage.getItem('origami:flatness')); if (f >= 0 && f <= 1 && localStorage.getItem('origami:flatness') !== null) this.flatness = f; } catch { /* ignore */ }
-    if (opts.thumbnail || opts.spin) this.flatness = 0.75;
-    this.sim.setRest([0.62 + 0.38 * this.flatness, 0.96 + 0.04 * this.flatness, 1]);
+    // Simulated steps (collapses, 3D shaping) start from paper folded almost flat, like the exact poses.
+    this.sim.setRest([0.98, 1, 1]);
     this.sheets = this.sim.meshes.map((m) => {
       const sh = model.sheets.find((s) => s.id === m.sheet)!;
       const v = new SheetView(m, this.colors[m.sheet] ?? { front: sh.front, back: sh.back });
@@ -413,7 +431,7 @@ export class FoldViewer {
     this.phases.forEach((v, k) => this.buildOverlay(v, k));
     this.sim.ensureStep(this.step);
     this.sim.load(this.sim.stateAt(this.step, 1));
-    this.buildKinematic();
+    this.exact = this.exactStep();
     this.place = [];
 
     if (camera) this.userCamera = false;
@@ -568,76 +586,37 @@ export class FoldViewer {
     return out;
   }
 
-  /** Orthonormal frame (origin, x, y, normal) of face fi's paper point p at time `local` of phase fp, in three.js. */
-  private faceFrame(fp: FlatPhase, fi: number, local: number, p: V2, o: THREE.Vector3, ex: THREE.Vector3, ey: THREE.Vector3, n: THREE.Vector3) {
-    const v = new THREE.Vector3();
-    toThree(fp.pose(fi, local, p, v), o);
-    toThree(fp.pose(fi, local, [p[0] + 1, p[1]], v), ex).sub(o).normalize();
-    toThree(fp.pose(fi, local, [p[0], p[1] + 1], v), ey).sub(o);
-    n.copy(ex).cross(ey).normalize();
-    ey.copy(n).cross(ex);
-  }
-
   /**
-   * For a step of rigid folds, the shape of the simulated paper at the start and end of the step,
-   * stored per vertex as offsets from the exact flat pose in each face's own frame. Playing the step
-   * moves the exact pose (flaps turn rigidly about their hinges) and blends these offsets, so the
-   * motion is exact and smooth while the resting shapes still come from the simulation.
+   * Whether the current step is drawn from the exact flat-fold pose. Flaps then turn rigidly about
+   * their hinges, flat paper stays perfectly flat, and creases not made yet cannot show. Collapses
+   * (chain) and 3D shaping or standing are not rigid hinge motions, so those steps, and every step
+   * after the paper has been shaped, replay the simulation instead.
    */
-  private buildKinematic() {
-    this.kin = null;
-    if (this.step >= this.stepCount) return;
-    const step = this.model.steps[this.step];
-    // Collapses (chain) and 3D shaping are not rigid hinge motions: those replay the simulation instead.
-    if (!step.phases.length || step.phases.some((p) => p.motion === 'shape' || p.motion === 'stand' || p.motion === 'chain')) return;
-    const startS = this.sim.stateAt(this.step), endS = this.sim.stateAt(this.step + 1);
-    const last = this.phases.length - 1;
-    const o = new THREE.Vector3(), ex = new THREE.Vector3(), ey = new THREE.Vector3(), nn = new THREE.Vector3();
-    const local = (state: { x: Float64Array }[], si: number, pi: number, t: number) => {
-      const fp = this.phases[pi];
-      fp.prepare(t);
-      const P = this.fitToPose(si, state[si].x, fp, pi, t, () => 1);
-      const mesh = this.sim.meshes[si], match = this.vertMatch[si][pi];
-      const d = new Float32Array(3 * mesh.n);
-      for (let i = 0; i < mesh.n; i++) {
-        const fi = match[i];
-        if (fi < 0) continue;
-        this.faceFrame(fp, fi, t, [mesh.paper[2 * i], mesh.paper[2 * i + 1]], o, ex, ey, nn);
-        const dx = P[3 * i] - o.x, dy = P[3 * i + 1] - o.y, dz = P[3 * i + 2] - o.z;
-        d[3 * i] = dx * ex.x + dy * ex.y + dz * ex.z;
-        d[3 * i + 1] = dx * ey.x + dy * ey.y + dz * ey.z;
-        d[3 * i + 2] = dx * nn.x + dy * nn.y + dz * nn.z;
-      }
-      return d;
-    };
-    this.kin = this.sim.meshes.map((_, si) => ({ d0: local(startS, si, 0, 0), d1: local(endS, si, last, 1) }));
-    this.sim.load(startS);
+  private exactStep(i = this.step): boolean {
+    const steps = this.model.steps;
+    const shaped = (k: number) => steps[k].phases.some((p) => p.motion === 'shape' || p.motion === 'stand');
+    for (let k = 0; k < Math.min(i + 1, steps.length); k++) if (shaped(k)) return false;
+    if (i >= steps.length) return true;
+    return !steps[i].phases.some((p) => p.motion === 'chain');
   }
 
   /** Runs the solver a little (or replays the step) and places the meshes. */
   private updateMesh(iters: number) {
     const { index, local } = this.current();
     const fp = this.phases[Math.min(index, this.phases.length - 1)];
-    if (this.kin) {
+    if (this.exact) {
       this.simBudget = 0;
       fp.prepare(local);
-      const e = ease(this.t);
-      const o = new THREE.Vector3(), ex = new THREE.Vector3(), ey = new THREE.Vector3(), nn = new THREE.Vector3();
+      const v = new THREE.Vector3(), w = new THREE.Vector3();
       let minY = Infinity;
       this.sim.meshes.forEach((mesh, si) => {
-        const { d0, d1 } = this.kin![si];
         const match = this.vertMatch[si][Math.min(index, this.vertMatch[si].length - 1)];
         const P = this.sheets[si].pos;
         for (let i = 0; i < mesh.n; i++) {
           const fi = match[i];
           if (fi < 0) continue;
-          this.faceFrame(fp, fi, local, [mesh.paper[2 * i], mesh.paper[2 * i + 1]], o, ex, ey, nn);
-          const a = d0[3 * i] + (d1[3 * i] - d0[3 * i]) * e;
-          const b = d0[3 * i + 1] + (d1[3 * i + 1] - d0[3 * i + 1]) * e;
-          const c = d0[3 * i + 2] + (d1[3 * i + 2] - d0[3 * i + 2]) * e;
-          P[3 * i] = o.x + ex.x * a + ey.x * b + nn.x * c;
-          P[3 * i + 1] = o.y + ex.y * a + ey.y * b + nn.y * c;
-          P[3 * i + 2] = o.z + ex.z * a + ey.z * b + nn.z * c;
+          toThree(fp.pose(fi, local, [mesh.paper[2 * i], mesh.paper[2 * i + 1]], v), w);
+          P[3 * i] = w.x; P[3 * i + 1] = w.y; P[3 * i + 2] = w.z;
         }
         minY = Math.min(minY, this.finishSheet(si, fp, index, local));
       });
@@ -666,50 +645,106 @@ export class FoldViewer {
     const lowW = 1 - 0.98 * smooth(0, 0.18, local) * (1 - smooth(0.82, 1, local));
     const still = (fi: number) => (anchored ? (fp.faces[fi].k ? 1 : 0.02) : hasStill ? (fp.faces[fi].d === 0 ? 1 : lowW) : 1);
     let minY = Infinity;
+    const ends = this.chainEnds();
+    const e = ease(this.t);
     this.sim.solvers.forEach((sv, si) => {
       const placed = this.fitToPose(si, sv.x, fp, index, local, still);
+      if (ends) {
+        // A collapse starts and ends exactly on the flat pose; the simulation only fills in the middle.
+        const { c0, c1 } = ends[si];
+        for (let k = 0; k < placed.length; k++) placed[k] += c0[k] * (1 - e) + c1[k] * e;
+      }
       this.sheets[si].pos.set(placed);
       minY = Math.min(minY, this.finishSheet(si, fp, index, local));
     });
     this.placeOnTable(minY);
   }
 
+  private ends: { step: number; c: { c0: Float64Array; c1: Float64Array }[] } | null = null;
+  /**
+   * For a simulated step next to exactly drawn ones: per vertex, how far the simulated paper at the
+   * start (and end) of the step is from the exact flat pose. Blending these out keeps that end exact,
+   * so the simulated step meets the exactly drawn steps before and after it without a jump.
+   */
+  private chainEnds(): { c0: Float64Array; c1: Float64Array }[] | null {
+    if (this.exact || this.step >= this.stepCount) return null;
+    const atStart = this.step === 0 || this.exactStep(this.step - 1), atEnd = this.exactStep(this.step + 1);
+    if (!atStart && !atEnd) return null;
+    const F = this.sim.frames[this.step];
+    if (!F || F.length < 2) return null;
+    if (this.ends?.step === this.step) return this.ends.c;
+    const v = new THREE.Vector3(), w = new THREE.Vector3();
+    const corr = (si: number, pi: number, t: number, X: Float64Array) => {
+      const fp = this.phases[pi];
+      fp.prepare(t);
+      const placed = this.fitToPose(si, X, fp, pi, t, () => 1);
+      const mesh = this.sim.meshes[si], match = this.vertMatch[si][pi];
+      const c = new Float64Array(placed.length);
+      for (let i = 0; i < mesh.n; i++) {
+        const fi = match[i];
+        if (fi < 0) continue;
+        toThree(fp.pose(fi, t, [mesh.paper[2 * i], mesh.paper[2 * i + 1]], v), w);
+        c[3 * i] = w.x - placed[3 * i]; c[3 * i + 1] = w.y - placed[3 * i + 1]; c[3 * i + 2] = w.z - placed[3 * i + 2];
+      }
+      return c;
+    };
+    const last = this.phases.length - 1;
+    const zero = (si: number) => new Float64Array(3 * this.sim.meshes[si].n);
+    const c = this.sim.meshes.map((_, si) => ({
+      c0: atStart ? corr(si, 0, 0, F[0].x[si]) : zero(si),
+      c1: atEnd ? corr(si, last, 1, F[F.length - 1].x[si]) : zero(si),
+    }));
+    this.ends = { step: this.step, c };
+    return c;
+  }
+
   /** Adds layer thickness to sheet si's placed positions, updates its creases, and returns its lowest point. */
   private finishSheet(si: number, fp: FlatPhase, index: number, local: number): number {
     const mesh = this.sim.meshes[si], n = mesh.n, T = mesh.tris, nt = T.length / 3;
-    const P = this.sheets[si].pos;
+    const sh = this.sheets[si], P = sh.pos;
     const faceMatch = this.faceMatch[si][Math.min(index, this.faceMatch[si].length - 1)];
-    let minY = Infinity;
-    // Layers that lie flat on each other would z-fight or cross. Lift each triangle off the
-    // layers below it, along its own "up" (the side that faced up in the flat diagram).
+    // Layers that lie flat on each other would z-fight or cross. Lift each crease-pattern face off
+    // the layers below it, as one rigid piece, along its own "up" (the side that faced up in the
+    // flat diagram).
     const e = ease(local), off = this.layerGap;
-    const acc = new Float32Array(3 * n), cnt = new Float32Array(n);
+    const nf = faceMatch.length;
+    const fOff = new Float32Array(3 * nf), fSet = new Uint8Array(nf);
     for (let k = 0; k < nt; k++) {
-      const fi = faceMatch[mesh.triFace[k]];
+      const cf = mesh.triFace[k];
+      if (fSet[cf]) continue;
+      const fi = faceMatch[cf];
       if (fi < 0) continue;
       const f = fp.faces[fi];
       const moving = f.d !== 0 && fp.phase.motion !== 'none';
       // A moving flap turns over as a rigid stack: keep its start order until halfway, then its end order.
       const dep = moving ? (e > 0.5 ? fp.depthB[fi] : fp.depthA[fi]) : fp.depthA[fi] + (fp.depthB[fi] - fp.depthA[fi]) * e;
       const det0 = det(moving && e > 0.5 ? f.b : f.a) > 0 ? 1 : -1;
-      const wgt = 1;
       const a = T[3 * k], b = T[3 * k + 1], c = T[3 * k + 2];
       const ux = P[3 * b] - P[3 * a], uy = P[3 * b + 1] - P[3 * a + 1], uz = P[3 * b + 2] - P[3 * a + 2];
       const qx = P[3 * c] - P[3 * a], qy = P[3 * c + 1] - P[3 * a + 1], qz = P[3 * c + 2] - P[3 * a + 2];
-      let nx = uy * qz - uz * qy, ny = uz * qx - ux * qz, nz = ux * qy - uy * qx;
-      const nl = Math.hypot(nx, ny, nz) || 1;
-      const sc = (det0 * dep * off * wgt) / nl;
-      nx *= sc; ny *= sc; nz *= sc;
-      for (const vtx of [a, b, c]) { acc[3 * vtx] += nx; acc[3 * vtx + 1] += ny; acc[3 * vtx + 2] += nz; cnt[vtx]++; }
+      const nx = uy * qz - uz * qy, ny = uz * qx - ux * qz, nz = ux * qy - uy * qx;
+      const nl = Math.hypot(nx, ny, nz);
+      if (nl < 1e-12) continue;
+      const sc = (det0 * dep * off) / nl;
+      fOff[3 * cf] = nx * sc; fOff[3 * cf + 1] = ny * sc; fOff[3 * cf + 2] = nz * sc;
+      fSet[cf] = 1;
     }
-    for (let i = 0; i < n; i++) {
-      if (cnt[i]) { P[3 * i] += acc[3 * i] / cnt[i]; P[3 * i + 1] += acc[3 * i + 1] / cnt[i]; P[3 * i + 2] += acc[3 * i + 2] / cnt[i]; }
-      if (P[3 * i + 1] < minY) minY = P[3 * i + 1];
+    let minY = Infinity;
+    const R = sh.rpos, rv = sh.rvert, rf = sh.rface;
+    const acc = new Float32Array(3 * n), cnt = new Float32Array(n);
+    for (let r = 0; r < rv.length; r++) {
+      const v = rv[r], cf = rf[r];
+      const x = P[3 * v] + fOff[3 * cf], y = P[3 * v + 1] + fOff[3 * cf + 1], z = P[3 * v + 2] + fOff[3 * cf + 2];
+      R[3 * r] = x; R[3 * r + 1] = y; R[3 * r + 2] = z;
+      acc[3 * v] += x; acc[3 * v + 1] += y; acc[3 * v + 2] += z; cnt[v]++;
+      if (y < minY) minY = y;
     }
-    this.sheets[si].showCreases(this.born[si], this.step, this.step >= this.stepCount ? 0 : index, this.step >= this.stepCount ? 1 : local);
-    const g = this.sheets[si].geo;
-    g.attributes.position.needsUpdate = true;
-    g.computeBoundingSphere();
+    // Crease lines sit where the faces beside them meet.
+    for (let i = 0; i < n; i++) if (cnt[i]) { P[3 * i] = acc[3 * i] / cnt[i]; P[3 * i + 1] = acc[3 * i + 1] / cnt[i]; P[3 * i + 2] = acc[3 * i + 2] / cnt[i]; }
+    sh.showCreases(this.born[si], this.step, this.step >= this.stepCount ? 0 : index, this.step >= this.stepCount ? 1 : local);
+    sh.geo.attributes.position.needsUpdate = true;
+    sh.posAttr.needsUpdate = true;
+    sh.geo.computeBoundingSphere();
     return minY;
   }
 
@@ -796,23 +831,6 @@ export class FoldViewer {
     const to = sph.clone();
     to.theta = cur.theta + dTheta;
     this.camTween = { from: cur, to, tf: this.controls.target.clone(), tt: center, t: 0 };
-  }
-
-  /** Sets how flat the folds are pressed (0 = relaxed and open, 1 = completely flat). */
-  setFlatness(f: number) {
-    this.flatness = Math.max(0, Math.min(1, f));
-    try { localStorage.setItem('origami:flatness', String(this.flatness)); } catch { /* ignore */ }
-    const g = this.flatness;
-    this.sim.setRest([0.62 + 0.38 * g, 0.96 + 0.04 * g, 1]);
-    const t = this.t, playing = this.playing;
-    this.sim.ensureStep(this.step);
-    this.sim.load(this.sim.stateAt(this.step, 1));
-    this.buildKinematic();
-    this.t = t;
-    this.playing = playing;
-    this.floors.clear();
-    this.applyT();
-    this.simBudget = Math.max(this.simBudget, 3000);
   }
 
   /** Height the paper needs above the table at the start of step i, from the exact pose over the step before it and itself. */

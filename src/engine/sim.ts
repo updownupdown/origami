@@ -321,6 +321,9 @@ export class Solver {
   kBar: Float64Array;
   cBar: Float64Array;
   kHinge: Float64Array;
+  /** Stiffness of each crease hinge once made, and before it is made. */
+  kCrease: Float64Array;
+  kUnmade: Float64Array;
   restLen: Float64Array;
   dt: number;
   /** Largest vertex speed in the last iteration. */
@@ -348,7 +351,15 @@ export class Solver {
       kMax = Math.max(kMax, k);
     }
     this.kHinge = new Float64Array(nh);
-    for (let h = 0; h < nh; h++) this.kHinge[h] = (mesh.hingeCrease[h] ? opt.crease ?? 0.7 : opt.facet ?? 0.15) * (mesh.hingeLen[h] / s);
+    // Creases not made yet are much stiffer than made ones, so the paper cannot bend along them early.
+    // Facet diagonals stay soft: shaped models (boxes, pots) need their faces to give a little.
+    this.kCrease = new Float64Array(nh);
+    this.kUnmade = new Float64Array(nh);
+    for (let h = 0; h < nh; h++) {
+      this.kCrease[h] = (opt.crease ?? 0.7) * (mesh.hingeLen[h] / s);
+      this.kUnmade[h] = 3 * this.kCrease[h];
+      this.kHinge[h] = (mesh.hingeCrease[h] ? opt.crease ?? 0.7 : opt.facet ?? 0.15) * (mesh.hingeLen[h] / s);
+    }
     this.target = new Float64Array(nh);
     this.theta = new Float64Array(nh);
     this.dt = 0.9 / (2 * Math.PI * Math.sqrt(kMax));
@@ -540,7 +551,7 @@ export class FoldSim {
     this.angles.forEach((phases, s) => phases.forEach((A, p) => {
       const a = A.a[i], b = A.b[i], m = A.mid?.[i];
       for (let h = 0; h < nh; h++) {
-        if ((a[h] !== b[h] || (m && m[h] !== 0)) && out[h] > s * 64 + p) out[h] = s * 64 + Math.min(p, 63);
+        if ((a[h] !== 0 || b[h] !== 0 || (m && m[h] !== 0)) && out[h] > s * 64 + p) out[h] = s * 64 + Math.min(p, 63);
       }
     }));
     return out;
@@ -594,6 +605,16 @@ export class FoldSim {
   }
 
   /** Changes how far folds rest open ([newest, previous, older] factors of a full fold) and drops cached states. */
+  /** Creases not made by the end of step s are stiff, so they cannot bend early. */
+  private setMadeCreases(s: number) {
+    this.solvers.forEach((sv, i) => {
+      const born = (this.born[i] ??= this.creaseBorn(i)), lim = (s + 1) * 64;
+      const crease = this.meshes[i].hingeCrease;
+      for (let h = 0; h < born.length; h++) if (crease[h]) sv.kHinge[h] = born[h] < lim ? sv.kCrease[h] : sv.kUnmade[h];
+    });
+  }
+  private born: Int32Array[] = [];
+
   setRest(rest: [number, number, number]) {
     this.rest = rest;
     this.cache.length = 1;
@@ -657,6 +678,7 @@ export class FoldSim {
     const np = Math.max(1, ph.length);
     const sub = Math.max(8, Math.round(20 * quality));
     const snap = () => this.solvers.map((sv) => sv.x.slice());
+    this.setMadeCreases(s);
     const frames: { t: number; x: Float64Array[] }[] = [{ t: 0, x: snap() }];
     for (let p = 0; p < ph.length; p++) {
       const changed = this.solvers.some((_, i) => ph[p].kind === 'crease' || ph[p].a[i].some((v, h) => v !== ph[p].b[i][h]));
