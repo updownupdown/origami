@@ -42,6 +42,8 @@ export interface SimMesh {
   /** Edges to draw: crease (1), boundary (2). Vertex pairs. */
   lines: Uint32Array;
   lineKind: Uint8Array;
+  /** For each line, its hinge (creases) or -1 (paper edges). */
+  lineHinge: Int32Array;
   /** Sheet size, used to normalise the solver. */
   size: number;
 }
@@ -170,7 +172,7 @@ export function buildMesh(sheet: string, polys0: V2[][], size: number): SimMesh 
   }
   const bars: number[] = [], barLen: number[] = [];
   const hinges: number[] = [], hingeCrease: number[] = [], hingeLen: number[] = [], hingeFaces: number[] = [];
-  const lines: number[] = [], lineKind: number[] = [];
+  const lines: number[] = [], lineKind: number[] = [], lineHinge: number[] = [];
   const L = (a: number, b: number) => Math.hypot(verts[a][0] - verts[b][0], verts[a][1] - verts[b][1]);
   for (const e of edgeMap.values()) {
     bars.push(e.a, e.b);
@@ -184,10 +186,11 @@ export function buildMesh(sheet: string, polys0: V2[][], size: number): SimMesh 
       hingeCrease.push(crease);
       hingeLen.push(L(e.a, e.b));
       hingeFaces.push(fl, fr);
-      if (crease) { lines.push(e.a, e.b); lineKind.push(1); }
+      if (crease) { lines.push(e.a, e.b); lineKind.push(1); lineHinge.push(hingeCrease.length - 1); }
     } else if (e.wings.length === 1) {
       lines.push(e.a, e.b);
       lineKind.push(2);
+      lineHinge.push(-1);
     }
   }
   // Shear bars across each pair of triangles in a face keep facets from collapsing in-plane.
@@ -203,7 +206,7 @@ export function buildMesh(sheet: string, polys0: V2[][], size: number): SimMesh 
     hinges: Uint32Array.from(hinges), hingeCrease: Uint8Array.from(hingeCrease), hingeLen: Float64Array.from(hingeLen),
     hingeFaces: Int32Array.from(hingeFaces),
     faces: full.map((ring) => ring.map((v) => verts[v])), faceSample,
-    vertFace, lines: Uint32Array.from(lines), lineKind: Uint8Array.from(lineKind), size,
+    vertFace, lines: Uint32Array.from(lines), lineKind: Uint8Array.from(lineKind), lineHinge: Int32Array.from(lineHinge), size,
   };
 }
 
@@ -526,6 +529,21 @@ export class FoldSim {
       this.lastAt.push(next);
       cur = next;
     }
+  }
+
+  /**
+   * For each hinge of sheet i, when it is first folded, encoded as step * 64 + phase (or a large
+   * number if never).
+   */
+  creaseBorn(i: number): Int32Array {
+    const nh = this.meshes[i].hingeLen.length, out = new Int32Array(nh).fill(1 << 30);
+    this.angles.forEach((phases, s) => phases.forEach((A, p) => {
+      const a = A.a[i], b = A.b[i], m = A.mid?.[i];
+      for (let h = 0; h < nh; h++) {
+        if ((a[h] !== b[h] || (m && m[h] !== 0)) && out[h] > s * 64 + p) out[h] = s * 64 + Math.min(p, 63);
+      }
+    }));
+    return out;
   }
 
   /** Rest factor of hinge h of sheet i at the start of step s. */

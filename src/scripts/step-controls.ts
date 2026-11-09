@@ -5,8 +5,8 @@ import { runAt, sheetRuns, type SheetRun } from '../lib/sheets';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
-/** Speeds for the three plays of a step after landing on it: each slower than the last. */
-const SPEEDS = [1, 0.7, 0.5];
+/** Each step plays once after landing on it; tapping the knob replays it. */
+const SPEEDS = [1];
 /** Narrowest a step may get on the bar before the bar scrolls sideways (px). */
 const MIN_STEP = 22;
 /** Gap between chapters on the bar (px). */
