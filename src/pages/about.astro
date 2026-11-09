@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import index from '../generated/index.json';
 const base = import.meta.env.BASE_URL;
+const build = `${(process.env.GITHUB_SHA ?? 'local').slice(0, 7)} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 const foldable = index.filter((e: any) => e.kind === 'foldable');
 const designers = [...new Set(foldable.map((e: any) => e.designer))].sort();
 ---
@@ -25,6 +26,7 @@ const designers = [...new Set(foldable.map((e: any) => e.designer))].sort();
     <p>Install this site from your browser's menu to use it like an app. Models you have opened stay available offline.</p>
     <h2>For makers</h2>
     <p>Every model can be downloaded as a <a href="https://github.com/edemaine/fold" rel="noopener">FOLD</a> file, and you can write your own in the <a href={`${base}author/`}>editor</a>. The source is on <a href="https://github.com/updownupdown/origami">GitHub</a>.</p>
+    <p class="build">Build {build}</p>
   </main>
 </Base>
 <style>
@@ -32,6 +34,7 @@ const designers = [...new Set(foldable.map((e: any) => e.designer))].sort();
   h1 { font-weight: 600; }
   h2 { font-weight: 500; margin-top: 28px; }
   li { margin: 6px 0; }
+  .build { margin-top: 32px; font-size: 13px; color: var(--ink-soft); }
   .lv, .lm { display: inline-block; width: 28px; border-top: 2px dashed var(--valley); vertical-align: middle; }
   .lm { border-top: 2px dotted var(--mountain); }
 </style>

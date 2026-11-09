@@ -241,23 +241,58 @@ class SheetView {
     };
     this.lines = new THREE.LineSegments(pick(1), new THREE.LineBasicMaterial({ color: 0x2b2a28, transparent: true, opacity: 0.22 }));
     this.lines.add(new THREE.LineSegments(pick(2), new THREE.LineBasicMaterial({ color: 0x2b2a28, transparent: true, opacity: 0.55 })));
+    // Creases made in this step stay in their valley/mountain colour until the next step, where they
+    // fade back to plain creases.
+    this.fresh = [0x2f6fdb, 0xc4540a, 0x2f6fdb, 0xc4540a].map((color) => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', this.posAttr);
+      g.setIndex(new THREE.BufferAttribute(new Uint32Array(0), 1));
+      const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.95, depthFunc: THREE.LessEqualDepth }));
+      l.renderOrder = 2;
+      this.lines.add(l);
+      return l;
+    });
     this.lines.traverse((o) => (o.frustumCulled = false));
   }
+  /** Coloured creases: valley and mountain made this step, then valley and mountain made last step (fading). */
+  private fresh: THREE.LineSegments[];
+  private freshKey = '';
   private shownKey = '';
   /**
    * Shows only the creases that have been made by now: those folded earlier, plus the ones the
    * current phase is folding once it has started. `born` is each hinge's first step * 64 + phase.
    */
-  showCreases(born: Int32Array, step: number, phase: number, local: number) {
+  showCreases(born: Int32Array, step: number, phase: number, local: number, kinds?: Int8Array, fadeIn = 1) {
     const now = step * 64 + Math.min(phase, 63);
     const m = this.mesh, out: number[] = [];
+    const fresh: number[][] = [[], [], [], []];
     let key = '';
     for (let k = 0; k < m.lineKind.length; k++) {
       if (m.lineKind[k] !== 1) continue;
       const b = born[m.lineHinge[k]];
       const on = b < now || (b === now && local > 0.04);
-      key += on ? '1' : '0';
-      if (on) out.push(m.lines[2 * k], m.lines[2 * k + 1]);
+      // A coloured crease replaces the plain one (two lines in one place would flicker).
+      let slot = -1;
+      if (on && kinds && kinds[m.lineHinge[k]]) {
+        const bs = Math.floor(b / 64);
+        slot = bs === step ? 0 : bs === step - 1 && fadeIn < 0.999 ? 2 : -1;
+        if (slot >= 0 && kinds[m.lineHinge[k]] < 0) slot++;
+      }
+      key += on && slot < 0 ? '1' : '0';
+      if (on && slot < 0) out.push(m.lines[2 * k], m.lines[2 * k + 1]);
+      if (slot >= 0) fresh[slot].push(m.lines[2 * k], m.lines[2 * k + 1]);
+    }
+    const fk = fresh.map((f) => f.join(',')).join('|');
+    if (fk !== this.freshKey) {
+      this.freshKey = fk;
+      fresh.forEach((f, i) => this.fresh[i].geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(f), 1)));
+    }
+    // Last step's creases turn back into plain creases as this step begins.
+    for (const i of [2, 3]) {
+      const mat = this.fresh[i].material as THREE.LineBasicMaterial;
+      mat.color.set(i === 2 ? 0x2f6fdb : 0xc4540a).lerp(PLAIN, fadeIn);
+      mat.userData.base = 0.95 + (0.22 - 0.95) * fadeIn;
+      mat.opacity = mat.userData.base;
     }
     if (key === this.shownKey) return;
     this.shownKey = key;
@@ -291,6 +326,7 @@ class SheetView {
   }
 }
 
+const PLAIN = new THREE.Color(0x2b2a28);
 const PRESET_DEFAULT: CameraSpec = { azimuth: 0, elevation: 72, zoom: 1 };
 
 export interface ViewerOptions {
@@ -325,6 +361,8 @@ export class FoldViewer {
   /** 0..1 across all phases of the current step. */
   t = 0;
   playing = false;
+  /** Set while a step plays backwards to its start (see `rewind`). */
+  rewinding: { from: number; then?: () => void } | null = null;
   /** Seconds per phase while playing. */
   phaseSeconds = 1.6;
   thick: number;
@@ -345,6 +383,8 @@ export class FoldViewer {
   private floors = new Map<number, number>();
   /** First step that folds each crease, per sheet (creases appear only once they are made). */
   private born: Int32Array[] = [];
+  /** Per sheet, per hinge: 1 valley, -1 mountain (as seen in the step that makes it), 0 none. */
+  private kinds: Int8Array[] = [];
   /** True when the current step is drawn from the exact flat-fold pose (see exactStep). */
   private exact = false;
   /** Smoothed placement of the simulated paper (rotation as a quaternion, and translation). */
@@ -407,6 +447,7 @@ export class FoldViewer {
 
     this.sim = new FoldSim(model);
     this.born = this.sim.meshes.map((_, i) => this.sim.creaseBorn(i));
+    this.kinds = this.sim.meshes.map((_, i) => this.creaseKinds(i));
     this.kin = new Kinematics(model, this.sim.meshes, this.sim.angles, this.born);
     // Simulated steps (collapses, 3D shaping) start from paper folded almost flat, like the exact poses.
     this.sim.setRest([0.98, 1, 1]);
@@ -450,6 +491,7 @@ export class FoldViewer {
   /** Show step i (0-based). i === stepCount shows the finished model. */
   showStep(i: number, { play = true, camera = true } = {}) {
     this.step = Math.max(0, Math.min(i, this.stepCount));
+    this.rewinding = null;
     for (const p of this.phases) { this.overlays.remove(p.overlay); p.dispose(); }
     const finished = this.step === this.stepCount;
     const phases = finished ? [] : this.model.steps[this.step].phases;
@@ -674,7 +716,7 @@ export class FoldViewer {
       const v = new THREE.Vector3(), w = new THREE.Vector3();
       let minY = Infinity;
       const pose = (t: number, views: SheetView[]) => {
-        const X = this.kin.frameAt(this.step, t);
+        const X = this.kin.frameAt(this.step, t), lift = this.kin.stackAt(this.step, t);
         X.forEach((Xs, si) => {
           const raw = this.kin.positions(si, Xs);
           const P = views[si].pos;
@@ -683,7 +725,20 @@ export class FoldViewer {
             toThree(v, w);
             P[3 * i] = w.x; P[3 * i + 1] = w.y; P[3 * i + 2] = w.z;
           }
-          minY = Math.min(minY, this.finishSheet(si, fp, index, local, views[si]));
+          // The lift is a direction in paper-world space: carry it through the same tilt and axes.
+          let L = lift?.[si];
+          if (L) {
+            const o = fp.tilt(local, v.set(0, 0, 0)).clone(), q = new THREE.Vector3(), r = new THREE.Vector3();
+            const out = new Float32Array(L.length);
+            for (let f = 0; f < L.length / 3; f++) {
+              if (!L[3 * f] && !L[3 * f + 1] && !L[3 * f + 2]) continue;
+              fp.tilt(local, q.set(L[3 * f], L[3 * f + 1], L[3 * f + 2])).sub(o);
+              toThree(q, r);
+              out[3 * f] = r.x; out[3 * f + 1] = r.y; out[3 * f + 2] = r.z;
+            }
+            L = out;
+          }
+          minY = Math.min(minY, this.finishSheet(si, fp, index, local, views[si], L));
         });
       };
       if (span) {
@@ -776,7 +831,7 @@ export class FoldViewer {
   }
 
   /** Adds layer thickness to sheet si's placed positions, updates its creases, and returns its lowest point. */
-  private finishSheet(si: number, fp: FlatPhase, index: number, local: number, sh = this.sheets[si]): number {
+  private finishSheet(si: number, fp: FlatPhase, index: number, local: number, sh = this.sheets[si], lift?: Float32Array): number {
     const mesh = this.sim.meshes[si], n = mesh.n, T = mesh.tris, nt = T.length / 3;
     const P = sh.pos;
     const faceMatch = this.faceMatch[si][Math.min(index, this.faceMatch[si].length - 1)];
@@ -806,6 +861,11 @@ export class FoldViewer {
       fOff[3 * cf] = nx * sc; fOff[3 * cf + 1] = ny * sc; fOff[3 * cf + 2] = nz * sc;
       fSet[cf] = 1;
     }
+    // Faces that came to lie on each other in 3D: lift them apart in the order they met.
+    if (lift) {
+      const g = off * 1.5;
+      for (let f = 0; f < nf; f++) { fOff[3 * f] += lift[3 * f] * g; fOff[3 * f + 1] += lift[3 * f + 1] * g; fOff[3 * f + 2] += lift[3 * f + 2] * g; }
+    }
     let minY = Infinity;
     const R = sh.rpos, rv = sh.rvert, rf = sh.rface;
     const acc = new Float32Array(3 * n), cnt = new Float32Array(n);
@@ -818,11 +878,37 @@ export class FoldViewer {
     }
     // Crease lines sit where the faces beside them meet.
     for (let i = 0; i < n; i++) if (cnt[i]) { P[3 * i] = acc[3 * i] / cnt[i]; P[3 * i + 1] = acc[3 * i + 1] / cnt[i]; P[3 * i + 2] = acc[3 * i + 2] / cnt[i]; }
-    sh.showCreases(this.born[si], this.step, this.step >= this.stepCount ? 0 : index, this.step >= this.stepCount ? 1 : local);
+    sh.showCreases(this.born[si], this.step, this.step >= this.stepCount ? 0 : index, this.step >= this.stepCount ? 1 : local,
+      this.kinds[si], this.step >= this.stepCount ? 1 : smooth(0, 0.3, this.t));
     sh.geo.attributes.position.needsUpdate = true;
     sh.posAttr.needsUpdate = true;
     sh.geo.computeBoundingSphere();
     return minY;
+  }
+
+  /**
+   * Valley or mountain for each crease, as the diagram of the step that makes it shows it: the fold's
+   * direction seen from the side of the paper facing up on the face that stays still.
+   */
+  private creaseKinds(si: number): Int8Array {
+    const mesh = this.sim.meshes[si], born = this.born[si], nh = mesh.hingeCrease.length;
+    const out = new Int8Array(nh);
+    for (let h = 0; h < nh; h++) {
+      if (!mesh.hingeCrease[h] || born[h] >= 1e9 || born[h] < 0) continue;
+      const s = Math.floor(born[h] / 64), p = born[h] % 64;
+      const A = this.sim.angles[s]?.[p], ph = this.model.steps[s]?.phases[p];
+      if (!A || !ph) continue;
+      const end = A.b[si][h], mid = A.mid?.[si][h] ?? 0;
+      const ang = Math.abs(mid) > Math.abs(end) ? mid : end;
+      if (Math.abs(ang) < 1e-3) continue;
+      const fl = mesh.hingeFaces[2 * h], fr = mesh.hingeFaces[2 * h + 1];
+      const pl = ph.faces[A.match[si][fl]], pr = ph.faces[A.match[si][fr]];
+      const still = pl && (pl.d === 0 || !pr) ? pl : pr ?? pl;
+      if (!still) continue;
+      const up = det(still.a) > 0 ? 1 : -1;
+      out[h] = ang * up < 0 ? 1 : -1;
+    }
+    return out;
   }
 
   /** Keeps the paper clear of the table. */
@@ -841,19 +927,31 @@ export class FoldViewer {
   setT(t: number) {
     this.t = Math.max(0, Math.min(1, t));
     this.playing = false;
+    this.rewinding = null;
     this.applyT();
   }
 
   /** Plays the current step from the start. `speed` 1 is normal; lower is slower. */
   play(speed = 1) {
     this.t = 0;
+    this.rewinding = null;
     this.phaseSeconds = 1.6 / speed;
     if (this.step < this.stepCount && this.opts.physics) this.sim.load(this.sim.stateAt(this.step));
     this.playing = true;
     this.applyT();
   }
 
-  stop() { this.playing = false; }
+  /**
+   * Plays the current step backwards from where it is to its start (quicker than playing it), then
+   * calls `then`. Used for replays and for going back a step, so folds unfold instead of vanishing.
+   */
+  rewind(then?: () => void) {
+    if (this.t <= 0) { then?.(); return; }
+    this.rewinding = { from: this.t, then };
+    this.playing = false;
+  }
+
+  stop() { this.playing = false; this.rewinding = null; }
 
   setColors(colors: Colors) {
     this.colors = colors;
@@ -965,6 +1063,13 @@ export class FoldViewer {
   private loop(time: number) {
     const dt = Math.min(0.05, (time - (this.lastTime || time)) / 1000);
     this.lastTime = time;
+    if (this.rewinding) {
+      // Rewinding takes about a third of the time playing does, and at most 1.2 seconds.
+      const dur = Math.min(1.2, (this.phaseSeconds * this.phases.length) / 3);
+      this.t = Math.max(0, this.t - dt / dur);
+      this.applyT();
+      if (this.t <= 0) { const then = this.rewinding.then; this.rewinding = null; then?.(); }
+    }
     if (this.playing) {
       const dur = this.phaseSeconds * this.phases.length;
       this.t = Math.min(1, this.t + dt / dur);

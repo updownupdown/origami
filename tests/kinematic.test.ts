@@ -57,6 +57,12 @@ describe('kinematic steps', () => {
     }, 30000);
   }
 
+  it('faces that fold flat onto each other in 3D are stacked apart (no flicker)', () => {
+    kin.ensureStep(7);
+    const end = kin.stacks[7]!.at(-1)![0];
+    expect(end.some((x) => x !== 0)).toBe(true);
+  });
+
   it('the swan finishes clean and on target', () => {
     const { m, kin, mesh } = load('models/animals/swan.yaml');
     const last = m.steps.length - 1;

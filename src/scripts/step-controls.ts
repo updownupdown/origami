@@ -4,7 +4,7 @@ import { runAt, sheetRuns, type SheetRun } from '../lib/sheets';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
-/** Each step plays once after landing on it; tapping the knob replays it. */
+/** Each step plays once after landing on it; the replay button plays it again. */
 const SPEEDS = [1];
 
 export interface StepControlsOptions {
@@ -18,8 +18,9 @@ export interface StepControlsOptions {
 
 /**
  * The step card shared by the model page and the editor: step text with chevrons beside it, and a
- * progress bar for the current step that fills as the step plays. Drag the bar to scrub through the
- * step; the knob is a replay button. Chevrons, arrow keys and the steps panel move between steps.
+ * replay button and a progress bar for the current step that fills as the step plays. Drag the bar to
+ * scrub through the step. Replaying, or going back a step, first plays the fold backwards so the paper
+ * unfolds instead of jumping. Chevrons, arrow keys and the steps panel move between steps.
  */
 export class StepControls {
   cur = 0;
@@ -37,6 +38,7 @@ export class StepControls {
     this.opts = opts;
     $('btn-prev').addEventListener('click', () => this.go(this.cur - 1));
     $('btn-next').addEventListener('click', () => this.go(this.cur + 1));
+    $('btn-replay').addEventListener('click', () => this.playRepeats());
     $('step-where').addEventListener('click', () => this.toggleMap());
     $('amap-close').addEventListener('click', () => this.toggleMap(false));
     this.bindBar();
@@ -82,7 +84,7 @@ export class StepControls {
 
   private bindBar() {
     const bar = $('pbar'), track = $('pbar-track');
-    let id = -1, downX = 0, onKnob = false, moved = false;
+    let id = -1;
     const tAt = (x: number) => {
       const r = track.getBoundingClientRect();
       return Math.max(0, Math.min(1, (x - r.left) / Math.max(1, r.width)));
@@ -97,16 +99,11 @@ export class StepControls {
       if (e.button !== 0 || !this.count || this.cur >= this.count) return;
       id = e.pointerId;
       bar.setPointerCapture(id);
-      downX = e.clientX;
-      onKnob = !!(e.target as HTMLElement).closest('.knob');
-      moved = false;
-      if (!onKnob) scrub(e.clientX);
+      scrub(e.clientX);
       e.preventDefault();
     });
     bar.addEventListener('pointermove', (e) => {
       if (e.pointerId !== id) return;
-      if (!moved && onKnob && Math.abs(e.clientX - downX) < 5) return;
-      moved = true;
       scrub(e.clientX);
     });
     const up = (e: PointerEvent) => {
@@ -114,7 +111,6 @@ export class StepControls {
       id = -1;
       this.scrubbing = false;
       bar.classList.remove('drag');
-      if (onKnob && !moved && e.type !== 'pointercancel') this.playRepeats();
     };
     bar.addEventListener('pointerup', up);
     bar.addEventListener('pointercancel', up);
@@ -173,7 +169,7 @@ export class StepControls {
 
     // The bar takes the colour of the sheet being folded (ink on one-sheet models).
     const bar = $('pbar');
-    bar.hidden = finished;
+    $('prow').hidden = finished;
     bar.className = `pbar${run?.sheet === null ? ' asm' : run ? ' paper' : ''}`;
     bar.setAttribute('style', run ? this.runStyle(run) : '');
     bar.setAttribute('aria-valuetext', finished ? 'Finished' : `Step ${i + 1} of ${N}`);
@@ -257,6 +253,7 @@ export class StepControls {
   stopRepeats() {
     this.reps = SPEEDS.length;
     clearTimeout(this.timer);
+    if (this.viewer?.rewinding) this.viewer.stop();
     if (this.viewer) this.viewer.opts.onEnd = undefined;
   }
 
@@ -271,15 +268,20 @@ export class StepControls {
       if (this.reps >= SPEEDS.length) return;
       this.timer = window.setTimeout(() => { if (this.reps < SPEEDS.length) v.play(SPEEDS[this.reps]); }, 700);
     };
-    v.play(SPEEDS[0]);
+    // Unfold back to the start of the step first, then fold it again.
+    const step = this.cur;
+    v.rewind(() => { if (this.cur === step && this.reps === 0) v.play(SPEEDS[0]); });
   }
 
   /** Shows step i (count = finished model). */
   show(i: number, play = true) {
     if (!this.viewer) return;
     this.stopRepeats();
+    const back = i < this.cur;
     this.cur = Math.max(0, Math.min(this.count, i));
     this.viewer.showStep(this.cur, { play: false, camera: this.opts.camera ?? true });
+    // Going back: start from where the paper is now (the end of this step) and unfold it.
+    if (back && play && this.cur < this.count) this.viewer.setT(1);
     this.label(this.cur);
     this.frame(this.viewer.t);
     this.opts.onLand?.(this.cur);

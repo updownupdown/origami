@@ -662,6 +662,13 @@ export class Kinematics {
   spans: [number, number][][] = [];
   /** Largest gap (degrees) between a crease the step moves and the angle the script asks for, at its end. */
   missed: number[] = [];
+  /**
+   * Per step, per frame, per sheet: how far to lift each crease-pattern face (3 per face, world xyz,
+   * in layer gaps) so faces that come to lie flat on each other in 3D don't share one plane.
+   */
+  stacks: (Float32Array[][] | undefined)[] = [];
+  /** Which side each pair of overlapping faces approached from, carried from step to step. */
+  private sides: (Map<number, number>[] | undefined)[] = [];
   /** Symmetries held in the last phase set up, per sheet (for diagnostics). */
   symmetries: number[] = [];
 
@@ -812,6 +819,7 @@ export class Kinematics {
       else spans.push([ts[a], ts[b]]);
     }
     this.spans[s] = spans;
+    this.stackStep(s, frames);
     this.gap[s] = worst;
     this.tier[s] = tier;
     this.crossed[s] = crossed;
@@ -950,6 +958,35 @@ export class Kinematics {
     return P;
   }
 
+  /**
+   * Works out the stacking lift for every frame of step s. Faces that already lay on each other in
+   * the flat diagram are kept apart by the flat layer order, so only pairs that come together in 3D
+   * count here. Their order is the side one approached the other from.
+   */
+  private stackStep(s: number, frames: KinFrame[]) {
+    const steps = this.model.steps;
+    const shaped = this.shapedBefore(s) || steps[s]?.phases.some((p) => p.motion === 'shape' || p.motion === 'chain');
+    if (!shaped) { this.stacks[s] = undefined; this.sides[s + 1] = undefined; return; }
+    const prev = this.shapedBefore(s) ? this.sides[s] : undefined;
+    const sides = this.graphs.map((_, si) => new Map(prev?.[si] ?? []));
+    const fresh = !prev;
+    this.stacks[s] = frames.map((F, j) => F.X.map((X, si) => stackLift(this.graphs[si].mesh, this.positions(si, X), sides[si], fresh && j === 0)));
+    this.sides[s + 1] = sides;
+  }
+
+  /** Stacking lift (see `stacks`) at time t through step s, per sheet; null when there's none. */
+  stackAt(s: number, t: number): Float32Array[] | null {
+    if (s >= this.model.steps.length) { s = this.model.steps.length - 1; t = 1; }
+    this.ensureStep(s);
+    const S = this.stacks[s], F = this.frames[s];
+    if (!S || !F) return null;
+    let j = 0;
+    while (j < F.length - 1 && F[j + 1].t <= t) j++;
+    const k = Math.min(F.length - 1, j + 1);
+    const w = F[k].t > F[j].t ? Math.max(0, Math.min(1, (t - F[j].t) / (F[k].t - F[j].t))) : 0;
+    return S[j].map((a, si) => { const b = S[k][si], o = new Float32Array(a.length); for (let i = 0; i < a.length; i++) o[i] = a[i] + (b[i] - a[i]) * w; return o; });
+  }
+
   /** Face transforms at time t (0..1) through step s, blended between the two nearest frames. */
   frameAt(s: number, t: number): Float64Array[] {
     if (s >= this.model.steps.length) return this.stateAt(s);
@@ -978,6 +1015,151 @@ function blendXf(A: Float64Array, B: Float64Array, w: number): Float64Array {
     compose(P, A.subarray(o, o + 12), out, o);
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Stacking: faces that lie on each other in 3D get lifted apart, in the order they came together.
+
+const faceVerts = new WeakMap<SimMesh, number[][]>();
+function vertsOf(mesh: SimMesh): number[][] {
+  let V = faceVerts.get(mesh);
+  if (!V) {
+    const sets = mesh.faces.map(() => new Set<number>());
+    for (let k = 0; k < mesh.tris.length / 3; k++) for (let c = 0; c < 3; c++) sets[mesh.triFace[k]].add(mesh.tris[3 * k + c]);
+    V = sets.map((x) => [...x]);
+    faceVerts.set(mesh, V);
+  }
+  return V;
+}
+
+/**
+ * Per face, a lift (world xyz, in layer gaps) that separates faces lying flat on each other.
+ * `sides` remembers, for each overlapping pair, which side of the first face the second was on while
+ * they were still apart; `seed` marks pairs that already touch as handled elsewhere (flat layers).
+ */
+export function stackLift(mesh: SimMesh, P: ArrayLike<number>, sides: Map<number, number>, seed: boolean): Float32Array {
+  const V = vertsOf(mesh), nf = V.length;
+  const out = new Float32Array(3 * nf);
+  const tolPlane = mesh.size * 4e-3, tolOver = mesh.size * 4e-3, near = mesh.size * 0.05;
+  const C = new Float64Array(3 * nf), N = new Float64Array(3 * nf), box = new Float64Array(6 * nf);
+  for (let f = 0; f < nf; f++) {
+    const vs = V[f];
+    let cx = 0, cy = 0, cz = 0;
+    box[6 * f] = box[6 * f + 1] = box[6 * f + 2] = Infinity;
+    box[6 * f + 3] = box[6 * f + 4] = box[6 * f + 5] = -Infinity;
+    for (const v of vs) {
+      for (let c = 0; c < 3; c++) { const x = P[3 * v + c]; box[6 * f + c] = Math.min(box[6 * f + c], x); box[6 * f + 3 + c] = Math.max(box[6 * f + 3 + c], x); }
+      cx += P[3 * v]; cy += P[3 * v + 1]; cz += P[3 * v + 2];
+    }
+    C[3 * f] = cx / vs.length; C[3 * f + 1] = cy / vs.length; C[3 * f + 2] = cz / vs.length;
+  }
+  // Face normals from the triangles (front side).
+  const T = mesh.tris;
+  for (let k = 0; k < T.length / 3; k++) {
+    const f = mesh.triFace[k], a = T[3 * k], b = T[3 * k + 1], c = T[3 * k + 2];
+    const ux = P[3 * b] - P[3 * a], uy = P[3 * b + 1] - P[3 * a + 1], uz = P[3 * b + 2] - P[3 * a + 2];
+    const vx = P[3 * c] - P[3 * a], vy = P[3 * c + 1] - P[3 * a + 1], vz = P[3 * c + 2] - P[3 * a + 2];
+    N[3 * f] += uy * vz - uz * vy; N[3 * f + 1] += uz * vx - ux * vz; N[3 * f + 2] += ux * vy - uy * vx;
+  }
+  for (let f = 0; f < nf; f++) { const l = Math.hypot(N[3 * f], N[3 * f + 1], N[3 * f + 2]) || 1; N[3 * f] /= l; N[3 * f + 1] /= l; N[3 * f + 2] /= l; }
+  // Pairs that touch flat: g lies on side s (of f's front) of f.
+  const touch: [number, number, number][] = [];
+  const order = [...Array(nf).keys()].sort((a, b) => box[6 * a] - box[6 * b]);
+  for (let i = 0; i < nf; i++) {
+    const f = order[i];
+    for (let j = i + 1; j < nf; j++) {
+      const g = order[j];
+      if (box[6 * g] > box[6 * f + 3] + near) break;
+      if (box[6 * g + 1] > box[6 * f + 4] + near || box[6 * f + 1] > box[6 * g + 4] + near || box[6 * g + 2] > box[6 * f + 5] + near || box[6 * f + 2] > box[6 * g + 5] + near) continue;
+      const [a, b] = f < g ? [f, g] : [g, f];
+      const dot = N[3 * a] * N[3 * b] + N[3 * a + 1] * N[3 * b + 1] + N[3 * a + 2] * N[3 * b + 2];
+      if (Math.abs(dot) < 0.7) continue;
+      // Signed distance of b from a's plane, and whether they overlap seen along a's normal.
+      let d = 0;
+      for (const v of V[b]) d += (P[3 * v] - C[3 * a]) * N[3 * a] + (P[3 * v + 1] - C[3 * a + 1]) * N[3 * a + 1] + (P[3 * v + 2] - C[3 * a + 2]) * N[3 * a + 2];
+      d /= V[b].length;
+      if (!overlapAlong(P, V[a], V[b], N, a, tolOver)) continue;
+      const key = a * 65536 + b;
+      if (Math.abs(d) > tolPlane || Math.abs(dot) < 0.995) { if (Math.abs(d) > tolPlane) sides.set(key, Math.sign(d)); continue; }
+      if (seed && !sides.has(key)) sides.set(key, 0);
+      const sd = sides.get(key);
+      if (sd) touch.push([a, b, sd]);
+    }
+  }
+  if (!touch.length) return out;
+  // Group touching faces, then give each a level along the group's normal (longest path upwards).
+  const par = [...Array(nf).keys()];
+  const find = (x: number): number => { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; };
+  for (const [a, b] of touch) par[find(a)] = find(b);
+  const ref = new Int32Array(nf).fill(-1);
+  for (const [a] of touch) { const r = find(a); if (ref[r] < 0) ref[r] = a; }
+  // Trust faces joined by a crease first (a flap folded flat onto its neighbour can only be on one
+  // side); drop any order that would contradict the ones already taken.
+  const hinged = new Set<number>();
+  for (let h = 0; h < mesh.hingeFaces.length / 2; h++) {
+    const a = mesh.hingeFaces[2 * h], b = mesh.hingeFaces[2 * h + 1];
+    if (a >= 0 && b >= 0 && a !== b) hinged.add(Math.min(a, b) * 65536 + Math.max(a, b));
+  }
+  touch.sort((x, y) => Number(hinged.has(y[0] * 65536 + y[1])) - Number(hinged.has(x[0] * 65536 + x[1])));
+  const above: number[][] = Array.from({ length: nf }, () => []);
+  const reaches = (from: number, to: number) => {
+    const seen = new Set([from]), st = [from];
+    while (st.length) { const x = st.pop()!; if (x === to) return true; for (const y of above[x]) if (!seen.has(y)) { seen.add(y); st.push(y); } }
+    return false;
+  };
+  for (const [a, b, sd] of touch) {
+    const r = ref[find(a)];
+    const up = sd * (N[3 * a] * N[3 * r] + N[3 * a + 1] * N[3 * r + 1] + N[3 * a + 2] * N[3 * r + 2]) > 0;
+    const [lo, hi] = up ? [a, b] : [b, a];
+    if (!reaches(hi, lo)) above[lo].push(hi);
+  }
+  const level = new Float64Array(nf);
+  const memo = new Int8Array(nf);
+  const depth = (f: number): number => {
+    if (memo[f]) return level[f];
+    memo[f] = 1;
+    let d = 0;
+    for (let g = 0; g < nf; g++) if (above[g].includes(f)) d = Math.max(d, depth(g) + 1);
+    return (level[f] = d);
+  };
+  for (let f = 0; f < nf; f++) if (ref[find(f)] >= 0) depth(f);
+  for (let f = 0; f < nf; f++) {
+    if (!level[f]) continue;
+    const r = ref[find(f)];
+    out[3 * f] = level[f] * N[3 * r]; out[3 * f + 1] = level[f] * N[3 * r + 1]; out[3 * f + 2] = level[f] * N[3 * r + 2];
+  }
+  return out;
+}
+
+/** Do two convex faces overlap (by more than tol) when seen along face a's normal? */
+function overlapAlong(P: ArrayLike<number>, A: number[], B: number[], N: Float64Array, a: number, tol: number): boolean {
+  const nx = N[3 * a], ny = N[3 * a + 1], nz = N[3 * a + 2];
+  // A basis for the plane.
+  let ux = -ny, uy = nx, uz = 0;
+  if (Math.abs(nz) > 0.9) { ux = 0; uy = -nz; uz = ny; }
+  const ul = Math.hypot(ux, uy, uz); ux /= ul; uy /= ul; uz /= ul;
+  const vx = ny * uz - nz * uy, vy = nz * ux - nx * uz, vz = nx * uy - ny * ux;
+  const proj = (vs: number[]) => {
+    const pts = vs.map((v) => [P[3 * v] * ux + P[3 * v + 1] * uy + P[3 * v + 2] * uz, P[3 * v] * vx + P[3 * v + 1] * vy + P[3 * v + 2] * vz]);
+    // Convex hull order (faces are convex, but their vertices come unordered).
+    const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+    return pts.sort((p, q) => Math.atan2(p[1] - cy, p[0] - cx) - Math.atan2(q[1] - cy, q[0] - cx));
+  };
+  const pa = proj(A), pb = proj(B);
+  for (const poly of [pa, pb]) {
+    for (let i = 0; i < poly.length; i++) {
+      const p = poly[i], q = poly[(i + 1) % poly.length];
+      let ax = -(q[1] - p[1]), ay = q[0] - p[0];
+      const l = Math.hypot(ax, ay);
+      if (l < 1e-12) continue;
+      ax /= l; ay /= l;
+      let mina = Infinity, maxa = -Infinity, minb = Infinity, maxb = -Infinity;
+      for (const r of pa) { const x = r[0] * ax + r[1] * ay; mina = Math.min(mina, x); maxa = Math.max(maxa, x); }
+      for (const r of pb) { const x = r[0] * ax + r[1] * ay; minb = Math.min(minb, x); maxb = Math.max(maxb, x); }
+      if (Math.min(maxa, maxb) - Math.max(mina, minb) < tol) return false;
+    }
+  }
+  return true;
 }
 
 // ---------------------------------------------------------------------------
