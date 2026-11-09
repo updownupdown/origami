@@ -1,40 +1,11 @@
 import type { CompiledModel } from '../engine/types';
 import type { FoldViewer } from './viewer';
-import { stepSvg } from '../engine/svg';
 import { runAt, sheetRuns, type SheetRun } from '../lib/sheets';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
 /** Each step plays once after landing on it; tapping the knob replays it. */
 const SPEEDS = [1];
-/** Narrowest a step may get on the bar before the bar scrolls sideways (px). */
-const MIN_STEP = 22;
-/** Gap between chapters on the bar (px). */
-const GAP = 4;
-
-/** A stretch of steps shown as one segment of the bar: a sheet, assembly, or a step group. */
-export interface Chapter {
-  start: number;
-  end: number;
-  label: string;
-  /** Sheet id for a sheet run, null for assembly, undefined for a step group on a one-sheet model. */
-  sheet?: string | null;
-}
-
-/** Multi-sheet models split by sheet; one-sheet models split by step group (if the author named any). */
-export function chapters(model: CompiledModel, runs: SheetRun[] = sheetRuns(model)): Chapter[] {
-  if (runs.length) return runs.map((r) => ({ start: r.start, end: r.end, label: r.label, sheet: r.sheet }));
-  // Steps outside any base are labelled with the model's name ("Kite base", then "Whale").
-  const named = model.steps.some((s) => s.group);
-  const out: Chapter[] = [];
-  model.steps.forEach((s, i) => {
-    const label = s.group ?? (named ? model.title : '');
-    const last = out[out.length - 1];
-    if (!last || label !== last.label) out.push({ start: i, end: i, label });
-    else last.end = i;
-  });
-  return out;
-}
 
 export interface StepControlsOptions {
   /** Called whenever the shown step changes. */
@@ -47,8 +18,8 @@ export interface StepControlsOptions {
 
 /**
  * The step card shared by the model page and the editor: step text with chevrons beside it, and a
- * chapter bar across all steps. Dragging the bar shows a flat preview of the step under the finger
- * and leaves the 3D view alone; the view moves once, on release. Tapping the knob replays the step.
+ * progress bar for the current step that fills as the step plays. Drag the bar to scrub through the
+ * step; the knob is a replay button. Chevrons, arrow keys and the steps panel move between steps.
  */
 export class StepControls {
   cur = 0;
@@ -59,10 +30,7 @@ export class StepControls {
   private timer = 0;
   private opts: StepControlsOptions;
   private runs: SheetRun[] = [];
-  private chs: Chapter[] = [];
-  private stepW = 0;
   private t = 0;
-  private previews = new Map<number, string>();
   private mapOpen = false;
 
   constructor(opts: StepControlsOptions = {}) {
@@ -72,7 +40,6 @@ export class StepControls {
     $('step-where').addEventListener('click', () => this.toggleMap());
     $('amap-close').addEventListener('click', () => this.toggleMap(false));
     this.bindBar();
-    new ResizeObserver(() => this.layout()).observe($('cbar-wrap'));
   }
 
   get count() { return this.model?.steps.length ?? 0; }
@@ -82,10 +49,7 @@ export class StepControls {
     this.stopRepeats();
     this.model = model;
     this.viewer = viewer;
-    this.previews.clear();
     this.runs = sheetRuns(model);
-    this.chs = chapters(model, this.runs);
-    $('cbar').setAttribute('aria-valuemax', String(this.count));
     this.renderSheets();
   }
 
@@ -94,188 +58,83 @@ export class StepControls {
     return this.viewer?.colors[id]?.front ?? m.sheets.find((s) => s.id === id)?.front ?? '#999';
   }
 
-  /** CSS custom properties that colour a chapter: its paper, both papers for assembly, ink for step groups. */
-  private chStyle(c: Chapter) {
+  /** CSS custom properties that colour a sheet run: its paper, or both papers for assembly. */
+  private runStyle(r: SheetRun) {
     const m = this.model!;
-    if (c.sheet) return `--c:${this.color(c.sheet)}`;
-    if (c.sheet === null) return `--c1:${this.color(m.sheets[0].id)};--c2:${this.color(m.sheets[1].id)}`;
-    return '--c:var(--ink)';
+    if (r.sheet) return `--c:${this.color(r.sheet)}`;
+    return `--c1:${this.color(m.sheets[0].id)};--c2:${this.color(m.sheets[1].id)}`;
   }
 
-  /** Builds the bar (and the map, if open). Call again when paper colours change. */
+  /** Recolours the bar and the sheet chip (and the map, if open). Call again when paper colours change. */
   renderSheets() {
     if (!this.model) return;
-    const m = this.model;
-    $('cbar-segs').innerHTML = this.chs.map((c, k) => {
-      const kind = c.sheet ? ' paper' : c.sheet === null ? ' asm' : '';
-      const n = c.end - c.start + 1;
-      const steps = n === 1 ? `step ${c.start + 1}` : `steps ${c.start + 1} to ${c.end + 1}`;
-      return `<div class="seg${kind}" data-k="${k}" style="${this.chStyle(c)}"><div class="fill"></div>${'<i></i>'.repeat(n)}</div>` +
-        (c.label ? `<button class="lbl" data-k="${k}" tabindex="-1" title="${c.label}: ${steps}">${c.label}${c.sheet && (m.sheets.find((s) => s.id === c.sheet)?.count ?? 1) > 1 ? ` ×${m.sheets.find((s) => s.id === c.sheet)!.count}` : ''}</button>` : '');
-    }).join('');
-    this.layout();
     if (this.mapOpen) this.renderMap();
     if (this.count) this.label(this.cur);
   }
 
-  /** Sizes the bar to the card, or wider (scrolling) when steps would get narrower than MIN_STEP. */
-  private layout() {
-    const N = this.count;
-    if (!N) return;
-    const wrap = $('cbar-wrap'), bar = $('cbar');
-    const avail = wrap.clientWidth - 12;
-    const gaps = GAP * (this.chs.length - 1);
-    const pad = 16; // room for the knob at both ends
-    this.stepW = Math.max(MIN_STEP, (avail - gaps - pad * 2) / N);
-    const width = this.stepW * N + gaps + pad * 2;
-    bar.style.width = `${Math.max(avail, width)}px`;
-    wrap.classList.toggle('overflow', width > avail + 1);
-    const ticks = this.stepW >= 9;
-    bar.querySelectorAll<HTMLElement>('.seg').forEach((seg) => {
-      const c = this.chs[Number(seg.dataset.k)];
-      seg.style.left = `${this.left(c.start)}px`;
-      seg.style.width = `${(c.end - c.start + 1) * this.stepW}px`;
-      seg.querySelectorAll<HTMLElement>('i').forEach((i, j) => { i.hidden = !ticks || j === 0; i.style.left = `${j * this.stepW}px`; });
-    });
-    bar.querySelectorAll<HTMLElement>('.lbl').forEach((l) => {
-      const c = this.chs[Number(l.dataset.k)];
-      l.style.left = `${this.left(c.start)}px`;
-      l.style.maxWidth = `${Math.max(14, (c.end - c.start + 1) * this.stepW - 4)}px`;
-    });
-    this.place(this.cur, false);
-    this.fill(this.cur, this.t);
-    this.reveal(this.cur, false);
-  }
-
-  /** Left edge of step i's slot on the bar (px). */
-  private left(i: number) {
-    const k = this.chs.findIndex((c) => i >= c.start && i <= c.end);
-    return 16 + i * this.stepW + GAP * (k < 0 ? this.chs.length - 1 : k);
-  }
-  private centre(i: number) { return i >= this.count ? this.left(this.count - 1) + this.stepW : this.left(i) + this.stepW / 2; }
-
-  private stepAt(clientX: number) {
-    const r = $('cbar').getBoundingClientRect(), x = clientX - r.left;
-    let best = 0, bd = Infinity;
-    for (let i = 0; i < this.count; i++) { const d = Math.abs(this.centre(i) - x); if (d < bd) { bd = d; best = i; } }
-    return best;
-  }
-
-  private place(i: number, drag: boolean) {
-    const knob = $('cbar-knob');
-    knob.style.left = `${this.centre(i)}px`;
-    knob.querySelector('.num')!.textContent = i >= this.count ? '✓' : String(i + 1);
-    if (!drag) $('cbar').querySelectorAll('.lbl').forEach((l) => { const c = this.chs[Number((l as HTMLElement).dataset.k)]; l.classList.toggle('now', i >= c.start && i <= c.end); });
-  }
-
-  /** Fills the bar up to step i, part way through its slot by t. */
-  private fill(i: number, t: number) {
-    $('cbar').querySelectorAll<HTMLElement>('.seg').forEach((seg) => {
-      const c = this.chs[Number(seg.dataset.k)], n = c.end - c.start + 1;
-      const f = i > c.end ? 1 : i < c.start ? 0 : (i - c.start + t) / n;
-      (seg.firstElementChild as HTMLElement).style.width = `${f * 100}%`;
-    });
-  }
-
-  /** Scrolls a long bar so step i is in view. */
-  private reveal(i: number, smooth = true) {
-    const wrap = $('cbar-wrap'), x = this.centre(i);
-    if (x < wrap.scrollLeft + 40 || x > wrap.scrollLeft + wrap.clientWidth - 40) {
-      wrap.scrollTo({ left: x - wrap.clientWidth / 2, behavior: smooth ? 'smooth' : 'auto' });
-    }
-  }
-
-  private preview(i: number) {
-    let s = this.previews.get(i);
-    if (s === undefined) {
-      try { s = stepSvg(this.model!, i, { width: 104, height: 104, colors: this.viewer?.colors }); } catch { s = ''; }
-      this.previews.set(i, s);
-    }
-    return s;
-  }
-
-  private showBubble(i: number) {
-    const b = $('cbar-bubble'), wrap = $('cbar-wrap'), card = $('stepcard');
-    const c = this.chs.find((ch) => i >= ch.start && i <= ch.end);
-    b.querySelector('.pic')!.innerHTML = this.preview(i);
-    b.querySelector('.cap')!.innerHTML = `Step ${i + 1}${c?.label ? `<small>${c.label}</small>` : ''}`;
-    b.hidden = false;
-    const x = wrap.offsetLeft + this.centre(i) - wrap.scrollLeft;
-    b.style.left = `${Math.max(70, Math.min(card.clientWidth - 70, x))}px`;
-    b.style.top = `${wrap.offsetTop - b.offsetHeight - 6}px`;
+  /** Moves the fill and knob to t (0..1) of the current step. */
+  private set(t: number) {
+    const pc = `${Math.max(0, Math.min(1, t)) * 100}%`;
+    $('pbar-fill').style.width = pc;
+    $('pbar-knob').style.left = pc;
+    $('pbar').setAttribute('aria-valuenow', String(Math.round(t * 100)));
   }
 
   private bindBar() {
-    const bar = $('cbar'), wrap = $('cbar-wrap');
-    let id = -1, downX = 0, onKnob = false, moved = false, target = 0, lastX = 0, raf = 0;
-    const edge = () => {
-      // Drag near either end of a scrolling bar to keep going.
-      const r = wrap.getBoundingClientRect();
-      const d = lastX < r.left + 36 ? -1 : lastX > r.right - 36 ? 1 : 0;
-      if (d && id >= 0) {
-        wrap.scrollLeft += d * 8;
-        target = this.stepAt(lastX);
-        this.place(target, true);
-        this.showBubble(target);
-      }
-      raf = id >= 0 ? requestAnimationFrame(edge) : 0;
+    const bar = $('pbar'), track = $('pbar-track');
+    let id = -1, downX = 0, onKnob = false, moved = false;
+    const tAt = (x: number) => {
+      const r = track.getBoundingClientRect();
+      return Math.max(0, Math.min(1, (x - r.left) / Math.max(1, r.width)));
+    };
+    const scrub = (x: number) => {
+      if (!this.scrubbing) { this.scrubbing = true; this.stopRepeats(); bar.classList.add('drag'); }
+      const t = tAt(x);
+      this.viewer?.setT(t);
+      this.set(t);
     };
     bar.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || !this.count) return;
+      if (e.button !== 0 || !this.count || this.cur >= this.count) return;
       id = e.pointerId;
       bar.setPointerCapture(id);
-      downX = lastX = e.clientX;
+      downX = e.clientX;
       onKnob = !!(e.target as HTMLElement).closest('.knob');
       moved = false;
-      target = this.cur;
+      if (!onKnob) scrub(e.clientX);
       e.preventDefault();
     });
     bar.addEventListener('pointermove', (e) => {
       if (e.pointerId !== id) return;
-      lastX = e.clientX;
-      if (!moved && Math.abs(e.clientX - downX) < 5) return;
-      if (!moved) {
-        moved = true;
-        this.scrubbing = true;
-        this.stopRepeats();
-        bar.classList.add('drag');
-        if (!raf) raf = requestAnimationFrame(edge);
-      }
-      target = this.stepAt(e.clientX);
-      this.place(target, true);
-      this.showBubble(target);
+      if (!moved && onKnob && Math.abs(e.clientX - downX) < 5) return;
+      moved = true;
+      scrub(e.clientX);
     });
     const up = (e: PointerEvent) => {
       if (e.pointerId !== id) return;
       id = -1;
       this.scrubbing = false;
       bar.classList.remove('drag');
-      $('cbar-bubble').hidden = true;
-      if (!moved) {
-        const lbl = (e.target as HTMLElement).closest<HTMLElement>('.lbl');
-        if (onKnob) { this.playRepeats(); return; }
-        if (lbl) { this.go(this.chs[Number(lbl.dataset.k)].start); return; }
-        target = this.stepAt(e.clientX);
-      }
-      if (e.type === 'pointercancel') { this.place(this.cur, false); return; }
-      if (target === this.cur) { this.place(this.cur, false); this.viewer?.setT(0); this.playRepeats(); }
-      else this.go(target);
+      if (onKnob && !moved && e.type !== 'pointercancel') this.playRepeats();
     };
     bar.addEventListener('pointerup', up);
     bar.addEventListener('pointercancel', up);
     bar.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { this.go(this.cur + 1); e.preventDefault(); e.stopPropagation(); }
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { this.go(this.cur - 1); e.preventDefault(); e.stopPropagation(); }
-      if (e.key === 'Home') { this.go(0); e.preventDefault(); }
-      if (e.key === 'End') { this.go(this.count); e.preventDefault(); }
-      if (e.key === 'Enter' || e.key === ' ') { this.playRepeats(); e.preventDefault(); e.stopPropagation(); }
+      const nudge = (d: number) => { this.stopRepeats(); const t = Math.max(0, Math.min(1, (this.viewer?.t ?? 0) + d)); this.viewer?.setT(t); this.set(t); };
+      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') nudge(0.1);
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') nudge(-0.1);
+      else if (e.key === 'Home') nudge(-1);
+      else if (e.key === 'End') nudge(1);
+      else if (e.key === 'Enter' || e.key === ' ') this.playRepeats();
+      else return;
+      e.preventDefault();
+      e.stopPropagation();
     });
   }
 
-  /** Viewer frame callback: fills the current step's slot as it plays. */
+  /** Viewer frame callback: fills the bar as the current step plays. */
   frame(t: number) {
     this.t = this.cur >= this.count ? 1 : t;
-    if (!this.scrubbing) this.fill(this.cur, this.t);
+    if (!this.scrubbing) this.set(this.t);
   }
 
   private label(i: number) {
@@ -284,15 +143,14 @@ export class StepControls {
     const where = $('step-where');
     where.hidden = !run;
     if (run) {
-      const c = this.chs.find((ch) => ch.start === run.start)!;
       where.className = `where${run.sheet === null ? ' asm' : ''}`;
-      where.setAttribute('style', this.chStyle(c));
+      where.setAttribute('style', this.runStyle(run));
       where.innerHTML = `<i></i>${run.label} ${i - run.start + 1}/${run.end - run.start + 1}`;
       where.setAttribute('aria-label', `${run.label}, step ${i - run.start + 1} of ${run.end - run.start + 1}. Show the map of parts.`);
       where.setAttribute('aria-expanded', String(this.mapOpen));
     }
-    const group = !run && !finished ? m.steps[i].group : undefined;
-    $('step-count').textContent = finished ? 'Finished' : `${group ? `${group} · ` : ''}Step ${i + 1} of ${N}`;
+    const group = !finished ? m.steps[i].group : undefined;
+    $('step-count').textContent = finished ? 'Finished' : `${group && !run ? `${group} · ` : ''}Step ${i + 1} of ${N}`;
     $('step-text').textContent = finished ? m.finish.text : m.steps[i].text;
 
     // First step on a sheet: a card naming the sheet to pick up, in its paper colour.
@@ -312,11 +170,13 @@ export class StepControls {
 
     ($('btn-prev') as HTMLButtonElement).disabled = i === 0;
     ($('btn-next') as HTMLButtonElement).disabled = finished;
-    const bar = $('cbar');
-    bar.setAttribute('aria-valuenow', String(Math.min(i + 1, N)));
+
+    // The bar takes the colour of the sheet being folded (ink on one-sheet models).
+    const bar = $('pbar');
+    bar.hidden = finished;
+    bar.className = `pbar${run?.sheet === null ? ' asm' : run ? ' paper' : ''}`;
+    bar.setAttribute('style', run ? this.runStyle(run) : '');
     bar.setAttribute('aria-valuetext', finished ? 'Finished' : `Step ${i + 1} of ${N}`);
-    this.place(i, false);
-    this.reveal(i);
     if (this.mapOpen) this.renderMap();
     this.opts.onStep?.(i);
   }
@@ -400,7 +260,7 @@ export class StepControls {
     if (this.viewer) this.viewer.opts.onEnd = undefined;
   }
 
-  /** Plays the current step three times, slower each time. */
+  /** Plays the current step (once per entry in SPEEDS). */
   playRepeats() {
     const v = this.viewer;
     this.stopRepeats();

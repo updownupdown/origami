@@ -55,6 +55,8 @@ export async function initBrowse() {
     levelBtns.forEach((b) => b.setAttribute('aria-pressed', String(state.levels.includes(Number(b.dataset.level)))));
     sheetBtns.forEach((b) => b.setAttribute('aria-checked', String(b.dataset.sheets === state.sheets)));
     catBtn.classList.toggle('on', !!state.cat);
+    $('catpick').classList.toggle('picked', !!state.cat);
+    $('cat-x').hidden = !state.cat;
     const selected = catOpts.find((b) => b.dataset.cat === state.cat);
     $('cat-label').textContent = selected?.querySelector('span')?.textContent ?? 'All categories';
     catOpts.forEach((b) => b.setAttribute('aria-selected', String(b === selected)));
@@ -111,6 +113,11 @@ export async function initBrowse() {
     if (e.key === 'Escape') { openCats(false); catBtn.focus(); }
     if (e.key === 'ArrowDown') { catOpts[Math.min(catOpts.length - 1, i + 1)].focus(); e.preventDefault(); }
     if (e.key === 'ArrowUp') { catOpts[Math.max(0, i - 1)].focus(); e.preventDefault(); }
+  });
+  $('cat-x').addEventListener('click', () => {
+    state.cat = '';
+    if (params.has('cat')) { params.delete('cat'); history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}`); }
+    render(); openCats(false); catBtn.focus();
   });
   document.addEventListener('pointerdown', (e) => { if (!catPanel.hidden && !$('catpick').contains(e.target as Node)) openCats(false); });
   links.addEventListener('change', () => { state.links = links.checked; render(); });

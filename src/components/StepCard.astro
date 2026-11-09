@@ -22,13 +22,10 @@ import { icon } from '../lib/icons';
       <button class="btn icon primary" id="btn-next" aria-label="Next step"><Fragment set:html={icon('next')} /></button>
     </div>
   </div>
-  <div class="cbar-wrap" id="cbar-wrap">
-    <div class="cbar" id="cbar" role="slider" tabindex="0" aria-label="All steps. Drag to pick a step, tap the knob to replay." aria-valuemin="1" aria-valuemax="1" aria-valuenow="1">
-      <div class="segs" id="cbar-segs"></div>
-      <div class="knob" id="cbar-knob" title="Tap to replay this step"><span class="num">1</span></div>
-    </div>
+  <div class="pbar" id="pbar" role="slider" tabindex="0" aria-label="This step. Drag to scrub through the fold; tap the knob to replay it." aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <div class="track" id="pbar-track"><div class="fill" id="pbar-fill"></div></div>
+    <button class="knob" id="pbar-knob" tabindex="-1" aria-label="Replay this step" title="Replay this step"><Fragment set:html={icon('replay')} /></button>
   </div>
-  <div class="cbar-bubble" id="cbar-bubble" hidden><div class="pic"></div><span class="cap"></span></div>
   <div class="legend"><span class="lv"></span>Valley <span class="lm"></span>Mountain</div>
 </section>
 
@@ -50,29 +47,19 @@ import { icon } from '../lib/icons';
   .pickup i { width: 28px; height: 28px; border-radius: 5px; flex-shrink: 0; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
   .pickup b { font-weight: 600; }
 
-  /* Chapter bar: one bar for every step, split into sheets or step groups. Scrolls sideways when steps get too close. */
-  .cbar-wrap { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; margin: 0 -6px; padding: 0 6px; }
-  .cbar-wrap::-webkit-scrollbar { display: none; }
-  .cbar-wrap.overflow { mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent); }
-  .cbar { position: relative; height: 54px; touch-action: none; cursor: pointer; user-select: none; -webkit-user-select: none; outline: none; }
-  .cbar:focus-visible .knob { outline: 2px solid var(--valley); outline-offset: 2px; }
-  .cbar .seg { position: absolute; top: 14px; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--c) 28%, var(--line)); }
-  .cbar .seg.paper { box-shadow: inset 0 0 0 1px rgba(0,0,0,.14); }
-  .cbar .seg .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 4px; background: var(--c); }
-  .cbar .seg.paper .fill { box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
-  .cbar .seg.asm { background: linear-gradient(90deg, color-mix(in srgb, var(--c1) 30%, var(--line)), color-mix(in srgb, var(--c2) 30%, var(--line))); }
-  .cbar .seg.asm .fill { background: linear-gradient(90deg, var(--c1), var(--c2)); }
-  .cbar .seg i { position: absolute; top: 3px; width: 2px; height: 2px; margin-left: -1px; border-radius: 1px; background: var(--paper-raised); opacity: .75; pointer-events: none; }
-  .cbar .lbl { position: absolute; top: 28px; height: 22px; border: 0; background: none; padding: 0; font: inherit; font-size: 12px; color: var(--ink-soft); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
-  .cbar .lbl.now { color: var(--ink); font-weight: 600; }
-  .cbar .knob { position: absolute; top: 18px; left: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: var(--ink); color: var(--paper-raised); border: 2px solid var(--paper-raised); display: grid; place-items: center; font-size: 13px; font-weight: 600; box-shadow: var(--shadow); transition: left .2s ease; font-variant-numeric: tabular-nums; }
-  .cbar.drag .knob { transition: none; transform: scale(1.12); }
-  @media (prefers-reduced-motion: reduce) { .cbar .knob { transition: none; } }
-  .cbar-bubble { position: absolute; z-index: 3; width: 128px; margin-left: -64px; background: var(--paper-raised); border: 1px solid var(--line-strong); border-radius: 12px; box-shadow: var(--shadow); padding: 6px 6px 5px; text-align: center; font-size: 12px; pointer-events: none; }
-  .cbar-bubble .pic { width: 104px; height: 104px; margin: 0 auto 2px; }
-  .cbar-bubble .pic svg { width: 100%; height: 100%; }
-  .cbar-bubble .cap { display: block; line-height: 1.25; }
-  .cbar-bubble .cap small { display: block; color: var(--ink-soft); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* This step's progress bar: fills as the step plays; drag to scrub; the knob replays the step. */
+  .pbar { position: relative; height: 40px; margin: 0 15px; touch-action: none; cursor: pointer; user-select: none; -webkit-user-select: none; outline: none; --c: var(--ink); }
+  .pbar[hidden] { display: none; }
+  .pbar .track { position: absolute; left: 0; right: 0; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px; background: color-mix(in srgb, var(--c) 22%, var(--line)); }
+  .pbar .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--c); }
+  .pbar.paper .track, .pbar.paper .fill { box-shadow: inset 0 0 0 1px rgba(0,0,0,.16); }
+  .pbar.asm .track { background: linear-gradient(90deg, color-mix(in srgb, var(--c1) 30%, var(--line)), color-mix(in srgb, var(--c2) 30%, var(--line))); }
+  .pbar.asm .fill { background: linear-gradient(90deg, var(--c1), var(--c2)); }
+  .pbar .knob { position: absolute; top: 50%; left: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; padding: 0; border-radius: 50%; background: var(--ink); color: var(--paper-raised); border: 2px solid var(--paper-raised); display: grid; place-items: center; box-shadow: var(--shadow); cursor: pointer; }
+  .pbar .knob svg { width: 15px; height: 15px; }
+  .pbar .knob:hover { transform: scale(1.08); }
+  .pbar.drag .knob { transform: scale(1.12); }
+  .pbar:focus-visible .knob { outline: 2px solid var(--valley); outline-offset: 2px; }
 
   /* Map of parts (multi-sheet models). */
   .amap { border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 4px; display: flex; flex-direction: column; gap: 4px; }

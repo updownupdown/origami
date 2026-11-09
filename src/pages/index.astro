@@ -31,6 +31,9 @@ const linkCount = index.length - foldable.length;
           <span id="cat-label">All categories</span>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
         </button>
+        <button class="cp-x" id="cat-x" aria-label="Show all categories" title="Show all categories" hidden>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
         <div class="cp-panel card" id="cat-panel" role="listbox" aria-label="Category" hidden>
           <button role="option" data-cat="" class="cp-all"><span>All categories</span><b data-count=""></b></button>
           <div class="cp-groups">
@@ -87,6 +90,12 @@ const linkCount = index.length - foldable.length;
   .cp-btn.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
   .cp-btn svg { color: var(--ink-soft); transition: transform 0.15s; }
   .cp-btn[aria-expanded=true] svg { transform: rotate(180deg); }
+  /* With a category picked, an X sits where the chevron was and goes back to all categories. */
+  .catpick.picked .cp-btn { padding-right: 40px; }
+  .catpick.picked .cp-btn svg { display: none; }
+  .cp-x { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 50%; border: 0; padding: 0; display: grid; place-items: center; background: var(--paper-sunk); color: var(--ink); cursor: pointer; }
+  .cp-x[hidden] { display: none; }
+  .cp-x:hover, .cp-x:focus-visible { background: var(--ink); color: var(--paper-raised); outline: none; }
   .cp-panel { position: absolute; z-index: 20; top: 46px; left: 0; width: min(560px, calc(100vw - 32px)); max-height: min(70vh, 520px); overflow-y: auto; padding: 10px; box-shadow: var(--shadow); }
   .cp-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 4px 12px; margin-top: 6px; }
   .cp-group { display: flex; flex-direction: column; padding: 4px 0; }
