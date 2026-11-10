@@ -369,7 +369,7 @@ function opFold(st: State, op: FoldOp): Phase {
     op.reverse ? op.reverse
       : op.crease ? (op.crease === 'mountain' ? 'crease-mountain' : 'crease-valley')
         : op.unfold ? 'unfold'
-          : op.fold === 'mountain' ? 'mountain' : 'valley';
+          : op.fold === 'both' ? 'outside' : op.fold === 'mountain' ? 'mountain' : 'valley';
   if (!op.line) throw new Error('A fold needs a line');
   let [p, q] = resolveLine(st, op.line);
   const isCrease = kind.startsWith('crease');
@@ -508,6 +508,23 @@ function opFold(st: State, op: FoldOp): Phase {
   const phase = makePhase(isCrease ? 'crease' : 'hinge', items);
   phase.axis = [p, q];
   if (op.name) phase.name = op.name;
+  if (op.reverse) {
+    // The flap's spine: the longest edge joining its two halves, where they were before the fold.
+    let best: [V2, V2] | null = null, bestLen = 0;
+    for (const x of mv) for (const y of mv) {
+      if (x.f.layer >= midM === y.f.layer >= midM || x.f.layer < y.f.layer) continue;
+      const e = adjacent(x.f, y.f);
+      if (!e) continue;
+      const w: [V2, V2] = [apply(x.f.m, e[0]), apply(x.f.m, e[1])];
+      const l = dist(w[0], w[1]);
+      if (l > bestLen) { bestLen = l; best = w; }
+    }
+    const V = best && lineIntersection(best[0], best[1], p, q);
+    if (best && V) {
+      const far = side(best[0], p, q) > side(best[1], p, q) ? best[0] : best[1];
+      if (dist(far, V) > 1e-6) phase.spine = [V, far];
+    }
+  }
   // Diagram: the fold line across the moving paper, and an arrow.
   const seg = clipToFaces(mv.map((x) => worldPoly({ ...x.f })), p, q);
   if (seg) {
@@ -877,6 +894,7 @@ function opShape(st: State, spec: NonNullable<StepSpec['shape']>): Phase {
     st.faces = st.faces.map((f) => ({ ...f, anchor: hit.includes(f) }));
   }
   const ph = stillPhase(st, 'shape');
+  if (!Array.isArray(spec) && spec.soft) ph.soft = true;
   ph.shape = list.map((c) => {
     if (typeof c.angle !== 'number' || c.angle < 0 || c.angle > 180) throw new Error('shape: angle must be 0 to 180 degrees');
     if (c.creases) return { name: c.creases, angle: c.angle, ...(c.kind ? { kind: c.kind } : {}) };

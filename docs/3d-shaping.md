@@ -28,6 +28,31 @@ the next one instead of showing the crossing. All of this is solved when the sit
 - A list without `fixed` is fine too: `shape: [ { creases: walls, angle: 90 } ]`.
 - The angle holds for the rest of the model until a later fold changes that crease.
 
+### Soft shapes: when the paper has to bend
+
+Some shapes can't be reached with stiff faces. Pulling a crane's wings apart puffs out its body,
+and the layers inside have to give. Add `soft: true` and the paper is allowed to bend:
+
+```yaml
+- text: Hold the wings and pull them gently apart until they stand out level.
+  shape:
+    creases:
+      - { creases: wings, angle: 90 }
+    soft: true
+```
+
+A soft step is solved when the site is built. The sheet becomes a mesh of stiff bars with springy
+hinges (`src/engine/sim.ts`). The creases the step names are worked firmly to their angles, and
+the rest of the paper follows as it must. The viewer replays the solved shape, vertex by vertex.
+
+- The paper that stayed still when the named folds were made stays still now. Give `fixed:` to
+  hold another part instead.
+- Once a model has a soft step, every later step carries on from the bent shape. Later steps can
+  stand the model up or bend it again, but they can't fold it flat.
+- Faces bend only along their mesh lines, so a soft shape is a faceted bend, not a smooth curl.
+- `fold: both` folds the front layers towards you and the back layers away in one step (both
+  wings of a bird), which is the usual fold before such a step.
+
 ## `stand`: tip the model up so it stands
 
 ```yaml
