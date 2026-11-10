@@ -621,6 +621,7 @@ export function faceMotion(ph: Phase, f: PhaseFace, t: number): number[] {
     const L = Math.hypot(Q[0] - P[0], Q[1] - P[1]) || 1;
     const u = [(Q[0] - P[0]) / L, (Q[1] - P[1]) / L, 0];
     if (ph.motion === 'crease') return axisRot([P[0], P[1], 0], u, Math.PI * 0.85 * (0.5 - 0.5 * Math.cos(2 * Math.PI * t)) * f.d);
+    if (ph.motion === 'hinge' && ph.spine) return reverseMotion(ph.spine, u, D, e);
     const M = axisRot([P[0], P[1], 0], u, Math.PI * e * f.d);
     const Mend = axisRot([P[0], P[1], 0], u, Math.PI * f.d);
     // Land exactly where the flat engine says (any shift beyond the pure turn is added in linearly).
@@ -628,6 +629,34 @@ export function faceMotion(ph: Phase, f: PhaseFace, t: number): number[] {
     return M;
   }
   return partial(D, e);
+}
+
+/**
+ * A reverse fold. Paper has to flex to make one, so no rigid motion exists; this one keeps the flap
+ * inside the model's plane, as it is in the hand: the flap swings about the point where the fold
+ * line meets its spine, and at the same time narrows onto its spine and opens out again on the
+ * other side (it turns inside out, seen flat). The start and end are the exact folded poses.
+ */
+function reverseMotion(spine: [V2, V2], u: number[], D: number[], e: number): number[] {
+  const [V, far] = spine;
+  const L = Math.hypot(far[0] - V[0], far[1] - V[1]) || 1;
+  const s = [(far[0] - V[0]) / L, (far[1] - V[1]) / L];
+  let th = 2 * (Math.atan2(u[1], u[0]) - Math.atan2(s[1], s[0]));
+  while (th > Math.PI) th -= 2 * Math.PI;
+  while (th <= -Math.PI) th += 2 * Math.PI;
+  const c = Math.cos(Math.PI * e), k = 1 - c;
+  // Narrowing across the spine (and through the thickness), about V.
+  const S = [c + k * s[0] * s[0], k * s[0] * s[1], 0, k * s[0] * s[1], c + k * s[1] * s[1], 0, 0, 0, c];
+  const St = [...S, V[0] - (S[0] * V[0] + S[1] * V[1]), V[1] - (S[3] * V[0] + S[4] * V[1]), 0];
+  const M = new Float64Array(12);
+  compose(axisRot([V[0], V[1], 0], [0, 0, 1], th * e), St, M);
+  const end = new Float64Array(12);
+  const Se = [2 * s[0] * s[0] - 1, 2 * s[0] * s[1], 0, 2 * s[0] * s[1], 2 * s[1] * s[1] - 1, 0, 0, 0, -1];
+  compose(axisRot([V[0], V[1], 0], [0, 0, 1], th), [...Se, V[0] - (Se[0] * V[0] + Se[1] * V[1]), V[1] - (Se[3] * V[0] + Se[4] * V[1]), 0], end);
+  const out = Array.from(M);
+  // Land exactly where the flat engine says.
+  for (let i = 0; i < 12; i++) out[i] += (D[i] - end[i]) * e;
+  return out;
 }
 
 export interface KinFrame { t: number; X: Float64Array[] }
@@ -1157,6 +1186,12 @@ export class Kinematics {
 export function blendXf(A: Float64Array, B: Float64Array, w: number): Float64Array {
   const out = new Float64Array(A.length);
   for (let o = 0; o < A.length; o += 12) {
+    // A face being reshaped (not a rigid move) has no rotation to slerp: blend it directly.
+    const da = detOf(A, o), db = detOf(B, o);
+    if (Math.abs(Math.abs(da) - 1) > 1e-3 || Math.abs(Math.abs(db) - 1) > 1e-3) {
+      for (let k = 0; k < 12; k++) out[o + k] = A[o + k] + (B[o + k] - A[o + k]) * w;
+      continue;
+    }
     const D = new Float64Array(12);
     compose(B.subarray(o, o + 12), invert(A.subarray(o, o + 12)), D);
     // Turn about the face's own centre-ish (its origin image), not the world origin.

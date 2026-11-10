@@ -267,6 +267,12 @@ export interface DiagramArrow {
 export interface Phase {
   motion: MotionKind;
   axis?: [V2, V2];
+  /**
+   * A reverse fold: the point where the fold line meets the flap's folded edge (its spine), and a
+   * point further along the spine on the moving side. The flap swings about the first point in the
+   * plane of the model while it turns inside out.
+   */
+  spine?: [V2, V2];
   center?: V2;
   angle?: number;
   faces: PhaseFace[];

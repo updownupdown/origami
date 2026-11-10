@@ -508,6 +508,23 @@ function opFold(st: State, op: FoldOp): Phase {
   const phase = makePhase(isCrease ? 'crease' : 'hinge', items);
   phase.axis = [p, q];
   if (op.name) phase.name = op.name;
+  if (kind === 'inside' || kind === 'outside') {
+    // The flap's spine: the longest edge joining its two halves, where they were before the fold.
+    let best: [V2, V2] | null = null, bestLen = 0;
+    for (const x of mv) for (const y of mv) {
+      if (x.f.layer >= midM === y.f.layer >= midM || x.f.layer < y.f.layer) continue;
+      const e = adjacent(x.f, y.f);
+      if (!e) continue;
+      const w: [V2, V2] = [apply(x.f.m, e[0]), apply(x.f.m, e[1])];
+      const l = dist(w[0], w[1]);
+      if (l > bestLen) { bestLen = l; best = w; }
+    }
+    const V = best && lineIntersection(best[0], best[1], p, q);
+    if (best && V) {
+      const far = side(best[0], p, q) > side(best[1], p, q) ? best[0] : best[1];
+      if (dist(far, V) > 1e-6) phase.spine = [V, far];
+    }
+  }
   // Diagram: the fold line across the moving paper, and an arrow.
   const seg = clipToFaces(mv.map((x) => worldPoly({ ...x.f })), p, q);
   if (seg) {
