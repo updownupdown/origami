@@ -6,8 +6,9 @@ flat state as the source of truth. Steps with linked folds are posed by rigid-or
 closed, and the solver gets as close to the angles asked for as rigid paper allows. Mirror-symmetric
 models stay exactly symmetric. Each step is checked for paper passing through paper. Where staggering
 the folds (one flap after another) can't avoid it, the viewer dissolves from the last clean pose to
-the next one instead of showing the crossing. The bar-and-hinge physics is still there behind the
-viewer's `physics` option, but it is no longer what you see.
+the next one instead of showing the crossing. All of this is solved when the site is built
+(`npm run compile` stores it in each model's JSON), so the browser only replays it; the editor at
+/author/ solves live.
 
 ## `shape`: hold creases at an in-between angle
 
