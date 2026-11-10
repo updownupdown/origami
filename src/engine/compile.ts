@@ -5,6 +5,7 @@
 // a line; layers are re-ranked after each operation. This is exact for flat-folded
 // states; the motion between states is an approximation (see docs/fidelity.md).
 
+import { solveLayers, type LayerCrease } from './layers.ts';
 import {
   type Mat, type V2, IDENTITY, add, apply, bbox, centroid, clipLineToPolygon, compose, containsPoint,
   cross, det, dist, distToLine, dot, invert, len, lerp, lineIntersection, mul, near, norm, perp,
@@ -763,6 +764,24 @@ function opCollapse(st: State, c: NonNullable<StepSpec['collapse']>, sheet: stri
     }
   }
   if (T.some((t) => !t)) throw new Error('Some parts of the sheet are not connected');
+  // Layer order: solved so no paper passes through paper (the tree's running count is only a guess,
+  // and is wrong for bases like the bird base).
+  {
+    const lc: LayerCrease[] = [];
+    for (let i = 0; i < faces.length; i++) for (let j = i + 1; j < faces.length; j++) {
+      const e = adj[i][j];
+      const cr = e && onCrease(e);
+      if (!e || !cr) continue;
+      const towardFront = cr.kind === 'valley' ? s > 0 : s < 0;
+      const iFrontUp = det(compose(m0, T[i]!)) > 0;
+      lc.push({ f: i, g: j, a: e[0], b: e[1], above: towardFront === iFrontUp ? 1 : -1 });
+    }
+    const sh = st.sheets.get(sheet)!;
+    // World "up" may be the paper's back (a flipped sheet): layers count up the world.
+    const solved = solveLayers(faces.map((f, i) => ({ poly: f.poly, T: T[i]! })), lc.map((c) => (s > 0 ? c : { ...c, above: -c.above })), Math.max(sh.w, sh.h));
+    if (!solved) throw new Error('These creases fold flat, but no layer order keeps the paper from passing through itself');
+    solved.layer.forEach((l, i) => (Z[i] = s > 0 ? l : -l));
+  }
   const others = st.faces.filter((f) => f.sheet !== sheet);
   const base = Math.max(-1, ...others.map((f) => f.layer)) + 1;
   const items = [

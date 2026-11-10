@@ -80,6 +80,8 @@ export async function initBrowse() {
       if (state.sheets === '2' && e.sheets < 2) return false;
       return true;
     });
+    // A to Z, unless searching (then best match first).
+    if (!state.q.trim()) list = list.slice().sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
     const n = list.filter((e) => e.kind === 'foldable').length, l = list.length - n;
     $('status').textContent = list.length ? `${n} foldable model${n === 1 ? '' : 's'}${state.links ? `, ${l} link-only` : ''}` : 'Nothing matches. Try another word or clear a filter.';
     $('grid').innerHTML = list.slice(0, 600).map(card).join('');

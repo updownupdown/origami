@@ -1,0 +1,116 @@
+id: crane
+title: Crane
+family: crane
+aliases: [orizuru, paper crane, tsuru, flapping bird base crane]
+categories: [animals/birds]
+tags: [crane, bird, bird base, traditional, japanese, classic]
+difficulty: 3
+description: The traditional Japanese paper crane, or orizuru. It starts from the bird base, then the neck and tail are narrowed and lifted, and the wings fold down.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#d9534f", back: "#fbf7ee" }
+steps:
+  - text: White side up, fold in half along both diagonals and both midlines, unfolding each time.
+    ops:
+      - crease: mountain
+        line: [A, C]
+        move: B
+      - crease: mountain
+        line: [B, D]
+        move: A
+      - crease: valley
+        line: [mid(A B), mid(C D)]
+        move: A
+      - crease: valley
+        line: [mid(A D), mid(B C)]
+        move: A
+  - text: Add the creases for the bird base. Each one runs from a corner to a midline, halving the angle between the edge and the diagonal. Two short creases join them across the top and bottom.
+    pattern:
+      valley:
+        - [A, lerp(mid(A B) O 0.41421356)]
+        - [A, lerp(mid(A D) O 0.41421356)]
+        - [C, lerp(mid(C B) O 0.41421356)]
+        - [C, lerp(mid(C D) O 0.41421356)]
+        - [B, lerp(mid(A B) O 0.41421356)]
+        - [B, lerp(mid(C B) O 0.41421356)]
+        - [D, lerp(mid(A D) O 0.41421356)]
+        - [D, lerp(mid(C D) O 0.41421356)]
+      mountain:
+        - [lerp(mid(A B) O 0.41421356), lerp(mid(A D) O 0.41421356)]
+        - [lerp(mid(C B) O 0.41421356), lerp(mid(C D) O 0.41421356)]
+  - text: Collapse along the creases into the bird base, a long diamond. Two corners become the wide flaps at one end, and the other two meet as two narrow flaps at the other end.
+    collapse:
+      fixed: lerp(O A 0.2)
+      valley:
+        - [A, lerp(mid(A B) O 0.41421356)]
+        - [A, lerp(mid(A D) O 0.41421356)]
+        - [C, lerp(mid(C B) O 0.41421356)]
+        - [C, lerp(mid(C D) O 0.41421356)]
+        - [B, lerp(mid(A B) O 0.41421356)]
+        - [B, lerp(mid(C B) O 0.41421356)]
+        - [D, lerp(mid(A D) O 0.41421356)]
+        - [D, lerp(mid(C D) O 0.41421356)]
+        - [O, lerp(mid(A B) O 0.41421356)]
+        - [O, lerp(mid(A D) O 0.41421356)]
+        - [O, lerp(mid(C B) O 0.41421356)]
+        - [O, lerp(mid(C D) O 0.41421356)]
+      mountain:
+        - [lerp(mid(A B) O 0.41421356), lerp(mid(A D) O 0.41421356)]
+        - [lerp(mid(C B) O 0.41421356), lerp(mid(C D) O 0.41421356)]
+        - [O, B]
+        - [O, D]
+  - text: Turn the model around so the split end, with its two loose flaps, points down.
+    rotate: 180
+  - text: Fold the lower edges of the top layer in to the centre line, making the bottom half narrow.
+    pin: { TIP: B, TOP: A, XR: at(13.7132034 13.7132034), XL: at(7.5 13.7132034) }
+    ops:
+      - fold: valley
+        line:
+          bring: [TIP, XR]
+          onto: [TIP, TOP]
+        move: XR
+        layers: top
+      - fold: valley
+        line:
+          bring: [TIP, XL]
+          onto: [TIP, TOP]
+        move: XL
+        layers: top
+  - text: Turn the model over from side to side.
+    turn-over: vertical
+  - text: Fold the lower edges in to the centre line on this side too.
+    ops:
+      - fold: valley
+        line:
+          bring: [TIP, XR]
+          onto: [TIP, TOP]
+        move: XR
+        layers: top
+      - fold: valley
+        line:
+          bring: [TIP, XL]
+          onto: [TIP, TOP]
+        move: XL
+        layers: top
+  - text: Fold the left narrow point up between the layers, so it sticks out at an angle (inside reverse fold). This is the tail.
+    reverse: inside
+    line: [at(10.6066 13.3066), at(7.6066 12.0638)]
+    move: at(10.4066 7.6066)
+  - text: Fold the right narrow point up the same way. This is the neck.
+    reverse: inside
+    line: [at(10.6066 13.3066), at(13.6066 12.0638)]
+    move: at(10.8066 7.6066)
+  - text: Fold the tip of the neck down between its layers to make the head (inside reverse fold).
+    reverse: inside
+    line: [at(14.6066 17.2066), at(16.5566 17.6366)]
+    move: at(15.3066 17.9566)
+  - text: Stand the crane up on the table, with its neck and tail rising beside the wings.
+    stand: [XL, XR]
+finish:
+  camera: { azimuth: -30, elevation: 30, zoom: 1.1 }
+  text: Your crane is done. To finish it by hand, fold the wings down and pull them gently apart to puff out the body.

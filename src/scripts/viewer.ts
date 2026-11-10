@@ -908,7 +908,8 @@ export class FoldViewer {
       const moving = f.d !== 0 && fp.phase.motion !== 'none';
       // A moving flap turns over as a rigid stack: keep its start order until halfway, then its end order.
       const dep = moving ? (e > 0.5 ? fp.depthB[fi] : fp.depthA[fi]) : fp.depthA[fi] + (fp.depthB[fi] - fp.depthA[fi]) * e;
-      const det0 = det(moving && e > 0.5 ? f.b : f.a) > 0 ? 1 : -1;
+      // A collapse turns faces over too (each about its own hinges), so its second half uses the end side.
+      const det0 = det((moving || fp.phase.motion === 'chain') && e > 0.5 ? f.b : f.a) > 0 ? 1 : -1;
       const a = T[3 * k], b = T[3 * k + 1], c = T[3 * k + 2];
       const ux = P[3 * b] - P[3 * a], uy = P[3 * b + 1] - P[3 * a + 1], uz = P[3 * b + 2] - P[3 * a + 2];
       const qx = P[3 * c] - P[3 * a], qy = P[3 * c + 1] - P[3 * a + 1], qz = P[3 * c + 2] - P[3 * a + 2];
