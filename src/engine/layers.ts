@@ -11,7 +11,7 @@
 // A small backtracking search with propagation finds an order, and a topological sort turns it
 // into layer numbers.
 
-import { apply, type Mat, type V2 } from './geometry.ts';
+import { apply, det, segmentsOverlap, type Mat, type V2 } from './geometry.ts';
 
 export interface LayerFace {
   /** The face in paper coordinates (convex). */
@@ -73,7 +73,7 @@ function centroidOf(P: V2[]): V2 {
  * Returns a layer number per face (0 = bottom) and the side each crease went, or null if no order
  * keeps the paper apart. `up` is +1 when the folded paper's front faces up in the world.
  */
-export function solveLayers(faces: LayerFace[], creases: LayerCrease[], scale: number, prefer?: (i: number, j: number) => number): { layer: number[] } | null {
+export function solveLayers(faces: LayerFace[], creases: LayerCrease[], scale: number, prefer?: (i: number, j: number) => number): { layer: number[]; changed: number } | null {
   const n = faces.length;
   const P = faces.map((f) => f.poly.map((p) => apply(f.T, p)));
   const minArea = scale * scale * 1e-6;
@@ -228,6 +228,30 @@ export function solveLayers(faces: LayerFace[], creases: LayerCrease[], scale: n
     for (const j of out[i]) { layer[j] = Math.max(layer[j], layer[i] + 1); if (--indeg[j] === 0) queue.push(j); }
   }
   if (seen < n) return null;
-  return { layer };
+  // How many overlapping pairs ended up in another order than `prefer` asked for.
+  let changed = 0;
+  if (prefer) for (const [k, v] of val) if (v !== (prefer(Math.floor(k / n), k % n) < 0 ? -1 : 1)) changed++;
+  return { layer, changed };
 }
 
+
+/**
+ * Checks a flat-folded state's layer order (`layer`, higher is on top) and finds the nearest one
+ * that keeps paper from passing through paper. Every crease keeps the side it has; every other
+ * overlapping pair keeps its order wherever it can. `changed` is 0 when the order was already
+ * right. Null when even the creases can't be ordered (the fold itself is impossible).
+ */
+export function checkOrder(faces: (LayerFace & { layer: number })[], scale: number): { layer: number[]; changed: number } | null {
+  const lc: LayerCrease[] = [];
+  for (let i = 0; i < faces.length; i++) for (let j = i + 1; j < faces.length; j++) {
+    const A = faces[i], B = faces[j];
+    if (det(A.T) > 0 === det(B.T) > 0) continue;
+    let e: [V2, V2] | null = null;
+    for (let a = 0; a < A.poly.length && !e; a++) for (let b = 0; b < B.poly.length && !e; b++) {
+      const a1 = A.poly[a], a2 = A.poly[(a + 1) % A.poly.length];
+      if (segmentsOverlap(a1, a2, B.poly[b], B.poly[(b + 1) % B.poly.length], 1e-5)) e = [a1, a2];
+    }
+    if (e) lc.push({ f: i, g: j, a: e[0], b: e[1], above: B.layer > A.layer ? 1 : -1 });
+  }
+  return solveLayers(faces, lc, scale, (i, j) => (faces[i].layer > faces[j].layer ? 1 : -1));
+}

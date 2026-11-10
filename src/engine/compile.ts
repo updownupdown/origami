@@ -5,7 +5,7 @@
 // a line; layers are re-ranked after each operation. This is exact for flat-folded
 // states; the motion between states is an approximation (see docs/fidelity.md).
 
-import { solveLayers, type LayerCrease } from './layers.ts';
+import { checkOrder, solveLayers, type LayerCrease } from './layers.ts';
 import {
   type Mat, type V2, IDENTITY, add, apply, bbox, centroid, clipLineToPolygon, compose, containsPoint,
   cross, det, dist, distToLine, dot, invert, len, lerp, lineIntersection, mul, near, norm, perp,
@@ -461,7 +461,10 @@ function opFold(st: State, op: FoldOp): Phase {
   const mv = finalPieces.filter((x) => moving.has(x));
   const mvLayers = mv.map((x) => x.f.layer);
   const maxM = Math.max(...mvLayers), minM = Math.min(...mvLayers);
-  const midM = (maxM + minM) / 2;
+  // The flap's two halves for a reverse fold: the upper and lower half of its layers by count
+  // (a narrow flap is folded in half, so each half holds as many layers as the other).
+  const srt = mvLayers.slice().sort((a, b) => a - b);
+  const midM = (srt[(srt.length - 1) >> 1] + srt[srt.length >> 1]) / 2;
 
   const items = finalPieces.map((x) => {
     const f = x.f;
@@ -498,6 +501,7 @@ function opFold(st: State, op: FoldOp): Phase {
     return { f, a: f.m, b, la: f.layer, lb, d };
   });
   rerank(items);
+  if (!isCrease) settleLayers(st, items);
 
   st.faces = items.map((x) => ({ ...x.f, m: x.b, layer: x.lb }));
 
@@ -519,6 +523,26 @@ function opFold(st: State, op: FoldOp): Phase {
     });
   }
   return phase;
+}
+
+/**
+ * Checks the layer order a fold left with the layer solver, sheet by sheet, and repairs it if paper
+ * would pass through paper. Every crease keeps the side the fold gave it; the solver then keeps
+ * every other pair as the fold ordered it wherever it can, so a correct order comes back unchanged.
+ * If even the creases can't be ordered (the fold itself is impossible), the fold's order stays.
+ */
+function settleLayers(st: State, items: { f: Face; b: Mat; lb: number }[]) {
+  for (const sheet of new Set(items.map((x) => x.f.sheet))) {
+    const F = items.filter((x) => x.f.sheet === sheet);
+    if (F.length < 3 || F.length > 400) continue;
+    const sh = st.sheets.get(sheet)!;
+    const r = checkOrder(F.map((x) => ({ poly: x.f.poly, T: x.b, layer: x.lb })), Math.max(sh.w, sh.h));
+    if (!r || !r.changed) continue;
+    // Same slots in the stack (so other sheets keep their places), in the solved order.
+    const slots = F.map((x) => x.lb).sort((a, b) => a - b);
+    const order = F.map((_, i) => i).sort((i, j) => r.layer[i] - r.layer[j] || F[i].lb - F[j].lb);
+    order.forEach((i, k) => (F[i].lb = slots[k]));
+  }
 }
 
 function orient(poly: V2[]): V2[] {
