@@ -1022,26 +1022,30 @@ export function compileModel(script: ModelScript, bases: BaseLibrary = {}): Comp
       if (step.sheet) st.active = step.sheet;
       const ops = opsOf(step);
       const phases: Phase[] = [];
+      // Each phase carries the model's tilt as it is when the phase happens, so the viewer can pose it
+      // standing (a shape before a stand in the same step is still lying down).
+      const push = (...ps: Phase[]) => {
+        for (const ph of ps) if (!ph.tilt && st.tilt) ph.tilt = { p: st.tilt.p, q: st.tilt.q, a0: st.tilt.a, a1: st.tilt.a };
+        phases.push(...ps);
+      };
       for (const op of ops) {
         if ('mark' in op) { opMark(st, op.mark); continue; }
         if ('pin' in op) { for (const [k, e] of Object.entries((op as { pin: Record<string, PointExpr> }).pin)) st.pins.set(k, resolvePoint(st, e)); continue; }
-        if ('turn-over' in op) { phases.push(opTurnOver(st, op['turn-over'] === 'horizontal' ? 'horizontal' : 'vertical')); continue; }
-        if ('rotate' in op) { phases.push(opRotate(st, op.rotate)); continue; }
-        if ('grid' in op) { phases.push(opGrid(st, op.grid, op.sheet ?? st.active)); continue; }
-        if ('collapse' in op) { phases.push(opCollapse(st, op.collapse, op.sheet ?? st.active)); continue; }
-        if ('place' in op) { phases.push(opPlace(st, op.place)); continue; }
-        if ('shape' in op) { phases.push(opShape(st, op.shape)); continue; }
-        if ('pattern' in op) { phases.push(...opPattern(st, op.pattern, op.sheet ?? st.active)); continue; }
-        if ('stand' in op) { phases.push(opStand(st, op.stand)); continue; }
+        if ('turn-over' in op) { push(opTurnOver(st, op['turn-over'] === 'horizontal' ? 'horizontal' : 'vertical')); continue; }
+        if ('rotate' in op) { push(opRotate(st, op.rotate)); continue; }
+        if ('grid' in op) { push(opGrid(st, op.grid, op.sheet ?? st.active)); continue; }
+        if ('collapse' in op) { push(opCollapse(st, op.collapse, op.sheet ?? st.active)); continue; }
+        if ('place' in op) { push(opPlace(st, op.place)); continue; }
+        if ('shape' in op) { push(opShape(st, op.shape)); continue; }
+        if ('pattern' in op) { push(...opPattern(st, op.pattern, op.sheet ?? st.active)); continue; }
+        if ('stand' in op) { push(opStand(st, op.stand)); continue; }
         const f = op as FoldOp;
         if (f.sheet) st.active = f.sheet;
-        phases.push(opFold(st, f));
+        push(opFold(st, f));
       }
       cam = camera(step.camera, cam);
       if (!step.camera && (cam.auto || cam.preset === 'top')) cam = { ...cam, auto: true };
       else if (step.camera) cam = { ...cam, auto: false };
-      // Every phase carries the model's tilt, so the viewer can pose it standing.
-      for (const ph of phases) if (!ph.tilt && st.tilt) ph.tilt = { p: st.tilt.p, q: st.tilt.q, a0: st.tilt.a, a1: st.tilt.a };
       steps.push({ text: step.text ?? defaultText(ops), tip: step.tip, group, sheets: stepSheets(phases), camera: cam, phases });
     } catch (e) {
       if (e instanceof CompileError) throw e;

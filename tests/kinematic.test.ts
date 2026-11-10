@@ -59,7 +59,7 @@ describe('kinematic steps', () => {
 
   it('faces that fold flat onto each other in 3D are stacked apart (no flicker)', () => {
     kin.ensureStep(7);
-    const end = kin.stacks[7]!.at(-1)![0];
+    const end = kin.levels[7]!.at(-1)![0];
     expect(end.some((x) => x !== 0)).toBe(true);
   });
 
