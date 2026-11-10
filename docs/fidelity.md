@@ -35,13 +35,16 @@ The viewer already poses faces by composing hinge rotations, so this is mostly c
 work. One limit: faces can only bend along existing creases. Curved or rounded shaping,
 such as puffing out a balloon, would need step 4.
 
-## 3. A proper layer-order solver
+## 3. A proper layer-order solver (done)
 
-Layers are currently ranked with simple rules, such as the moving part landing on top.
-That's right for the folds we write by hand, but it can be wrong after collapses and
-reverse folds. The standard approach would be a full solver, such as the Flat-Folder
-algorithm by Jason Ku et al. It finds every valid stacking for a crease pattern and lets
-the script pick one. It runs offline at build time, so the viewer doesn't change.
+Each fold first ranks layers with simple rules (the moving part lands on top; a reverse fold
+turns each half of the flap inside out). Then the layer solver in `src/engine/layers.ts`
+checks that order with the Flat-Folder rules (Jason Ku et al.): crease order, taco-taco,
+taco-tortilla and no cycles. Every crease keeps the side the fold gave it, and every other
+overlapping pair keeps its order wherever it can, so a correct order comes back unchanged and
+a wrong one is repaired with as few swaps as possible. Collapses are solved the same way.
+`tests/layers-valid.test.ts` checks every fold of every model. The one known exception is the
+dart's second wing fold, whose script takes only the bottom layer.
 
 ## 4. Physics: bending and curved paper
 
