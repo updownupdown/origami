@@ -22,7 +22,8 @@ export interface LineSpec {
 export type LayerChoice = 'all' | 'top' | 'bottom' | 'outer';
 
 export interface FoldOp {
-  fold?: 'valley' | 'mountain';
+  /** 'both': the front layers fold towards you and the back layers away (both wings of a bird at once). */
+  fold?: 'valley' | 'mountain' | 'both';
   crease?: 'valley' | 'mountain';
   unfold?: true;
   reverse?: 'inside' | 'outside';
@@ -87,7 +88,15 @@ export interface ShapeCrease {
 }
 export interface ShapeOp {
   /** Open or close creases to 3D angles (walls of a box, a body opened to stand, a puffed wing). */
-  shape: ShapeCrease[] | { creases?: ShapeCrease[]; fixed?: PointExpr };
+  shape: ShapeCrease[] | {
+    creases?: ShapeCrease[];
+    fixed?: PointExpr;
+    /**
+     * The paper may bend to reach the shape (wings pulled apart so the body puffs out, a curled
+     * leaf). Solved as bending paper when the site is built. Every later step is soft too.
+     */
+    soft?: boolean;
+  };
 }
 export interface PatternOp {
   /** Crease a crease pattern (segments in world space on a flat sheet), and optionally fold it all to `angle`. */
@@ -266,6 +275,8 @@ export interface DiagramArrow {
 
 export interface Phase {
   motion: MotionKind;
+  /** A shape the paper bends to reach (see ShapeOp.soft). */
+  soft?: boolean;
   axis?: [V2, V2];
   /**
    * A reverse fold: the point where the fold line meets the flap's folded edge (its spine), and a

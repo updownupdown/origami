@@ -109,8 +109,18 @@ steps:
     reverse: inside
     line: [at(14.6066 17.2066), at(16.5566 17.6366)]
     move: at(15.3066 17.9566)
-  - text: Stand the crane up on the table, with its neck and tail rising beside the wings.
-    stand: [XL, XR]
+  - text: Fold both wings down along the top of the body, the front wing towards you and the back wing behind.
+    fold: both
+    line: [XL, XR]
+    move: at(10.1066 19.1066)
+    name: wings
+  - text: Hold the wings and pull them gently apart until they stand out level. The body puffs out between them.
+    shape:
+      creases:
+        - { creases: wings, angle: 90 }
+      soft: true
+  - text: Set the crane on the table.
+    stand: { on: [XL, XR], angle: -90 }
 finish:
   camera: { azimuth: -30, elevation: 30, zoom: 1.1 }
-  text: Your crane is done. To finish it by hand, fold the wings down and pull them gently apart to puff out the body.
+  text: Your crane is done. Hang it by a thread, or fold a thousand for a senbazuru.

@@ -615,8 +615,9 @@ export class FoldViewer {
     const pose = (t: number, views: SheetView[]) => {
       const X = this.kin.frameAt(this.step, t);
       const levels = this.kin.levelsAt(this.step, t);
-      X.forEach((Xs, si) => {
-        const raw = this.kin.positions(si, Xs);
+      const pos = this.kin.posAt(this.step, t);
+      X.forEach((_, si) => {
+        const raw = pos[si];
         const P = views[si].pos;
         for (let i = 0; i < raw.length / 3; i++) {
           fp.tilt(local, v.set(raw[3 * i], raw[3 * i + 1], raw[3 * i + 2]));
@@ -818,11 +819,21 @@ export class FoldViewer {
     for (const k of [i - 1, i]) {
       const st = this.model.steps[k];
       if (!st) continue;
-      for (const ph of st.phases) {
+      this.kin.ensureStep(k);
+      const bent = !!this.kin.soft[k];
+      st.phases.forEach((ph, p) => {
         const fp = new FlatPhase(ph, this.thick);
-        minY = Math.min(minY, fp.bounds().min.y);
+        if (bent) {
+          // Bent paper is not where the flat diagram says: take its solved shape.
+          const v = new THREE.Vector3(), w = new THREE.Vector3();
+          // (Only where this step meets its neighbour: in between, the paper's own need lifts it.)
+          const at = k < i ? (p === st.phases.length - 1 ? [1] : []) : p === 0 ? [0] : [];
+          for (const local of at) for (const P of this.kin.posAt(k, (p + local) / st.phases.length)) {
+            for (let j = 0; j < P.length; j += 3) { fp.tilt(local, v.set(P[j], P[j + 1], P[j + 2])); minY = Math.min(minY, toThree(v, w).y); }
+          }
+        } else minY = Math.min(minY, fp.bounds().min.y);
         fp.dispose();
-      }
+      });
     }
     const v = -minY + this.model.extent * 0.012;
     this.floors.set(i, v);

@@ -58,11 +58,20 @@ simulation in the browser, in the style of Amanda Ghassaei's *Origami Simulator*
 It costs more CPU and can be unstable at 180°, so it would sit behind a "realistic" toggle
 and the exact flat-fold engine would stay the source of truth.
 
-Status: this was built, and then replaced as the default for linked folds by rigid kinematics
-(see [3D shaping](3d-shaping.md)). Physics picks a branch at random at flat states, which made
-symmetric models lopsided, and it has no collision handling. The viewer no longer uses it; the
-bar-and-hinge solver stays in src/engine/sim.ts for a future bending path between two exact states
-(a step that can't move rigidly), which would be solved at build time like the rest.
+Status: the bar-and-hinge solver (src/engine/sim.ts) runs when the site is built, for steps
+marked `soft: true` (see [3D shaping](3d-shaping.md)). It is not used for ordinary folds: physics
+picks a branch at random at flat states, which made symmetric models lopsided, so those stay with
+the exact flat-fold engine and the rigid solver. A soft step holds part of the model still and
+works the named creases firmly, which keeps it symmetric.
+
+Still missing for models like curled leaves and round pots:
+
+- A finer mesh inside faces, so paper can curl smoothly instead of bending along a few lines.
+- Collisions between layers, so paper rests on paper instead of passing through.
+- A `curl` step (roll a strip into a tube, curve a leaf) that sets a bend across a whole face.
+
+Reverse folds are the other non-rigid case. They are shown as the flap swinging in the plane of
+the model while it turns inside out (`reverseMotion` in src/engine/kinematic.ts).
 
 ## 5. Paper thickness
 

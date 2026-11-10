@@ -14,8 +14,8 @@
 // Pure TypeScript with no three.js, so it runs in the browser, in workers and in tests.
 
 import type { CompiledModel, Phase, PhaseFace } from './types.ts';
-import type { SimMesh } from './sim.ts';
-import { recordSides, stackLevels, type FlatInfo } from './stack.ts';
+import { alignRigid, Solver, type SimMesh } from './sim.ts';
+import { recordSides, stackLevels, vertsOf, type FlatInfo } from './stack.ts';
 
 type V2 = [number, number];
 
@@ -678,6 +678,8 @@ export interface KinRecord {
     /** Levels: rests × sheets × faces, int16, base64. */
     levels: string;
     frames?: { t: number[]; X: string; flip: string };
+    /** Bent paper: per frame, per sheet, per mesh vertex a position (cm), float32, base64. */
+    soft?: string;
   }[];
 }
 
@@ -711,6 +713,13 @@ export class Kinematics {
   private start: (Float64Array[] | undefined)[] = [];
   /** Recorded poses through each step (time 0..1 across the whole step). */
   frames: (KinFrame[] | undefined)[] = [];
+  /**
+   * Steps where the paper bends: positions of every mesh vertex per frame (same times as `frames`,
+   * whose face transforms are then the best rigid fit of each face). Once paper has bent, every
+   * later step carries on from the bent shape.
+   */
+  soft: (Float64Array[][] | undefined)[] = [];
+  private softStart: (Float64Array[] | undefined)[] = [];
   /** Largest crease gap (fraction of the sheet) seen while solving each step. */
   gap: number[] = [];
   samples: number;
@@ -794,6 +803,7 @@ export class Kinematics {
   runStep(s: number) {
     if (this.rec?.[s]?.frames) { this.adopt(s); return; }
     const step = this.model.steps[s];
+    if (this.softStart[s] || step.phases.some((p) => p.soft)) { this.runSoft(s); return; }
     const np = Math.max(1, step.phases.length);
     let X: Float64Array[] = this.stateAt(s).map((x) => x.slice());
     const frames: KinFrame[] = [{ t: 0, X: X.map((x) => x.slice()) }];
@@ -903,6 +913,114 @@ export class Kinematics {
     this.missed[s] = (missed * 180) / Math.PI;
     // Until the paper has been shaped, every step starts again from the exact flat-fold pose.
     this.start[s + 1] = this.shapedBefore(s + 1) ? X : this.flatStart(s + 1);
+  }
+
+  /**
+   * A step where the paper bends. The sheet is a mesh of stiff bars with springy hinges (sim.ts);
+   * the step's creases are driven to their angles and the rest of the paper gives way as it must.
+   */
+  private runSoft(s: number) {
+    const step = this.model.steps[s], np = Math.max(1, step.phases.length);
+    const X0 = this.stateAt(s);
+    let P = this.softStart[s] ?? X0.map((X, si) => this.positions(si, X));
+    const solvers = this.meshes.map((mesh, si) => {
+      const sv = new Solver(mesh, { facet: 0.08 });
+      for (let i = 0; i < P[si].length; i++) sv.x[i] = P[si][i] / mesh.size;
+      // Fold angles near ±180° are read relative to what the script says they are.
+      const A = this.angles[s][0];
+      if (A) sv.theta.set(A.a[si]);
+      sv.measure().forEach((t, h) => (sv.theta[h] = t));
+      sv.target.set(sv.theta);
+      for (let h = 0; h < sv.target.length; h++) if (!mesh.hingeCrease[h]) sv.target[h] = 0;
+      return sv;
+    });
+    // The part of the model that is held still (the step's "fixed" point) does not give way, and the
+    // creases the step folds are worked firmly; the rest of the paper follows.
+    const hold = (ph: Phase, A: PhaseAnglesLike) => solvers.forEach((sv, si) => {
+      const mesh = this.meshes[si], V = vertsOf(mesh);
+      const pin = new Uint8Array(mesh.n);
+      let any = false;
+      V.forEach((vs, f) => { const pf = ph.faces[A.match[si][f]]; if (pf?.k) { any = true; for (const v of vs) pin[v] = 1; } });
+      if (!any) {
+        // No fixed point given: the paper that stayed still when the named folds were made stays still now.
+        const names = new Set((ph.shape ?? []).map((c) => c.name).filter(Boolean));
+        this.model.steps.slice(0, s).forEach((st, s2) => st.phases.forEach((q, p2) => {
+          if (!q.name || !names.has(q.name) || q.motion !== 'hinge') return;
+          const M = this.angles[s2][p2].match[si];
+          V.forEach((vs, f) => { const qf = q.faces[M[f]]; if (qf && qf.d === 0) { any = true; for (const v of vs) pin[v] = 1; } });
+        }));
+      }
+      sv.pinned = any ? pin : null;
+      for (let h = 0; h < sv.kHinge.length; h++) {
+        if (!mesh.hingeCrease[h]) continue;
+        sv.kHinge[h] = sv.kCrease[h] * (Math.abs(A.b[si][h] - sv.target[h]) > 1e-6 ? 6 : 0.15);
+      }
+    });
+    const read = () => solvers.map((sv, si) => { const o = new Float64Array(sv.x.length), z = this.meshes[si].size; for (let i = 0; i < o.length; i++) o[i] = sv.x[i] * z; return o; });
+    const ts = [0], Ps = [P.map((x) => x.slice())];
+    step.phases.forEach((ph, p) => {
+      const A = this.angles[s][p];
+      // Only a phase that folds something works the paper; turning or standing the model leaves it as it is.
+      const moves = A.a.some((a, si) => a.some((v, h) => this.meshes[si].hingeCrease[h] && Math.abs(A.b[si][h] - v) > 1e-6));
+      if (!moves) return;
+      solvers.forEach((sv, si) => { for (let h = 0; h < sv.target.length; h++) if (this.meshes[si].hingeCrease[h]) sv.target[h] = A.a[si][h]; });
+      hold(ph, A);
+      const from = solvers.map((sv) => sv.target.slice());
+      const K = this.samples;
+      for (let k = 1; k <= K; k++) {
+        const e = easeCos(k / K);
+        solvers.forEach((sv, si) => {
+          const mesh = this.meshes[si];
+          for (let h = 0; h < sv.target.length; h++) if (mesh.hingeCrease[h]) sv.target[h] = from[si][h] + (A.b[si][h] - from[si][h]) * e;
+          sv.drag = 0.995;
+          sv.step(k === K ? 4000 : 500);
+        });
+        ts.push((p + k / K) / np);
+        Ps.push(read());
+      }
+    });
+    if (ts[ts.length - 1] < 1) { ts.push(1); Ps.push(Ps[Ps.length - 1].map((x) => x.slice())); }
+    this.soft[s] = Ps;
+    // Each face's best rigid fit, for everything that thinks in whole faces (paper thickness).
+    const fit = (Pf: Float64Array[]) => Pf.map((Q, si) => {
+      const mesh = this.meshes[si], V = vertsOf(mesh), X = new Float64Array(12 * mesh.faces.length);
+      V.forEach((vs, f) => {
+        const src: number[] = [], dst: number[] = [];
+        for (const v of vs) { src.push(mesh.paper[2 * v], mesh.paper[2 * v + 1], 0); dst.push(Q[3 * v], Q[3 * v + 1], Q[3 * v + 2]); }
+        const { R, t } = alignRigid(src, dst, vs.map(() => 1));
+        X.set([...R, ...t], 12 * f);
+      });
+      return X;
+    });
+    const frames = ts.map((t, i) => ({ t, X: fit(Ps[i]) }));
+    this.frames[s] = frames;
+    this.spans[s] = [];
+    if (this.rec?.[s]) this.levels[s] = this.recLevels(s);
+    else this.stackStep(s, frames);
+    this.gap[s] = 0;
+    this.tier[s] = 'kinematic';
+    this.crossed[s] = 0;
+    this.missed[s] = 0;
+    this.start[s + 1] = frames[frames.length - 1].X;
+    this.softStart[s + 1] = Ps[Ps.length - 1];
+  }
+
+  /** Positions (cm, 3 per mesh vertex) of every sheet at time t through step s. */
+  posAt(s: number, t: number): Float64Array[] {
+    const n = this.model.steps.length;
+    if (s >= n) {
+      const X = this.stateAt(n);
+      return this.softStart[n] ?? X.map((Xs, si) => this.positions(si, Xs));
+    }
+    this.ensureStep(s);
+    const S = this.soft[s];
+    if (!S) return this.frameAt(s, t).map((Xs, si) => this.positions(si, Xs));
+    const F = this.frames[s]!;
+    let j = 0;
+    while (j < F.length - 1 && F[j + 1].t <= t) j++;
+    const k = Math.min(F.length - 1, j + 1);
+    const w = F[k].t > F[j].t ? Math.max(0, Math.min(1, (t - F[j].t) / (F[k].t - F[j].t))) : 0;
+    return S[j].map((a, si) => { const b = S[k][si], o = new Float64Array(a.length); for (let i = 0; i < o.length; i++) o[i] = a[i] + (b[i] - a[i]) * w; return o; });
   }
 
   private setupPhase(G: SheetGraph, si: number, ph: Phase, A: PhaseAnglesLike, now: number, X0: Float64Array, order?: number[]) {
@@ -1061,6 +1179,13 @@ export class Kinematics {
           }
         });
         out.frames = { t: F.map((fr) => +fr.t.toFixed(6)), X: b64(new Uint8Array(X.buffer)), flip: b64(new Uint8Array(flip.buffer)) };
+        const S = this.soft[s];
+        if (S) {
+          const nv = this.meshes.reduce((a, m) => a + m.n, 0), buf = new Float32Array(S.length * nv * 3);
+          let o2 = 0;
+          for (const fr of S) for (const Q of fr) { buf.set(Q, o2); o2 += Q.length; }
+          out.soft = b64(new Uint8Array(buf.buffer));
+        }
       }
       return out;
     });
@@ -1107,6 +1232,12 @@ export class Kinematics {
         return out;
       }) };
     });
+    if (r.soft) {
+      const buf = new Float32Array(unb64(r.soft).buffer);
+      let o2 = 0;
+      this.soft[s] = fr.t.map(() => this.meshes.map((m) => { const Q = Float64Array.from(buf.subarray(o2, o2 + 3 * m.n)); o2 += 3 * m.n; return Q; }));
+      this.softStart[s + 1] = this.soft[s]!.at(-1)!;
+    }
     this.tier[s] = r.tier;
     this.spans[s] = r.spans;
     this.missed[s] = r.missed;

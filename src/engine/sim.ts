@@ -330,6 +330,8 @@ export class Solver {
   speed = 0;
   /** Velocity kept per iteration (1 = none lost). Raised while settling. */
   drag = 0.9995;
+  /** Vertices held where they are (1 per vertex), if any. */
+  pinned: Uint8Array | null = null;
 
   constructor(mesh: SimMesh, opt: SolverOptions = {}) {
     this.mesh = mesh;
@@ -461,7 +463,9 @@ export class Solver {
         }
       }
       let mx = 0;
+      const pin = this.pinned;
       for (let i = 0; i < n3; i++) {
+        if (pin && pin[(i / 3) | 0]) { V[i] = 0; continue; }
         V[i] = (V[i] + F[i] * dt) * this.drag;
         X[i] += V[i] * dt;
         const s = Math.abs(V[i]);
