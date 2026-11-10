@@ -62,9 +62,13 @@ symmetric models lopsided, and it has no collision handling. It stays behind the
 
 ## 5. Paper thickness
 
-Today layers are drawn a fixed tiny distance apart. Better thickness means offsetting each
-face by its layer and bending creases around the stack. That matters most for
-tessellations and big multi-layer models. It's a viewer change only.
+Status: built (src/engine/stack.ts). One rule for every pose, flat or 3D: faces that touch are
+stacked, and each sits one paper thickness (about 0.15 mm on a 15 cm sheet) above the highest face it
+rests on. Two faces that touch the way they lay in the flat diagram keep the diagram's layer order;
+faces that meet in 3D keep the side they approached from. Levels are worked out at the rest poses
+(the ends of each phase), so the end of one step and the start of the next are the same state with
+the same thickness, and a thin strip along each crease joins faces at different levels so the paper
+never tears open. `tests/continuity.test.ts` checks every model for jumps between steps.
 
 ## Format guarantees
 

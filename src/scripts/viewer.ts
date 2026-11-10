@@ -1,13 +1,10 @@
 // Three.js renderer for compiled fold steps.
 //
-// The flat-fold engine describes each step exactly (where every face lies when
-// folded flat). Steps of plain folds are drawn straight from that exact pose:
-// flaps turn rigidly about their hinges and each layer sits a paper thickness
-// above the one below. Collapses, 3D shaping and every step after the paper has
-// been shaped are posed by rigid-origami kinematics (engine/kinematic.ts): faces stay
-// flat and rigid, creases close up exactly, and the motion follows the fold angles the
-// script asks for, so the same step always looks the same. The physics simulation
-// (engine/sim.ts) is kept behind the `physics` option.
+// Every step is posed the same way: rigid-origami kinematics (engine/kinematic.ts) turn the fold
+// angles of the step's stored states into face positions (a plain fold is a hinge turning to 180°,
+// a box wall one held at 90°), and engine/stack.ts gives each face its layer of paper thickness.
+// The end of one step and the start of the next are the same state, so they look the same. The
+// physics simulation (engine/sim.ts) is kept behind the `physics` option.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { CameraSpec, CompiledModel, Phase, PhaseFace } from '../engine/types';
@@ -220,6 +217,17 @@ class SheetView {
       let r = key.get(kk);
       if (r === undefined) { r = rv.length; key.set(kk, r); rv.push(v); rf.push(f); }
       idx.push(r);
+    }
+    // Paper is continuous: where the faces either side of a crease sit at different layers, a thin
+    // strip joins them (the rounded edge of a fold in real paper). It is wound like the face on its
+    // left continued across the crease, so its front and back colours are the paper's own.
+    for (let h = 0; h < mesh.hingeCrease.length; h++) {
+      if (!mesh.hingeCrease[h]) continue;
+      const a = mesh.hinges[4 * h], b = mesh.hinges[4 * h + 1], fl = mesh.hingeFaces[2 * h], fr = mesh.hingeFaces[2 * h + 1];
+      if (fl < 0 || fr < 0 || fl === fr) continue;
+      const al = key.get(a * nf + fl), bl = key.get(b * nf + fl), ar = key.get(a * nf + fr), br = key.get(b * nf + fr);
+      if (al === undefined || bl === undefined || ar === undefined || br === undefined) continue;
+      idx.push(bl, al, ar, bl, ar, br);
     }
     this.rvert = Int32Array.from(rv);
     this.rface = Int32Array.from(rf);
@@ -443,8 +451,9 @@ export class FoldViewer {
   constructor(public el: HTMLElement, public model: CompiledModel, public opts: ViewerOptions) {
     this.colors = opts.colors;
     this.thick = model.extent * 0.0016;
-    // Paper thickness, exaggerated a little so stacked layers always read as separate sheets.
-    this.layerGap = model.extent * 0.0022;
+    // Paper thickness: about 0.15 mm on a 15 cm sheet (real paper is about 0.1 mm), so stacked layers
+    // read as separate sheets without the model looking like a block from the side.
+    this.layerGap = model.extent * 0.001;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: !!opts.thumbnail });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true;
@@ -732,6 +741,8 @@ export class FoldViewer {
    * paper has been shaped, replay the simulation instead.
    */
   private exactStep(i = this.step): boolean {
+    // Without physics every step is posed by the rigid kinematics, from the same stored states.
+    if (!this.opts.physics) return false;
     const steps = this.model.steps;
     // Standing a flat-folded model up only tilts it (part of the exact pose); shaping makes it 3D.
     const shaped = (k: number) => steps[k].phases.some((p) => p.motion === 'shape');
@@ -774,7 +785,7 @@ export class FoldViewer {
       let minY = Infinity;
       const pose = (t: number, views: SheetView[]) => {
         const X = this.kin.frameAt(this.step, t);
-        const lift = this.kin.stackAt(this.step, t);
+        const levels = this.kin.levelsAt(this.step, t);
         X.forEach((Xs, si) => {
           const raw = this.kin.positions(si, Xs);
           const P = views[si].pos;
@@ -783,20 +794,7 @@ export class FoldViewer {
             toThree(v, w);
             P[3 * i] = w.x; P[3 * i + 1] = w.y; P[3 * i + 2] = w.z;
           }
-          // The lift is a direction in paper-world space: carry it through the same tilt and axes.
-          let L = lift?.[si];
-          if (L) {
-            const o = fp.tilt(local, v.set(0, 0, 0)).clone(), q = new THREE.Vector3(), r = new THREE.Vector3();
-            const out = new Float32Array(L.length);
-            for (let f = 0; f < L.length / 3; f++) {
-              if (!L[3 * f] && !L[3 * f + 1] && !L[3 * f + 2]) continue;
-              fp.tilt(local, q.set(L[3 * f], L[3 * f + 1], L[3 * f + 2])).sub(o);
-              toThree(q, r);
-              out[3 * f] = r.x; out[3 * f + 1] = r.y; out[3 * f + 2] = r.z;
-            }
-            L = out;
-          }
-          minY = Math.min(minY, this.finishSheet(si, fp, index, local, views[si], L));
+          minY = Math.min(minY, this.finishSheet(si, fp, index, local, views[si], levels[si]));
         });
       };
       if (span) {
@@ -888,42 +886,42 @@ export class FoldViewer {
     return c;
   }
 
-  /** Adds layer thickness to sheet si's placed positions, updates its creases, and returns its lowest point. */
-  private finishSheet(si: number, fp: FlatPhase, index: number, local: number, sh = this.sheets[si], lift?: Float32Array): number {
+  /**
+   * Adds paper thickness to sheet si's placed positions, updates its creases, and returns its lowest
+   * point. `levels` gives each crease-pattern face's layer along its own front normal (stack.ts);
+   * without it (physics), the flat diagram's stacking is used.
+   */
+  private finishSheet(si: number, fp: FlatPhase, index: number, local: number, sh = this.sheets[si], levels?: Float32Array): number {
     const mesh = this.sim.meshes[si], n = mesh.n, T = mesh.tris, nt = T.length / 3;
     const P = sh.pos;
     const faceMatch = this.faceMatch[si][Math.min(index, this.faceMatch[si].length - 1)];
-    // Layers that lie flat on each other would z-fight or cross. Lift each crease-pattern face off
-    // the layers below it, as one rigid piece, along its own "up" (the side that faced up in the
-    // flat diagram).
+    // Each crease-pattern face sits its level of paper thicknesses off the paper, as one rigid piece
+    // along its own front normal. The strips along the creases (SheetView) keep the paper joined.
     const e = ease(local), off = this.layerGap;
-    const nf = faceMatch.length;
+    const nf = mesh.faces.length;
     const fOff = new Float32Array(3 * nf), fSet = new Uint8Array(nf);
     for (let k = 0; k < nt; k++) {
       const cf = mesh.triFace[k];
       if (fSet[cf]) continue;
-      const fi = faceMatch[cf];
-      if (fi < 0) continue;
-      const f = fp.faces[fi];
-      const moving = f.d !== 0 && fp.phase.motion !== 'none';
-      // A moving flap turns over as a rigid stack: keep its start order until halfway, then its end order.
-      const dep = moving ? (e > 0.5 ? fp.depthB[fi] : fp.depthA[fi]) : fp.depthA[fi] + (fp.depthB[fi] - fp.depthA[fi]) * e;
-      // A collapse turns faces over too (each about its own hinges), so its second half uses the end side.
-      const det0 = det((moving || fp.phase.motion === 'chain') && e > 0.5 ? f.b : f.a) > 0 ? 1 : -1;
+      let lv: number;
+      if (levels) lv = levels[cf];
+      else {
+        const fi = faceMatch[cf];
+        if (fi < 0) continue;
+        const f = fp.faces[fi];
+        const moving = f.d !== 0 && fp.phase.motion !== 'none';
+        const dep = moving ? (e > 0.5 ? fp.depthB[fi] : fp.depthA[fi]) : fp.depthA[fi] + (fp.depthB[fi] - fp.depthA[fi]) * e;
+        lv = dep * (det((moving || fp.phase.motion === 'chain') && e > 0.5 ? f.b : f.a) > 0 ? 1 : -1);
+      }
       const a = T[3 * k], b = T[3 * k + 1], c = T[3 * k + 2];
       const ux = P[3 * b] - P[3 * a], uy = P[3 * b + 1] - P[3 * a + 1], uz = P[3 * b + 2] - P[3 * a + 2];
       const qx = P[3 * c] - P[3 * a], qy = P[3 * c + 1] - P[3 * a + 1], qz = P[3 * c + 2] - P[3 * a + 2];
       const nx = uy * qz - uz * qy, ny = uz * qx - ux * qz, nz = ux * qy - uy * qx;
       const nl = Math.hypot(nx, ny, nz);
       if (nl < 1e-12) continue;
-      const sc = (det0 * dep * off) / nl;
+      const sc = (lv * off) / nl;
       fOff[3 * cf] = nx * sc; fOff[3 * cf + 1] = ny * sc; fOff[3 * cf + 2] = nz * sc;
       fSet[cf] = 1;
-    }
-    // Faces that came to lie on each other in 3D: lift them apart in the order they met.
-    if (lift) {
-      const g = off * 1.5;
-      for (let f = 0; f < nf; f++) { fOff[3 * f] += lift[3 * f] * g; fOff[3 * f + 1] += lift[3 * f + 1] * g; fOff[3 * f + 2] += lift[3 * f + 2] * g; }
     }
     let minY = Infinity;
     const R = sh.rpos, rv = sh.rvert, rf = sh.rface;
