@@ -636,6 +636,8 @@ export type StepTier = 'exact' | 'kinematic' | 'staggered' | 'crossing';
 
 /** Above this many unknowns the crossing check is skipped (big tessellations fold all at once). */
 const CHECK_LIMIT = 200;
+/** A collapse whose solved end misses its folded angles by more than this (radians) is staged instead. */
+const MISS_LIMIT = 0.05;
 
 export interface KinOptions {
   /** Samples per phase that changes fold angles. */
@@ -738,6 +740,7 @@ export class Kinematics {
     let worst = 0, tier: StepTier = 'exact', crossed = 0, missed = 0;
     const badTimes: number[] = [];
     let flat = !this.shapedBefore(s);
+    let stagedEnd = false;
     step.phases.forEach((ph, p) => {
       const A = this.angles[s][p];
       const now = s * 64 + Math.min(p, 63);
@@ -796,8 +799,21 @@ export class Kinematics {
         }
       }
       if (best.bad) { crossed += best.bad; badTimes.push(...best.badT); }
-      missed = Math.max(missed, best.miss);
       worst = Math.max(worst, best.gap);
+      if (flat && ph.motion === 'chain' && best.miss > MISS_LIMIT && best.out.length) {
+        // A collapse the rigid solver can't finish (a bird base needs its paper to flex). Keep the
+        // solved motion for the start, then dissolve into the exact folded pose.
+        const end = this.flatPose(ph, A, 'b');
+        const cut = (p + 0.6) / np;
+        const keep = best.out.filter((f) => f.t < cut);
+        frames.push(...keep, { t: (p + 1) / np, X: end.map((x) => x.slice()) });
+        badTimes.push((p + 1) / np);
+        tier = 'crossing';
+        stagedEnd = true;
+        X = end;
+        return;
+      }
+      missed = Math.max(missed, best.miss);
       frames.push(...best.out);
       X = best.Xe;
     });
@@ -820,6 +836,9 @@ export class Kinematics {
     }
     this.spans[s] = spans;
     this.stackStep(s, frames);
+    // A staged collapse ends on the exact flat pose, whose layer depths already keep the paper apart.
+    const S = this.stacks[s];
+    if (stagedEnd && S) S[S.length - 1] = S[S.length - 1].map((L) => new Float32Array(L.length));
     this.gap[s] = worst;
     this.tier[s] = tier;
     this.crossed[s] = crossed;
