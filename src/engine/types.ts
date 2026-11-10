@@ -307,4 +307,6 @@ export interface CompiledModel {
   finish: { camera: CameraSpec; text: string };
   /** Overall extents over all steps, for camera framing. */
   extent: number;
+  /** Steps solved when the site was built (engine/kinematic.ts); absent in the editor, which solves live. */
+  kin?: import('./kinematic.ts').KinRecord;
 }

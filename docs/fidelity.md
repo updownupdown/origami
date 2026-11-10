@@ -57,8 +57,9 @@ and the exact flat-fold engine would stay the source of truth.
 
 Status: this was built, and then replaced as the default for linked folds by rigid kinematics
 (see [3D shaping](3d-shaping.md)). Physics picks a branch at random at flat states, which made
-symmetric models lopsided, and it has no collision handling. It stays behind the viewer's
-`physics` option for paper that really has to bend.
+symmetric models lopsided, and it has no collision handling. The viewer no longer uses it; the
+bar-and-hinge solver stays in src/engine/sim.ts for a future bending path between two exact states
+(a step that can't move rigidly), which would be solved at build time like the rest.
 
 ## 5. Paper thickness
 

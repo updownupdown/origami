@@ -42,3 +42,32 @@ describe('step continuity', () => {
     }, 120000);
   }
 });
+
+describe('steps solved at build time', () => {
+  for (const id of ['masu-box', 'crane', 'rabbit', 'miura-ori']) {
+    it(`${id}: replays exactly what was solved`, () => {
+      const { script } = models.find((m) => m.script.id === id)!;
+      const m = compileModel(script, bases);
+      const sim = new FoldSim(m);
+      const born = sim.meshes.map((_, i) => sim.creaseBorn(i));
+      const solved = new Kinematics(m, sim.meshes, sim.angles as any, born);
+      const rec = JSON.parse(JSON.stringify(solved.record()));
+      const replay = new Kinematics(m, sim.meshes, sim.angles as any, born);
+      replay.load(rec);
+      let d = 0, dl = 0;
+      for (let s = 0; s < m.steps.length; s++) {
+        replay.ensureStep(s);
+        expect(replay.tier[s]).toBe(solved.tier[s]);
+        expect(replay.spans[s]).toEqual(solved.spans[s]);
+        for (const t of [0, 0.3, 0.5, 0.8, 1]) {
+          const a = solved.frameAt(s, t), b = replay.frameAt(s, t);
+          a.forEach((X, si) => { const pa = solved.positions(si, X), pb = replay.positions(si, b[si]); for (let i = 0; i < pa.length; i++) d = Math.max(d, Math.abs(pa[i] - pb[i])); });
+          const la = solved.levelsAt(s, t), lb = replay.levelsAt(s, t);
+          la.forEach((x, si) => x.forEach((v, f) => (dl = Math.max(dl, Math.abs(v - lb[si][f])))));
+        }
+      }
+      expect(d / m.extent).toBeLessThan(1e-5);
+      expect(dl).toBeLessThan(1e-6);
+    }, 60000);
+  }
+});

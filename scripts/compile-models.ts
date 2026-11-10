@@ -2,6 +2,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { compileModel, CompileError } from '../src/engine/compile.ts';
+import { FoldSim } from '../src/engine/sim.ts';
+import { Kinematics } from '../src/engine/kinematic.ts';
 import { toFold } from '../src/engine/fold-format.ts';
 import { finalSvg } from '../src/engine/svg.ts';
 import { ROOT, loadBases, loadModels } from './lib.ts';
@@ -21,7 +23,10 @@ for (const { file, script } of loadModels()) {
     if (!script.credits?.designer) throw new CompileError(-1, 'Every model needs credits.designer');
     ids.add(script.id);
     const m = compileModel(script, bases);
-    fs.writeFileSync(out(`public/models/${m.id}.json`), JSON.stringify(m));
+    // Solve the 3D motion now, so the browser only replays it.
+    const sim = new FoldSim(m);
+    const kin = new Kinematics(m, sim.meshes, sim.angles, sim.meshes.map((_, i) => sim.creaseBorn(i)));
+    fs.writeFileSync(out(`public/models/${m.id}.json`), JSON.stringify({ ...m, kin: kin.record() }));
     fs.writeFileSync(out(`public/fold/${m.id}.fold`), JSON.stringify(toFold(m)));
     fs.copyFileSync(file, out(`public/src/${m.id}.yaml`));
     fs.writeFileSync(out(`public/thumbs/${m.id}.svg`), finalSvg(m, { width: 400, height: 400, padding: 0.12 }));

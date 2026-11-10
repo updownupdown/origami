@@ -74,6 +74,10 @@ export function lift(m: ArrayLike<number>): number[] {
   return [m[0], m[2], 0, m[1], m[3], 0, 0, 0, s, m[4], m[5], 0];
 }
 
+function detOf(T: ArrayLike<number>, o: number): number {
+  return T[o] * (T[o + 4] * T[o + 8] - T[o + 5] * T[o + 7]) - T[o + 1] * (T[o + 3] * T[o + 8] - T[o + 5] * T[o + 6]) + T[o + 2] * (T[o + 3] * T[o + 7] - T[o + 4] * T[o + 6]);
+}
+
 function invert(T: ArrayLike<number>): number[] {
   // R^T, -R^T t
   const R = [T[0], T[3], T[6], T[1], T[4], T[7], T[2], T[5], T[8]];
@@ -629,6 +633,29 @@ export function faceMotion(ph: Phase, f: PhaseFace, t: number): number[] {
 export interface KinFrame { t: number; X: Float64Array[] }
 
 /**
+ * A model's solved steps, worked out when the site is built so the browser only replays them.
+ * Per step: how it is shown, and the level of every face at each rest pose. Steps that need the
+ * solver (collapses, 3D shaping and everything after) also carry their frames: per frame, per sheet,
+ * per face a rotation (quaternion) and a translation, as float32, base64.
+ */
+export interface KinRecord {
+  v: 1;
+  /** Crease-pattern faces per sheet, to check the record matches the meshes. */
+  faces: number[];
+  steps: {
+    tier: StepTier;
+    spans: [number, number][];
+    missed: number;
+    /** Levels: rests × sheets × faces, int16, base64. */
+    levels: string;
+    frames?: { t: number[]; X: string; flip: string };
+  }[];
+}
+
+const b64 = (bytes: Uint8Array) => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = (s: string) => { const bin = atob(s), out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; };
+
+/**
  * How a step is shown: 'exact' (flat folds, drawn from the flat-fold engine), 'kinematic' (rigid
  * motion of linked creases), 'staggered' (flaps folded one after another so they do not collide),
  * or 'crossing' (no rigid motion keeps the paper apart; shown as a staged move instead).
@@ -670,6 +697,8 @@ export class Kinematics {
    * the step), per sheet, the level of each crease-pattern face along its own front normal.
    */
   levels: (Float32Array[][] | undefined)[] = [];
+  /** Steps solved at build time (see KinRecord). */
+  private rec: KinRecord['steps'] | null = null;
   /** Which side each pair of nearby faces approached from, at the start of each step (per sheet). */
   private sides: (Map<number, number>[] | undefined)[] = [];
   /** Symmetries held in the last phase set up, per sheet (for diagnostics). */
@@ -734,6 +763,7 @@ export class Kinematics {
 
   /** Solves step s from its start state to its end, recording frames. */
   runStep(s: number) {
+    if (this.rec?.[s]?.frames) { this.adopt(s); return; }
     const step = this.model.steps[s];
     const np = Math.max(1, step.phases.length);
     let X: Float64Array[] = this.stateAt(s).map((x) => x.slice());
@@ -836,7 +866,8 @@ export class Kinematics {
       else spans.push([ts[a], ts[b]]);
     }
     this.spans[s] = spans;
-    this.stackStep(s, frames);
+    if (this.rec?.[s]) this.levels[s] = this.recLevels(s);
+    else this.stackStep(s, frames);
     this.gap[s] = worst;
     this.tier[s] = tier;
     this.crossed[s] = crossed;
@@ -973,6 +1004,88 @@ export class Kinematics {
       applyXf(X, 12 * Math.max(0, f), mesh.paper[2 * i], mesh.paper[2 * i + 1], P, 3 * i);
     }
     return P;
+  }
+
+  /** Works out every step and packs the result for the browser (see KinRecord). */
+  record(): KinRecord {
+    const steps = this.model.steps.map((step, s) => {
+      this.ensureStep(s);
+      const L = this.levels[s]!, nf = this.graphs.map((G) => G.mesh.faces.length);
+      const lv = new Int16Array(L.length * nf.reduce((a, b) => a + b, 0));
+      let o = 0;
+      for (const rest of L) rest.forEach((x) => { for (let f = 0; f < x.length; f++) lv[o++] = Math.round(x[f]); });
+      const out: KinRecord['steps'][number] = { tier: this.tier[s], spans: this.spans[s], missed: +this.missed[s].toFixed(3), levels: b64(new Uint8Array(lv.buffer)) };
+      if (this.solved(s)) {
+        const F = this.frames[s]!;
+        const X = new Float32Array(F.length * nf.reduce((a, b) => a + b, 0) * 7);
+        const flip = new Int8Array(nf.reduce((a, b) => a + b, 0));
+        let k = 0, j = 0;
+        F[0].X.forEach((Xs) => { for (let f = 0; f < Xs.length / 12; f++) flip[j++] = detOf(Xs, 12 * f) < 0 ? 1 : 0; });
+        for (const fr of F) fr.X.forEach((Xs) => {
+          for (let f = 0; f < Xs.length / 12; f++) {
+            const o12 = 12 * f, sg = detOf(Xs, o12) < 0 ? -1 : 1;
+            const R = [Xs[o12], Xs[o12 + 1], Xs[o12 + 2] * sg, Xs[o12 + 3], Xs[o12 + 4], Xs[o12 + 5] * sg, Xs[o12 + 6], Xs[o12 + 7], Xs[o12 + 8] * sg];
+            const q = quatOf(R);
+            if (q[0] < 0) for (let c = 0; c < 4; c++) q[c] = -q[c];
+            X.set([q[0], q[1], q[2], q[3], Xs[o12 + 9], Xs[o12 + 10], Xs[o12 + 11]], k);
+            k += 7;
+          }
+        });
+        out.frames = { t: F.map((fr) => +fr.t.toFixed(6)), X: b64(new Uint8Array(X.buffer)), flip: b64(new Uint8Array(flip.buffer)) };
+      }
+      return out;
+    });
+    return { v: 1, faces: this.graphs.map((G) => G.mesh.faces.length), steps };
+  }
+
+  /** Uses steps solved at build time. Ignored when it doesn't match this model's meshes. */
+  load(rec: KinRecord | undefined) {
+    if (!rec || rec.v !== 1 || rec.steps.length !== this.model.steps.length) return;
+    if (rec.faces.length !== this.graphs.length || rec.faces.some((n, si) => n !== this.graphs[si].mesh.faces.length)) return;
+    this.rec = rec.steps;
+  }
+
+  /** True for steps that need the solver (not plain folds of flat paper), which are recorded in full. */
+  private solved(s: number): boolean {
+    return this.shapedBefore(s) || this.model.steps[s].phases.some((p) => p.motion === 'chain' || p.motion === 'shape');
+  }
+
+  private recLevels(s: number): Float32Array[][] {
+    const r = this.rec![s], v = new Int16Array(unb64(r.levels).buffer);
+    const nf = this.graphs.map((G) => G.mesh.faces.length), per = nf.reduce((a, b) => a + b, 0);
+    const out: Float32Array[][] = [];
+    for (let o = 0; o + per <= v.length; o += per) {
+      let k = o;
+      out.push(nf.map((n) => { const x = new Float32Array(n); for (let f = 0; f < n; f++) x[f] = v[k++]; return x; }));
+    }
+    return out;
+  }
+
+  /** Takes step s from the build-time record instead of solving it. */
+  private adopt(s: number) {
+    const r = this.rec![s], fr = r.frames!;
+    const nf = this.graphs.map((G) => G.mesh.faces.length);
+    const X = new Float32Array(unb64(fr.X).buffer), flip = new Int8Array(unb64(fr.flip).buffer);
+    let k = 0;
+    this.frames[s] = fr.t.map((t) => {
+      let j = 0;
+      return { t, X: nf.map((n) => {
+        const out = new Float64Array(12 * n);
+        for (let f = 0; f < n; f++, j++, k += 7) {
+          const R = quatToR([X[k], X[k + 1], X[k + 2], X[k + 3]]), sg = flip[j] ? -1 : 1;
+          out.set([R[0], R[1], R[2] * sg, R[3], R[4], R[5] * sg, R[6], R[7], R[8] * sg, X[k + 4], X[k + 5], X[k + 6]], 12 * f);
+        }
+        return out;
+      }) };
+    });
+    this.tier[s] = r.tier;
+    this.spans[s] = r.spans;
+    this.missed[s] = r.missed;
+    this.crossed[s] = r.tier === 'crossing' ? 1 : 0;
+    this.gap[s] = 0;
+    this.levels[s] = this.recLevels(s);
+    const end = this.frames[s]!.at(-1)!.X;
+    this.start[s + 1] = this.shapedBefore(s + 1) ? end.map((x) => x.slice()) : this.flatStart(s + 1);
   }
 
   /** What the flat diagram says at rest pose r of step s (r = phase index; r = phases for the end). */

@@ -3,79 +3,33 @@
 // Every step is posed the same way: rigid-origami kinematics (engine/kinematic.ts) turn the fold
 // angles of the step's stored states into face positions (a plain fold is a hinge turning to 180°,
 // a box wall one held at 90°), and engine/stack.ts gives each face its layer of paper thickness.
-// The end of one step and the start of the next are the same state, so they look the same. The
-// physics simulation (engine/sim.ts) is kept behind the `physics` option.
+// The end of one step and the start of the next are the same state, so they look the same.
+// Models built for the site carry their solved steps (CompiledModel.kin), so the browser only
+// replays them; the editor solves live.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { CameraSpec, CompiledModel, Phase, PhaseFace } from '../engine/types';
 import { stateBefore } from '../engine/svg';
-import { FoldSim, alignRigid, matchFaces, type SimMesh } from '../engine/sim';
+import { FoldSim, type SimMesh } from '../engine/sim';
 import { Kinematics } from '../engine/kinematic';
 
 type V2 = [number, number];
 const apply = (m: number[], p: V2): V2 => [m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5]];
 const det = (m: number[]) => m[0] * m[3] - m[1] * m[2];
-/** For each face, how many overlapping faces lie below it (convex polygons, separating axis test). */
-function stackDepth(faces: PhaseFace[], which: 'a' | 'b'): Float32Array {
-  const polys = faces.map((f) => {
-    const m = which === 'a' ? f.a : f.b, out: V2[] = [];
-    for (let k = 0; k < f.p.length; k += 2) out.push(apply(m, [f.p[k], f.p[k + 1]]));
-    return out;
-  });
-  const box = polys.map((P) => {
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    for (const [x, y] of P) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
-    return [x0, y0, x1, y1];
-  });
-  const sep = (A: V2[], B: V2[]) => {
-    for (const P of [A, B]) {
-      for (let i = 0; i < P.length; i++) {
-        const p = P[i], q = P[(i + 1) % P.length], nx = q[1] - p[1], ny = p[0] - q[0];
-        let a0 = Infinity, a1 = -Infinity, b0 = Infinity, b1 = -Infinity;
-        for (const v of A) { const d = v[0] * nx + v[1] * ny; a0 = Math.min(a0, d); a1 = Math.max(a1, d); }
-        for (const v of B) { const d = v[0] * nx + v[1] * ny; b0 = Math.min(b0, d); b1 = Math.max(b1, d); }
-        const tol = 1e-3 * Math.hypot(nx, ny);
-        if (a1 <= b0 + tol || b1 <= a0 + tol) return true;
-      }
-    }
-    return false;
-  };
-  const L = faces.map((f) => (which === 'a' ? f.la : f.lb));
-  // Height of the stack under each face: one more than the tallest face it rests on. (Counting every
-  // face below would count one layer many times over where creases cut it into pieces, and the
-  // layers would spread far apart.)
-  const depth = new Float32Array(faces.length);
-  const order = faces.map((_, i) => i).sort((i, j) => L[i] - L[j]);
-  for (const i of order) {
-    for (const j of order) {
-      if (L[j] >= L[i]) break;
-      if (faces[i].s !== faces[j].s || depth[j] + 1 <= depth[i]) continue;
-      const a = box[i], b = box[j];
-      if (a[2] <= b[0] || b[2] <= a[0] || a[3] <= b[1] || b[3] <= a[1]) continue;
-      if (!sep(polys[i], polys[j])) depth[i] = depth[j] + 1;
-    }
-  }
-  return depth;
-}
-
 const ease = (t: number) => 0.5 - 0.5 * Math.cos(Math.PI * Math.max(0, Math.min(1, t)));
 const smooth = (a: number, b: number, x: number) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
 export interface Colors { [sheet: string]: { front: string; back: string } }
 
-/** Flat (exact) pose of the faces of one phase, used to place the simulated paper. */
+/** The diagram of one phase: its flat pose (for the arrows and lines drawn over the paper) and the model's tilt. */
 class FlatPhase {
   faces: PhaseFace[];
   zPivot = 0;
   chain: THREE.Matrix4[] = [];
   overlay = new THREE.Group();
-  depthA: Float32Array;
-  depthB: Float32Array;
 
   constructor(public phase: Phase, public thick: number) {
     this.faces = phase.faces;
-    this.depthA = stackDepth(this.faces, 'a');
-    this.depthB = phase.motion === 'crease' || phase.motion === 'none' || phase.motion === 'shape' || phase.motion === 'stand' ? this.depthA : stackDepth(this.faces, 'b');
     const moving = this.faces.filter((f) => f.d !== 0);
     this.zPivot = moving.length ? (moving.reduce((s, f) => s + f.la, 0) / moving.length) * thick : 0;
   }
@@ -387,8 +341,6 @@ export interface ViewerOptions {
   onFrame?: (t: number) => void;
   /** Called when a playing step reaches its end. */
   onEnd?: () => void;
-  /** Use the bar-and-hinge physics simulation for 3D steps instead of exact kinematics. */
-  physics?: boolean;
 }
 
 export class FoldViewer {
@@ -436,17 +388,8 @@ export class FoldViewer {
   private born: Int32Array[] = [];
   /** Per sheet, per hinge: 1 valley, -1 mountain (as seen in the step that makes it), 0 none. */
   private kinds: Int8Array[] = [];
-  /** True when the current step is drawn from the exact flat-fold pose (see exactStep). */
-  private exact = false;
-  /** Smoothed placement of the simulated paper (rotation as a quaternion, and translation). */
-  private place: { q: THREE.Quaternion; t: THREE.Vector3 }[] = [];
   /** True once the person has turned the camera themselves during this step. */
   userCamera = false;
-  /** For each sheet and phase, the phase face index of every mesh vertex. */
-  private vertMatch: Int32Array[][] = [];
-  /** For each sheet and phase, the phase face index of every crease-pattern face. */
-  private faceMatch: Int32Array[][] = [];
-  private weights: Float64Array[];
 
   constructor(public el: HTMLElement, public model: CompiledModel, public opts: ViewerOptions) {
     this.colors = opts.colors;
@@ -508,8 +451,7 @@ export class FoldViewer {
     this.born = this.sim.meshes.map((_, i) => this.sim.creaseBorn(i));
     this.kinds = this.sim.meshes.map((_, i) => this.creaseKinds(i));
     this.kin = new Kinematics(model, this.sim.meshes, this.sim.angles, this.born);
-    // Simulated steps (collapses, 3D shaping) start from paper folded almost flat, like the exact poses.
-    this.sim.setRest([0.98, 1, 1]);
+    this.kin.load(model.kin);
     this.sheets = this.sim.meshes.map((m) => {
       const sh = model.sheets.find((s) => s.id === m.sheet)!;
       const v = new SheetView(m, this.colors[m.sheet] ?? { front: sh.front, back: sh.back });
@@ -523,7 +465,6 @@ export class FoldViewer {
       v.setOpacity(0);
       return v;
     });
-    this.weights = this.sim.meshes.map((m) => new Float64Array(m.n));
 
     this.resizeObs = new ResizeObserver(() => this.resize());
     this.resizeObs.observe(el);
@@ -557,29 +498,19 @@ export class FoldViewer {
     const phases = finished ? [] : this.model.steps[this.step].phases;
     if (phases.length) {
       this.phases = phases.map((ph) => new FlatPhase(ph, this.thick));
-      this.faceMatch = this.sim.meshes.map((_, si) => phases.map((__, pi) => this.sim.angles[this.step][pi].match[si]));
-      this.vertMatch = this.sim.meshes.map((m, si) => this.faceMatch[si].map((match) => Int32Array.from(m.vertFace, (f) => match[f])));
     } else {
       const faces = stateBefore(this.model, this.step);
       const lastTilt = this.model.steps.slice(0, this.step).reverse().flatMap((st) => st.phases.slice(-1))[0]?.tilt;
       const ph: Phase = { motion: 'none', faces: faces.map((f) => ({ ...f, a: f.b, la: f.lb, d: 0 })), lines: [], arrows: [] };
       if (lastTilt) ph.tilt = { ...lastTilt, a0: lastTilt.a1 };
       this.phases = [new FlatPhase(ph, this.thick)];
-      this.faceMatch = this.sim.meshes.map((m) => [matchFaces(m, ph.faces)]);
-      this.vertMatch = this.sim.meshes.map((m, si) => [Int32Array.from(m.vertFace, (f) => this.faceMatch[si][0][f])]);
     }
     this.phases.forEach((v, k) => this.buildOverlay(v, k));
-    this.exact = this.exactStep();
-    if (this.opts.physics) {
-      this.sim.ensureStep(this.step);
-      this.sim.load(this.sim.stateAt(this.step, 1));
-    } else if (!this.exact) this.kin.ensureStep(this.step);
-    this.place = [];
+    this.kin.ensureStep(this.step);
 
     if (camera) this.userCamera = false;
     this.t = play ? 0 : finished || !phases.length ? 1 : 0;
     this.applyT();
-    if ((finished || this.opts.thumbnail) && this.opts.physics) this.simBudget = 3000;
     this.updateMesh(0);
     if (camera) this.bestAngle(!this.opts.thumbnail);
     this.playing = play && phases.length > 0;
@@ -652,12 +583,6 @@ export class FoldViewer {
   /** Sets solver targets for the current time and asks for more iterations. */
   private applyT() {
     const { index, local } = this.current();
-    if (this.step < this.stepCount && this.model.steps[this.step].phases.length) {
-      // Earlier phases of this step are complete; later ones have not started.
-      this.sim.setTargets(this.step, index, local);
-    } else {
-      this.sim.setRestTargets(this.step);
-    }
     // Turning the model round: a flat circular arrow on the screen (drawn clockwise; mirrored for anticlockwise).
     const spin = this.phases[index]?.phase.motion === 'spin' && !this.rewinding && this.t < 1 ? this.phases[index].phase.angle ?? 0 : 0;
     this.spinHint.style.opacity = spin ? String(1 - smooth(0.7, 1, local)) : '0';
@@ -676,250 +601,68 @@ export class FoldViewer {
     this.opts.onFrame?.(this.t);
   }
 
-  /** Runs the solver a little and places the meshes. */
-  /**
-   * Rigidly places simulated positions X (paper units) of sheet si onto the exact flat pose of phase
-   * `fp` at time `local`, weighting faces by `still`. Returns the placed positions (cm, three.js).
-   */
-  private fitToPose(si: number, X: Float64Array, fp: FlatPhase, index: number, local: number, still: (fi: number) => number): Float64Array {
-    const mesh = this.sim.meshes[si], W = this.weights[si];
-    const n = mesh.n, s = mesh.size;
-    const match = this.vertMatch[si][Math.min(index, this.vertMatch[si].length - 1)];
-    const v = new THREE.Vector3(), w3 = new THREE.Vector3(), vx = new THREE.Vector3(), vy = new THREE.Vector3();
-    // Correspondences: every vertex, plus, for every triangle, a point a little way along its
-    // front normal, so the fit cannot settle on the mirror image of a symmetric shape.
-    const L = s * 0.2;
-    const T = mesh.tris, nt = T.length / 3;
-    const src = new Float64Array(3 * (n + nt)), dst = new Float64Array(3 * (n + nt)), ww = new Float64Array(n + nt);
-    for (let i = 0; i < n; i++) {
-      const fi = match[i];
-      src[3 * i] = X[3 * i] * s; src[3 * i + 1] = X[3 * i + 1] * s; src[3 * i + 2] = X[3 * i + 2] * s;
-      if (fi < 0) { ww[i] = 0; W[i] = 0; continue; }
-      toThree(fp.pose(fi, local, [mesh.paper[2 * i], mesh.paper[2 * i + 1]], v), w3);
-      dst[3 * i] = w3.x; dst[3 * i + 1] = w3.y; dst[3 * i + 2] = w3.z;
-      const wt = still(fi);
-      ww[i] = wt; W[i] = wt;
-    }
-    const faceMatch = this.faceMatch[si][Math.min(index, this.faceMatch[si].length - 1)];
-    for (let k = 0; k < nt; k++) {
-      const a = T[3 * k], b = T[3 * k + 1], c = T[3 * k + 2];
-      const j = n + k, fi = faceMatch[mesh.triFace[k]];
-      const ux = X[3 * b] - X[3 * a], uy = X[3 * b + 1] - X[3 * a + 1], uz = X[3 * b + 2] - X[3 * a + 2];
-      const qx = X[3 * c] - X[3 * a], qy = X[3 * c + 1] - X[3 * a + 1], qz = X[3 * c + 2] - X[3 * a + 2];
-      let nx = uy * qz - uz * qy, ny = uz * qx - ux * qz, nz = ux * qy - uy * qx;
-      const nl = Math.hypot(nx, ny, nz) || 1;
-      nx /= nl; ny /= nl; nz /= nl;
-      src[3 * j] = (src[3 * a] + src[3 * b] + src[3 * c]) / 3 + nx * L;
-      src[3 * j + 1] = (src[3 * a + 1] + src[3 * b + 1] + src[3 * c + 1]) / 3 + ny * L;
-      src[3 * j + 2] = (src[3 * a + 2] + src[3 * b + 2] + src[3 * c + 2]) / 3 + nz * L;
-      if (fi < 0) { ww[j] = 0; continue; }
-      const px = (mesh.paper[2 * a] + mesh.paper[2 * b] + mesh.paper[2 * c]) / 3;
-      const py = (mesh.paper[2 * a + 1] + mesh.paper[2 * b + 1] + mesh.paper[2 * c + 1]) / 3;
-      toThree(fp.pose(fi, local, [px, py], v), w3);
-      toThree(fp.pose(fi, local, [px + 1, py], v), vx).sub(w3);
-      toThree(fp.pose(fi, local, [px, py + 1], v), vy).sub(w3);
-      // Paper front normal is x × y in paper space (toThree is a proper rotation).
-      const fn = vx.clone().cross(vy).normalize();
-      dst[3 * j] = w3.x + fn.x * L; dst[3 * j + 1] = w3.y + fn.y * L; dst[3 * j + 2] = w3.z + fn.z * L;
-      ww[j] = still(fi);
-    }
-    const { R, t } = alignRigid(src, dst, ww);
-    const out = new Float64Array(3 * n);
-    for (let i = 0; i < n; i++) {
-      const x = src[3 * i], y = src[3 * i + 1], z = src[3 * i + 2];
-      out[3 * i] = R[0] * x + R[1] * y + R[2] * z + t[0];
-      out[3 * i + 1] = R[3] * x + R[4] * y + R[5] * z + t[1];
-      out[3 * i + 2] = R[6] * x + R[7] * y + R[8] * z + t[2];
-    }
-    return out;
-  }
-
-  /**
-   * Whether the current step is drawn from the exact flat-fold pose. Flaps then turn rigidly about
-   * their hinges, flat paper stays perfectly flat, and creases not made yet cannot show. Collapses
-   * (chain) and 3D shaping are not rigid hinge motions, so those steps, and every step after the
-   * paper has been shaped, replay the simulation instead.
-   */
-  private exactStep(i = this.step): boolean {
-    // Without physics every step is posed by the rigid kinematics, from the same stored states.
-    if (!this.opts.physics) return false;
-    const steps = this.model.steps;
-    // Standing a flat-folded model up only tilts it (part of the exact pose); shaping makes it 3D.
-    const shaped = (k: number) => steps[k].phases.some((p) => p.motion === 'shape');
-    for (let k = 0; k < Math.min(i + 1, steps.length); k++) if (shaped(k)) return false;
-    if (i >= steps.length) return true;
-    return !steps[i].phases.some((p) => p.motion === 'chain');
-  }
-
-  /** Runs the solver a little (or replays the step) and places the meshes. */
-  private updateMesh(iters: number) {
+  /** Places the meshes for the current time, from the solved frames of the step. */
+  private updateMesh(_iters = 0) {
     const { index, local } = this.current();
     const fp = this.phases[Math.min(index, this.phases.length - 1)];
-    if (this.exact) {
-      this.simBudget = 0;
-      fp.prepare(local);
-      const v = new THREE.Vector3(), w = new THREE.Vector3();
-      let minY = Infinity;
-      this.sim.meshes.forEach((mesh, si) => {
-        const match = this.vertMatch[si][Math.min(index, this.vertMatch[si].length - 1)];
-        const P = this.sheets[si].pos;
-        for (let i = 0; i < mesh.n; i++) {
-          const fi = match[i];
-          if (fi < 0) continue;
-          toThree(fp.pose(fi, local, [mesh.paper[2 * i], mesh.paper[2 * i + 1]], v), w);
+    this.simBudget = 0;
+    fp.prepare(local);
+    // Where no rigid motion keeps the paper apart, dissolve from the last clean pose to the next one
+    // instead of letting paper pass through paper.
+    const span = this.step < this.stepCount && !this.rewinding ? this.kin.spans[this.step]?.find(([a, b]) => this.t > a && this.t < b) : undefined;
+    const v = new THREE.Vector3(), w = new THREE.Vector3();
+    let minY = Infinity;
+    const pose = (t: number, views: SheetView[]) => {
+      const X = this.kin.frameAt(this.step, t);
+      const levels = this.kin.levelsAt(this.step, t);
+      X.forEach((Xs, si) => {
+        const raw = this.kin.positions(si, Xs);
+        const P = views[si].pos;
+        for (let i = 0; i < raw.length / 3; i++) {
+          fp.tilt(local, v.set(raw[3 * i], raw[3 * i + 1], raw[3 * i + 2]));
+          toThree(v, w);
           P[3 * i] = w.x; P[3 * i + 1] = w.y; P[3 * i + 2] = w.z;
         }
-        minY = Math.min(minY, this.finishSheet(si, fp, index, local));
+        minY = Math.min(minY, this.finishSheet(si, views[si], levels[si]));
       });
-      this.placeOnTable(minY);
-      return;
-    }
-    if (!this.opts.physics) {
-      // Exact rigid kinematics: the pose for this time, straight from the solved frames.
-      this.simBudget = 0;
-      fp.prepare(local);
-      // Where no rigid motion keeps the paper apart, dissolve from the last clean pose to the next one
-      // instead of letting paper pass through paper.
-      const span = this.step < this.stepCount && !this.rewinding ? this.kin.spans[this.step]?.find(([a, b]) => this.t > a && this.t < b) : undefined;
-      const v = new THREE.Vector3(), w = new THREE.Vector3();
-      let minY = Infinity;
-      const pose = (t: number, views: SheetView[]) => {
-        const X = this.kin.frameAt(this.step, t);
-        const levels = this.kin.levelsAt(this.step, t);
-        X.forEach((Xs, si) => {
-          const raw = this.kin.positions(si, Xs);
-          const P = views[si].pos;
-          for (let i = 0; i < raw.length / 3; i++) {
-            fp.tilt(local, v.set(raw[3 * i], raw[3 * i + 1], raw[3 * i + 2]));
-            toThree(v, w);
-            P[3 * i] = w.x; P[3 * i + 1] = w.y; P[3 * i + 2] = w.z;
-          }
-          minY = Math.min(minY, this.finishSheet(si, fp, index, local, views[si], levels[si]));
-        });
-      };
-      if (span) {
-        const e = smooth(span[0], span[1], this.t);
-        pose(span[1], this.sheets);
-        pose(span[0], this.ghosts);
-        this.sheets.forEach((sv) => sv.setOpacity(e));
-        this.ghosts.forEach((sv) => sv.setOpacity(1 - e));
-      } else {
-        pose(this.t, this.sheets);
-        this.sheets.forEach((sv) => sv.setOpacity(1));
-        this.ghosts.forEach((sv) => sv.setOpacity(0));
-      }
-      this.placeOnTable(minY);
-      return;
-    }
-    if (this.step < this.stepCount && this.sim.loadFrame(this.step, this.t)) {
-      // Replaying the recorded fold: exact and repeatable, no solver needed.
-      iters = 0;
-      this.simBudget = 0;
-    } else if (this.step >= this.stepCount || !this.model.steps[this.step].phases.length) {
-      // At rest: the cached state is already settled.
-      iters = 0;
-      this.simBudget = 0;
-    } else if (iters > 0) {
-      const speed = this.sim.iterate(iters);
-      this.simBudget -= iters;
-      if (speed < 4e-4 && !this.playing) this.simBudget = Math.min(this.simBudget, 0);
-    }
-    fp.prepare(local);
-    // Shaped (3D) models are placed by their anchor faces, so the base stays put while walls rise.
-    const anchored = fp.faces.some((f) => f.k);
-    const hasStill = !anchored && (fp.phase.motion === 'hinge' || fp.phase.motion === 'crease') && fp.faces.some((f) => f.d === 0) && fp.faces.some((f) => f.d !== 0);
-    // Mid-fold, place the paper by the parts that stay still. Blend that in and out at the ends of the
-    // phase, where every face is at rest, so the placement never jumps between phases or steps.
-    const lowW = 1 - 0.98 * smooth(0, 0.18, local) * (1 - smooth(0.82, 1, local));
-    const still = (fi: number) => (anchored ? (fp.faces[fi].k ? 1 : 0.02) : hasStill ? (fp.faces[fi].d === 0 ? 1 : lowW) : 1);
-    let minY = Infinity;
-    const ends = this.chainEnds();
-    const e = ease(this.t);
-    this.sim.solvers.forEach((sv, si) => {
-      const placed = this.fitToPose(si, sv.x, fp, index, local, still);
-      if (ends) {
-        // A collapse starts and ends exactly on the flat pose; the simulation only fills in the middle.
-        const { c0, c1 } = ends[si];
-        for (let k = 0; k < placed.length; k++) placed[k] += c0[k] * (1 - e) + c1[k] * e;
-      }
-      this.sheets[si].pos.set(placed);
-      minY = Math.min(minY, this.finishSheet(si, fp, index, local));
-    });
-    this.placeOnTable(minY);
-  }
-
-  private ends: { step: number; c: { c0: Float64Array; c1: Float64Array }[] } | null = null;
-  /**
-   * For a simulated step next to exactly drawn ones: per vertex, how far the simulated paper at the
-   * start (and end) of the step is from the exact flat pose. Blending these out keeps that end exact,
-   * so the simulated step meets the exactly drawn steps before and after it without a jump.
-   */
-  private chainEnds(): { c0: Float64Array; c1: Float64Array }[] | null {
-    if (this.exact || this.step >= this.stepCount || !this.opts.physics) return null;
-    const atStart = this.step === 0 || this.exactStep(this.step - 1), atEnd = this.exactStep(this.step + 1);
-    if (!atStart && !atEnd) return null;
-    const F = this.sim.frames[this.step];
-    if (!F || F.length < 2) return null;
-    if (this.ends?.step === this.step) return this.ends.c;
-    const v = new THREE.Vector3(), w = new THREE.Vector3();
-    const corr = (si: number, pi: number, t: number, X: Float64Array) => {
-      const fp = this.phases[pi];
-      fp.prepare(t);
-      const placed = this.fitToPose(si, X, fp, pi, t, () => 1);
-      const mesh = this.sim.meshes[si], match = this.vertMatch[si][pi];
-      const c = new Float64Array(placed.length);
-      for (let i = 0; i < mesh.n; i++) {
-        const fi = match[i];
-        if (fi < 0) continue;
-        toThree(fp.pose(fi, t, [mesh.paper[2 * i], mesh.paper[2 * i + 1]], v), w);
-        c[3 * i] = w.x - placed[3 * i]; c[3 * i + 1] = w.y - placed[3 * i + 1]; c[3 * i + 2] = w.z - placed[3 * i + 2];
-      }
-      return c;
     };
-    const last = this.phases.length - 1;
-    const zero = (si: number) => new Float64Array(3 * this.sim.meshes[si].n);
-    const c = this.sim.meshes.map((_, si) => ({
-      c0: atStart ? corr(si, 0, 0, F[0].x[si]) : zero(si),
-      c1: atEnd ? corr(si, last, 1, F[F.length - 1].x[si]) : zero(si),
-    }));
-    this.ends = { step: this.step, c };
-    return c;
+    if (span) {
+      const e = smooth(span[0], span[1], this.t);
+      pose(span[1], this.sheets);
+      pose(span[0], this.ghosts);
+      this.sheets.forEach((sv) => sv.setOpacity(e));
+      this.ghosts.forEach((sv) => sv.setOpacity(1 - e));
+    } else {
+      pose(this.t, this.sheets);
+      this.sheets.forEach((sv) => sv.setOpacity(1));
+      this.ghosts.forEach((sv) => sv.setOpacity(0));
+    }
+    this.placeOnTable(minY);
   }
 
   /**
    * Adds paper thickness to sheet si's placed positions, updates its creases, and returns its lowest
-   * point. `levels` gives each crease-pattern face's layer along its own front normal (stack.ts);
-   * without it (physics), the flat diagram's stacking is used.
+   * point. `levels` gives each crease-pattern face's layer along its own front normal (stack.ts).
    */
-  private finishSheet(si: number, fp: FlatPhase, index: number, local: number, sh = this.sheets[si], levels?: Float32Array): number {
+  private finishSheet(si: number, sh: SheetView, levels: Float32Array): number {
     const mesh = this.sim.meshes[si], n = mesh.n, T = mesh.tris, nt = T.length / 3;
     const P = sh.pos;
-    const faceMatch = this.faceMatch[si][Math.min(index, this.faceMatch[si].length - 1)];
+    const { index, local } = this.current();
     // Each crease-pattern face sits its level of paper thicknesses off the paper, as one rigid piece
     // along its own front normal. The strips along the creases (SheetView) keep the paper joined.
-    const e = ease(local), off = this.layerGap;
+    const off = this.layerGap;
     const nf = mesh.faces.length;
     const fOff = new Float32Array(3 * nf), fSet = new Uint8Array(nf);
     for (let k = 0; k < nt; k++) {
       const cf = mesh.triFace[k];
       if (fSet[cf]) continue;
-      let lv: number;
-      if (levels) lv = levels[cf];
-      else {
-        const fi = faceMatch[cf];
-        if (fi < 0) continue;
-        const f = fp.faces[fi];
-        const moving = f.d !== 0 && fp.phase.motion !== 'none';
-        const dep = moving ? (e > 0.5 ? fp.depthB[fi] : fp.depthA[fi]) : fp.depthA[fi] + (fp.depthB[fi] - fp.depthA[fi]) * e;
-        lv = dep * (det((moving || fp.phase.motion === 'chain') && e > 0.5 ? f.b : f.a) > 0 ? 1 : -1);
-      }
       const a = T[3 * k], b = T[3 * k + 1], c = T[3 * k + 2];
       const ux = P[3 * b] - P[3 * a], uy = P[3 * b + 1] - P[3 * a + 1], uz = P[3 * b + 2] - P[3 * a + 2];
       const qx = P[3 * c] - P[3 * a], qy = P[3 * c + 1] - P[3 * a + 1], qz = P[3 * c + 2] - P[3 * a + 2];
       const nx = uy * qz - uz * qy, ny = uz * qx - ux * qz, nz = ux * qy - uy * qx;
       const nl = Math.hypot(nx, ny, nz);
       if (nl < 1e-12) continue;
-      const sc = (lv * off) / nl;
+      const sc = (levels[cf] * off) / nl;
       fOff[3 * cf] = nx * sc; fOff[3 * cf + 1] = ny * sc; fOff[3 * cf + 2] = nz * sc;
       fSet[cf] = 1;
     }
@@ -996,7 +739,6 @@ export class FoldViewer {
     this.t = 0;
     this.rewinding = null;
     this.phaseSeconds = 1.6 / speed;
-    if (this.step < this.stepCount && this.opts.physics) this.sim.load(this.sim.stateAt(this.step));
     this.playing = true;
     this.applyT();
   }
