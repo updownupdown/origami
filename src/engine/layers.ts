@@ -67,10 +67,13 @@ function centroidOf(P: V2[]): V2 {
 }
 
 /**
+ * `prefer(i, j)` (i < j), when given, is the order to try first for an overlapping pair: +1 for i
+ * above j, -1 below.
+ *
  * Returns a layer number per face (0 = bottom) and the side each crease went, or null if no order
  * keeps the paper apart. `up` is +1 when the folded paper's front faces up in the world.
  */
-export function solveLayers(faces: LayerFace[], creases: LayerCrease[], scale: number): { layer: number[] } | null {
+export function solveLayers(faces: LayerFace[], creases: LayerCrease[], scale: number, prefer?: (i: number, j: number) => number): { layer: number[] } | null {
   const n = faces.length;
   const P = faces.map((f) => f.poly.map((p) => apply(f.T, p)));
   const minArea = scale * scale * 1e-6;
@@ -198,7 +201,9 @@ export function solveLayers(faces: LayerFace[], creases: LayerCrease[], scale: n
     if (--budget < 0) return false;
     const k = vars.find((x) => val.get(x) === 0);
     if (k === undefined) return true;
-    for (const s of [1, -1]) {
+    // Try the preferred order first (the order the fold itself suggests), so a valid suggestion is kept.
+    const p = prefer ? prefer(Math.floor(k / n), k % n) : 1;
+    for (const s of p < 0 ? [-1, 1] : [1, -1]) {
       const mark = trail.length;
       val.set(k, s); trail.push(k);
       if (propagate(mark) && search()) return true;
