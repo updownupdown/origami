@@ -878,6 +878,32 @@ function opPlace(st: State, pl: NonNullable<StepSpec['place']>): Phase {
   return makePhase('move', items);
 }
 
+/** Picks a folded sheet up and sets it down in 3D (see PoseOp). The flat diagram does not change. */
+function opPose(st: State, po: NonNullable<StepSpec['pose']>): Phase {
+  if (!st.sheets.get(po.sheet)) throw new Error(`Unknown sheet "${po.sheet}"`);
+  const prevActive = st.active;
+  st.active = po.sheet;
+  const p = resolvePoint(st, po.point), a = resolvePoint(st, po.along);
+  st.active = prevActive;
+  const to = resolvePoint(st, po.to);
+  const len = dist(p, a);
+  if (len < 1e-6) throw new Error('pose: "point" and "along" must be two different points');
+  const rad = Math.PI / 180, L = (po.lean ?? 0) * rad, phi = (po.toward ?? 0) * rad, tau = (po.turn ?? 0) * rad;
+  type V3 = [number, number, number];
+  const cross = (x: V3, y: V3): V3 => [x[1] * y[2] - x[2] * y[1], x[2] * y[0] - x[0] * y[2], x[0] * y[1] - x[1] * y[0]];
+  // The sheet's own axes as it lies now: its "up", the side facing the viewer, and across.
+  const u: V3 = [(a[0] - p[0]) / len, (a[1] - p[1]) / len, 0], n: V3 = [0, 0, 1], b = cross(n, u);
+  // And where they end: "up" leaning from the vertical, the upper side facing the middle and the sky.
+  const u1: V3 = [Math.sin(L) * Math.cos(phi), Math.sin(L) * Math.sin(phi), Math.cos(L)];
+  const n0: V3 = [-Math.cos(L) * Math.cos(phi), -Math.cos(L) * Math.sin(phi), Math.sin(L)], w = cross(u1, n0);
+  const n1: V3 = [0, 1, 2].map((i) => n0[i] * Math.cos(tau) + w[i] * Math.sin(tau)) as V3, b1 = cross(n1, u1);
+  const R: number[] = [];
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) R.push(u1[i] * u[j] + n1[i] * n[j] + b1[i] * b[j]);
+  const ph = stillPhase(st, 'pose');
+  ph.pose = { sheet: po.sheet, from: [p[0], p[1], 0], to: [to[0], to[1], po.height ?? 0], R };
+  return ph;
+}
+
 function stillPhase(st: State, motion: Phase['motion']): Phase {
   return makePhase(motion, st.faces.map((f) => ({ f, a: f.m, b: f.m, la: f.layer, lb: f.layer, d: 0 })));
 }
@@ -953,6 +979,7 @@ function opsOf(step: StepSpec): Op[] {
   if (step.grid) ops.push({ grid: step.grid, sheet: step.sheet });
   if (step.collapse) ops.push({ collapse: step.collapse, sheet: step.sheet });
   if (step.place) ops.push({ place: step.place });
+  if (step.pose) ops.push({ pose: step.pose });
   if (step.pattern) ops.push({ pattern: step.pattern, sheet: step.sheet });
   if (step.shape) ops.push({ shape: step.shape });
   if (step.stand) ops.push({ stand: step.stand });
@@ -967,6 +994,7 @@ function defaultText(ops: Op[]): string {
   if ('grid' in op) return `Crease a ${op.grid.n} × ${op.grid.m ?? op.grid.n} grid.`;
   if ('collapse' in op) return 'Collapse along the creases.';
   if ('place' in op) return 'Put the pieces together.';
+  if ('pose' in op) return 'Set the piece in place.';
   if ('shape' in op) return 'Open the model into shape.';
   if ('pattern' in op) return 'Crease the pattern.';
   if ('stand' in op) return 'Stand the model up.';
@@ -1001,12 +1029,14 @@ function parseSize(size: string | number): [number, number] {
 }
 
 /** Sheets a step changes: faces that move, turn or crease. */
-function stepSheets(phases: Phase[]): string[] {
+function stepSheets(phases: Phase[], placed: Set<string>): string[] {
   const out = new Set<string>();
   for (const ph of phases) {
     if (ph.motion === 'spin' || ph.motion === 'stand' || ph.motion === 'shape') continue;
     // Placing one sheet on another puts the model together: it is about every sheet.
     if (ph.motion === 'move') { for (const f of ph.faces) out.add(f.s); continue; }
+    // Setting a piece in place in space is about that piece and the ones already standing there.
+    if (ph.pose) { placed.add(ph.pose.sheet); for (const s of placed) out.add(s); continue; }
     for (const f of ph.faces) if (f.d !== 0 || f.a.some((v, i) => Math.abs(v - f.b[i]) > 1e-6)) out.add(f.s);
   }
   return [...out];
@@ -1018,6 +1048,7 @@ export function compileModel(script: ModelScript, bases: BaseLibrary = {}): Comp
   let x = 0;
   let layer = 0;
   const sheets: SheetInfo[] = [];
+  const placed = new Set<string>();
   for (const mat of script.materials) {
     const [w, h] = parseSize(mat.size);
     const at: V2 = mat.at ?? [x, 0];
@@ -1080,6 +1111,7 @@ export function compileModel(script: ModelScript, bases: BaseLibrary = {}): Comp
         if ('grid' in op) { push(opGrid(st, op.grid, op.sheet ?? st.active)); continue; }
         if ('collapse' in op) { push(opCollapse(st, op.collapse, op.sheet ?? st.active)); continue; }
         if ('place' in op) { push(opPlace(st, op.place)); continue; }
+        if ('pose' in op) { push(opPose(st, op.pose)); continue; }
         if ('shape' in op) { push(opShape(st, op.shape)); continue; }
         if ('pattern' in op) { push(...opPattern(st, op.pattern, op.sheet ?? st.active)); continue; }
         if ('stand' in op) { push(opStand(st, op.stand)); continue; }
@@ -1090,7 +1122,7 @@ export function compileModel(script: ModelScript, bases: BaseLibrary = {}): Comp
       cam = camera(step.camera, cam);
       if (!step.camera && (cam.auto || cam.preset === 'top')) cam = { ...cam, auto: true };
       else if (step.camera) cam = { ...cam, auto: false };
-      steps.push({ text: step.text ?? defaultText(ops), tip: step.tip, group, sheets: stepSheets(phases), camera: cam, phases });
+      steps.push({ text: step.text ?? defaultText(ops), tip: step.tip, group, sheets: stepSheets(phases, placed), camera: cam, phases });
     } catch (e) {
       if (e instanceof CompileError) throw e;
       throw new CompileError(i, (e as Error).message);

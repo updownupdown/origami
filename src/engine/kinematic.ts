@@ -539,7 +539,7 @@ interface Sym { fmap: Int32Array; sigma: number[]; S: number[] }
 
 function mapP(m: number[], p: V2): V2 { return [m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5]]; }
 
-function findSymmetries(G: SheetGraph, X0: Float64Array, root: number, sig: (k: number) => string): Sym[] {
+function findSymmetries(G: SheetGraph, X0: Float64Array, root: number, sig: (k: number) => string, moving: (k: number) => boolean): Sym[] {
   const mesh = G.mesh, nf = mesh.faces.length, tol = mesh.size * 1e-4;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let i = 0; i < mesh.n; i++) {
@@ -574,6 +574,21 @@ function findSymmetries(G: SheetGraph, X0: Float64Array, root: number, sig: (k: 
       if (k2 === undefined || sig(k) !== sig(k2)) ok = false;
     }
     if (!ok) continue;
+    // The symmetry is held as a fixed map of the world, which is only right if the root's partner
+    // stays where it is too: the root itself, or a face that no moving crease separates from it.
+    // (A strip curled up from one end panel is mirror-symmetric, but about a plane that travels.)
+    if (fmap[root] !== root) {
+      const seen = new Uint8Array(nf), todo = [root];
+      seen[root] = 1;
+      while (todo.length) {
+        const x = todo.pop()!;
+        for (const k of G.adj[x]) {
+          const e = G.edges[k], y = e.F === x ? e.G : e.F;
+          if (!seen[y] && !moving(k)) { seen[y] = 1; todo.push(y); }
+        }
+      }
+      if (!seen[fmap[root]]) continue;
+    }
     // The world map that takes the starting pose onto itself.
     const s3 = [sigma[0], sigma[2], 0, sigma[1], sigma[3], 0, 0, 0, 1, sigma[4], sigma[5], 0];
     const tmp = new Float64Array(12), S = new Float64Array(12);
@@ -765,7 +780,7 @@ export class Kinematics {
 
   /** True when a step before step s shapes the paper in 3D (so its pose is not the flat one). */
   shapedBefore(s: number): boolean {
-    for (let k = 0; k < Math.min(s, this.model.steps.length); k++) if (this.model.steps[k].phases.some((p) => p.motion === 'shape')) return true;
+    for (let k = 0; k < Math.min(s, this.model.steps.length); k++) if (this.model.steps[k].phases.some((p) => p.motion === 'shape' || p.motion === 'pose')) return true;
     return false;
   }
 
@@ -814,6 +829,30 @@ export class Kinematics {
     step.phases.forEach((ph, p) => {
       const A = this.angles[s][p];
       const now = s * 64 + Math.min(p, 63);
+      if (ph.pose) {
+        // A folded sheet picked up and set down as one rigid piece: turned about the point it is held
+        // by while that point travels over in a low arc.
+        if (flat) X = this.flatPose(ph, A, 'a');
+        flat = false;
+        const { from, to, R } = ph.pose, si = this.meshes.findIndex((m) => m.sheet === ph.pose!.sheet);
+        const X0 = X, hop = 0.3 * Math.hypot(to[0] - from[0], to[1] - from[1]), K = 16;
+        for (let k = 1; k <= K; k++) {
+          const e = easeCos(k / K), Re = partial([...R, 0, 0, 0], e), D = new Float64Array(12);
+          D.set(Re.slice(0, 9));
+          for (let i = 0; i < 3; i++) {
+            D[9 + i] = from[i] + (to[i] - from[i]) * e - (Re[3 * i] * from[0] + Re[3 * i + 1] * from[1] + Re[3 * i + 2] * from[2]);
+          }
+          D[11] += hop * Math.sin(Math.PI * e);
+          X = X0.map((x, i) => {
+            if (i !== si) return x;
+            const o = new Float64Array(x.length);
+            for (let f = 0; f < x.length; f += 12) compose(D, x.subarray(f, f + 12), o, f);
+            return o;
+          });
+          frames.push({ t: (p + k / K) / np, X: X.map((x) => x.slice()) });
+        }
+        return;
+      }
       if (flat) {
         // Paper not shaped yet: start from the exact flat-fold pose of this phase.
         X = this.flatPose(ph, A, 'a');
@@ -1107,7 +1146,8 @@ export class Kinematics {
     const rho = new Float64Array(ne);
     const tg: SolveTargets = { rho, w, rigid };
     const syms = changes && !moves && !order && T.vars.length <= 200
-      ? findSymmetries(G, X0, root, (k) => rigid[k] ? 'r' : `${ra[k].toFixed(9)} ${rb[k].toFixed(9)} ${rm[k].toFixed(9)} ${w[k]}`)
+      ? findSymmetries(G, X0, root, (k) => rigid[k] ? 'r' : `${ra[k].toFixed(9)} ${rb[k].toFixed(9)} ${rm[k].toFixed(9)} ${w[k]}`,
+        (k) => !rigid[k] && (ra[k] !== rb[k] || (A.kind === 'crease' && rm[k] !== 0)))
       : [];
     const extra = symmetryPairs(G, syms);
     this.symmetries[si] = syms.length;
@@ -1212,7 +1252,7 @@ export class Kinematics {
 
   /** True for steps that need the solver (not plain folds of flat paper), which are recorded in full. */
   private solved(s: number): boolean {
-    return this.shapedBefore(s) || this.model.steps[s].phases.some((p) => p.motion === 'chain' || p.motion === 'shape');
+    return this.shapedBefore(s) || this.model.steps[s].phases.some((p) => p.motion === 'chain' || p.motion === 'shape' || p.motion === 'pose');
   }
 
   private recLevels(s: number): Float32Array[][] {

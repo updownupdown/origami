@@ -1,0 +1,177 @@
+id: potted-agave
+title: Potted agave
+family: potted-plant
+variant: Agave
+aliases: [agave, spiky plant, succulent, aloe, house plant, plant pot]
+categories: [plants/potted]
+tags: [agave, succulent, spiky, plant, pot, leaves, house plant, seven sheets, 3D, our design, draft]
+difficulty: 2
+description: Six long pointed leaves standing in a seven-sided pot. The pot is one strip folded into a ring, and every leaf is the same few folds.
+credits:
+  designer: Origami project (original design)
+  script: Origami project
+  note: Inspired by the potted plants of Paper Kawaii; our own design and folding sequence.
+  sources:
+    - label: "Inspiration: Paper Kawaii"
+      url: https://www.paperkawaii.com/
+materials:
+  - id: pot
+    name: Pot
+    size: 24x5
+    shape: rectangle
+    at: [-12, -14]
+    colors: { front: "#ef5fa7", back: "#fbf7ee" }
+    note: A strip 24 cm by 5 cm.
+  - id: leaf1
+    name: Leaf 1
+    size: 7.5
+    diamond: true
+    at: [-14, -5]
+    colors: { front: "#8fd14f", back: "#eef7d8" }
+  - id: leaf2
+    name: Leaf 2
+    size: 7.5
+    diamond: true
+    at: [-2, -5]
+    colors: { front: "#8fd14f", back: "#eef7d8" }
+  - id: leaf3
+    name: Leaf 3
+    size: 7.5
+    diamond: true
+    at: [10, -5]
+    colors: { front: "#8fd14f", back: "#eef7d8" }
+  - id: leaf4
+    name: Leaf 4
+    size: 7.5
+    diamond: true
+    at: [-14, 7]
+    colors: { front: "#a8dc5a", back: "#eef7d8" }
+  - id: leaf5
+    name: Leaf 5
+    size: 7.5
+    diamond: true
+    at: [-2, 7]
+    colors: { front: "#a8dc5a", back: "#eef7d8" }
+  - id: leaf6
+    name: Leaf 6
+    size: 7.5
+    diamond: true
+    at: [10, 7]
+    colors: { front: "#a8dc5a", back: "#eef7d8" }
+steps:
+  # ---------- Pot ----------
+  - text: "Pot: start with the strip white side up. Fold it in half, short edge to short edge, and unfold."
+    crease: valley
+    sheet: pot
+    name: sides
+    line: [lerp(pot.A pot.B 0.5), lerp(pot.D pot.C 0.5)]
+    move: pot.B
+  - text: Fold each short edge to the middle crease and unfold.
+    ops:
+      - { crease: valley, sheet: pot, name: sides, line: [lerp(pot.A pot.B 0.25), lerp(pot.D pot.C 0.25)], move: pot.A }
+      - { crease: valley, sheet: pot, name: sides, line: [lerp(pot.A pot.B 0.75), lerp(pot.D pot.C 0.75)], move: pot.B }
+  - text: Fold once more between every pair of creases and unfold, so the strip has eight equal panels.
+    ops:
+      - { crease: valley, sheet: pot, name: sides, line: [lerp(pot.A pot.B 0.125), lerp(pot.D pot.C 0.125)], move: pot.A }
+      - { crease: valley, sheet: pot, name: sides, line: [lerp(pot.A pot.B 0.375), lerp(pot.D pot.C 0.375)], move: pot.A }
+      - { crease: valley, sheet: pot, name: sides, line: [lerp(pot.A pot.B 0.625), lerp(pot.D pot.C 0.625)], move: pot.B }
+      - { crease: valley, sheet: pot, name: sides, line: [lerp(pot.A pot.B 0.875), lerp(pot.D pot.C 0.875)], move: pot.B }
+  - text: Curl the strip into a ring, bending every crease the same way. Lay the last panel over the first and glue or tuck it, so the pot has seven sides.
+    pin:
+      HB: lerp(pot.D pot.C 0.4375)
+      HT: lerp(pot.A pot.B 0.4375)
+    shape:
+      fixed: lerp(lerp(pot.A pot.B 0.4375) lerp(pot.D pot.C 0.4375) 0.5)
+      creases:
+        - { creases: sides, angle: 51.42857 }
+  - text: Stand the pot upright.
+    pin:
+      HL: lerp(pot.D pot.C 0.375)
+      HR: lerp(pot.D pot.C 0.5)
+      CEN: shift(HB HL HR 3.115)
+      S1: shift(shift(CEN HL HR 1.250) HT HB 0.000)
+      S2: shift(shift(CEN HL HR -0.625) HT HB -1.083)
+      S3: shift(shift(CEN HL HR -0.625) HT HB 1.083)
+      S4: shift(shift(CEN HL HR 1.150) HT HB 1.992)
+      S5: shift(shift(CEN HL HR 1.150) HT HB -1.992)
+      S6: shift(shift(CEN HL HR -2.300) HT HB -0.000)
+    pose: { sheet: pot, point: HB, along: HT, to: HB, lean: 0, toward: -90 }
+  # ---------- Leaves ----------
+  - text: "Leaf: start with a small diamond, white side up. Fold it in half from side to side and unfold. Then fold the two upper edges to the centre crease."
+    sheet: leaf1
+    mark: { KR: intersect(leaf1.A mid(leaf1.B lerp(leaf1.A leaf1.C 0.70710678)) leaf1.C leaf1.B), KL: intersect(leaf1.A mid(leaf1.D lerp(leaf1.A leaf1.C 0.70710678)) leaf1.C leaf1.D) }
+    ops:
+      - { crease: valley, sheet: leaf1, name: mid1, line: [leaf1.A, leaf1.C], move: leaf1.B }
+      - { fold: valley, sheet: leaf1, line: { bring: [leaf1.A, leaf1.B], onto: [leaf1.A, leaf1.C] }, move: leaf1.B }
+      - { fold: valley, sheet: leaf1, line: { bring: [leaf1.A, leaf1.D], onto: [leaf1.A, leaf1.C] }, move: leaf1.D }
+  - text: Fold the folded edges to the centre again, to make a long thin blade.
+    ops:
+      - { fold: valley, sheet: leaf1, line: { bring: [leaf1.A, leaf1.KR], onto: [leaf1.A, leaf1.C] }, move: leaf1.KR }
+      - { fold: valley, sheet: leaf1, line: { bring: [leaf1.A, leaf1.KL], onto: [leaf1.A, leaf1.C] }, move: leaf1.KL }
+  - text: Fold the blade in half backwards along the centre crease, then let it open into a shallow V. The smooth side is the top of the leaf.
+    ops:
+      - shape: [ { creases: mid1, kind: mountain, angle: 40 } ]
+  - text: "Leaf 2: fold it just the same. Crease the middle, fold the upper edges to the centre, fold the folded edges to the centre, then make the shallow V."
+    sheet: leaf2
+    mark: { KR: intersect(leaf2.A mid(leaf2.B lerp(leaf2.A leaf2.C 0.70710678)) leaf2.C leaf2.B), KL: intersect(leaf2.A mid(leaf2.D lerp(leaf2.A leaf2.C 0.70710678)) leaf2.C leaf2.D) }
+    ops:
+      - { crease: valley, sheet: leaf2, name: mid2, line: [leaf2.A, leaf2.C], move: leaf2.B }
+      - { fold: valley, sheet: leaf2, line: { bring: [leaf2.A, leaf2.B], onto: [leaf2.A, leaf2.C] }, move: leaf2.B }
+      - { fold: valley, sheet: leaf2, line: { bring: [leaf2.A, leaf2.D], onto: [leaf2.A, leaf2.C] }, move: leaf2.D }
+      - { fold: valley, sheet: leaf2, line: { bring: [leaf2.A, leaf2.KR], onto: [leaf2.A, leaf2.C] }, move: leaf2.KR }
+      - { fold: valley, sheet: leaf2, line: { bring: [leaf2.A, leaf2.KL], onto: [leaf2.A, leaf2.C] }, move: leaf2.KL }
+      - shape: [ { creases: mid2, kind: mountain, angle: 40 } ]
+  - text: "Leaf 3: fold it just the same. Crease the middle, fold the upper edges to the centre, fold the folded edges to the centre, then make the shallow V."
+    sheet: leaf3
+    mark: { KR: intersect(leaf3.A mid(leaf3.B lerp(leaf3.A leaf3.C 0.70710678)) leaf3.C leaf3.B), KL: intersect(leaf3.A mid(leaf3.D lerp(leaf3.A leaf3.C 0.70710678)) leaf3.C leaf3.D) }
+    ops:
+      - { crease: valley, sheet: leaf3, name: mid3, line: [leaf3.A, leaf3.C], move: leaf3.B }
+      - { fold: valley, sheet: leaf3, line: { bring: [leaf3.A, leaf3.B], onto: [leaf3.A, leaf3.C] }, move: leaf3.B }
+      - { fold: valley, sheet: leaf3, line: { bring: [leaf3.A, leaf3.D], onto: [leaf3.A, leaf3.C] }, move: leaf3.D }
+      - { fold: valley, sheet: leaf3, line: { bring: [leaf3.A, leaf3.KR], onto: [leaf3.A, leaf3.C] }, move: leaf3.KR }
+      - { fold: valley, sheet: leaf3, line: { bring: [leaf3.A, leaf3.KL], onto: [leaf3.A, leaf3.C] }, move: leaf3.KL }
+      - shape: [ { creases: mid3, kind: mountain, angle: 40 } ]
+  - text: "Leaf 4: fold it just the same. Crease the middle, fold the upper edges to the centre, fold the folded edges to the centre, then make the shallow V."
+    sheet: leaf4
+    mark: { KR: intersect(leaf4.A mid(leaf4.B lerp(leaf4.A leaf4.C 0.70710678)) leaf4.C leaf4.B), KL: intersect(leaf4.A mid(leaf4.D lerp(leaf4.A leaf4.C 0.70710678)) leaf4.C leaf4.D) }
+    ops:
+      - { crease: valley, sheet: leaf4, name: mid4, line: [leaf4.A, leaf4.C], move: leaf4.B }
+      - { fold: valley, sheet: leaf4, line: { bring: [leaf4.A, leaf4.B], onto: [leaf4.A, leaf4.C] }, move: leaf4.B }
+      - { fold: valley, sheet: leaf4, line: { bring: [leaf4.A, leaf4.D], onto: [leaf4.A, leaf4.C] }, move: leaf4.D }
+      - { fold: valley, sheet: leaf4, line: { bring: [leaf4.A, leaf4.KR], onto: [leaf4.A, leaf4.C] }, move: leaf4.KR }
+      - { fold: valley, sheet: leaf4, line: { bring: [leaf4.A, leaf4.KL], onto: [leaf4.A, leaf4.C] }, move: leaf4.KL }
+      - shape: [ { creases: mid4, kind: mountain, angle: 40 } ]
+  - text: "Leaf 5: fold it just the same. Crease the middle, fold the upper edges to the centre, fold the folded edges to the centre, then make the shallow V."
+    sheet: leaf5
+    mark: { KR: intersect(leaf5.A mid(leaf5.B lerp(leaf5.A leaf5.C 0.70710678)) leaf5.C leaf5.B), KL: intersect(leaf5.A mid(leaf5.D lerp(leaf5.A leaf5.C 0.70710678)) leaf5.C leaf5.D) }
+    ops:
+      - { crease: valley, sheet: leaf5, name: mid5, line: [leaf5.A, leaf5.C], move: leaf5.B }
+      - { fold: valley, sheet: leaf5, line: { bring: [leaf5.A, leaf5.B], onto: [leaf5.A, leaf5.C] }, move: leaf5.B }
+      - { fold: valley, sheet: leaf5, line: { bring: [leaf5.A, leaf5.D], onto: [leaf5.A, leaf5.C] }, move: leaf5.D }
+      - { fold: valley, sheet: leaf5, line: { bring: [leaf5.A, leaf5.KR], onto: [leaf5.A, leaf5.C] }, move: leaf5.KR }
+      - { fold: valley, sheet: leaf5, line: { bring: [leaf5.A, leaf5.KL], onto: [leaf5.A, leaf5.C] }, move: leaf5.KL }
+      - shape: [ { creases: mid5, kind: mountain, angle: 40 } ]
+  - text: "Leaf 6: fold it just the same. Crease the middle, fold the upper edges to the centre, fold the folded edges to the centre, then make the shallow V."
+    sheet: leaf6
+    mark: { KR: intersect(leaf6.A mid(leaf6.B lerp(leaf6.A leaf6.C 0.70710678)) leaf6.C leaf6.B), KL: intersect(leaf6.A mid(leaf6.D lerp(leaf6.A leaf6.C 0.70710678)) leaf6.C leaf6.D) }
+    ops:
+      - { crease: valley, sheet: leaf6, name: mid6, line: [leaf6.A, leaf6.C], move: leaf6.B }
+      - { fold: valley, sheet: leaf6, line: { bring: [leaf6.A, leaf6.B], onto: [leaf6.A, leaf6.C] }, move: leaf6.B }
+      - { fold: valley, sheet: leaf6, line: { bring: [leaf6.A, leaf6.D], onto: [leaf6.A, leaf6.C] }, move: leaf6.D }
+      - { fold: valley, sheet: leaf6, line: { bring: [leaf6.A, leaf6.KR], onto: [leaf6.A, leaf6.C] }, move: leaf6.KR }
+      - { fold: valley, sheet: leaf6, line: { bring: [leaf6.A, leaf6.KL], onto: [leaf6.A, leaf6.C] }, move: leaf6.KL }
+      - shape: [ { creases: mid6, kind: mountain, angle: 40 } ]
+  # ---------- Put it together ----------
+  - text: Stand three leaves in the pot, points up and smooth side in, leaning a little apart. A little crumpled paper in the pot holds them.
+    ops:
+      - pose: { sheet: leaf1, point: leaf1.C, along: leaf1.A, to: S1, height: 2.2, lean: 14, toward: 90, turn: 200 }
+      - pose: { sheet: leaf2, point: leaf2.C, along: leaf2.A, to: S2, height: 2.2, lean: 16, toward: 210, turn: 200 }
+      - pose: { sheet: leaf3, point: leaf3.C, along: leaf3.A, to: S3, height: 2.2, lean: 12, toward: 330, turn: 200 }
+  - text: Tuck three more leaves in between them, low down, so they rest on the rim and reach out sideways.
+    ops:
+      - pose: { sheet: leaf4, point: leaf4.C, along: leaf4.A, to: S4, height: 4.85, lean: 64, toward: 30, turn: 200 }
+      - pose: { sheet: leaf5, point: leaf5.C, along: leaf5.A, to: S5, height: 4.85, lean: 67, toward: 150, turn: 200 }
+      - pose: { sheet: leaf6, point: leaf6.C, along: leaf6.A, to: S6, height: 4.85, lean: 61, toward: 270, turn: 200 }
+finish:
+  camera: { azimuth: -25, elevation: 22, zoom: 1.3 }
+  text: Your agave is ready. Move the leaves about until you like the shape.
