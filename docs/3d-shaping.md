@@ -1,6 +1,6 @@
 # 3D shaping: boxes, standing models and tessellations
 
-Most steps are flat folds. Three ops take a model into 3D. The flat-fold engine keeps the
+Most steps are flat folds. Four ops take a model into 3D. The flat-fold engine keeps the
 flat state as the source of truth. Steps with linked folds are posed by rigid-origami kinematics
 (`src/engine/kinematic.ts`): every crease-pattern face stays flat and rigid, loops of creases stay
 closed, and the solver gets as close to the angles asked for as rigid paper allows. Mirror-symmetric
@@ -23,6 +23,9 @@ the next one instead of showing the crossing. All of this is solved when the sit
 ```
 
 - `angle` is how far the crease is folded: 0 is flat open, 180 is folded flat.
+- `line:` takes every crease lying on that segment as the paper lies now, including creases of
+  layers folded onto it. To shape one crease of a folded-up sheet, name it when it is made and use
+  `creases:`. Add `kind: valley` or `kind: mountain` to bend a named crease the other way.
 - Name the folds you want to shape later with `name:` on the fold (`fold: valley, name: walls, ...`).
   Creases made with `crease:` (fold and unfold) can be named too; they keep their direction.
 - A list without `fixed` is fine too: `shape: [ { creases: walls, angle: 90 } ]`.
@@ -67,6 +70,37 @@ near the end; later folds still work but the overlay is drawn tilted.
 
 To make a flat (two-layer) animal actually stand, open its body a little before or after standing:
 `shape: [ { line: [spine start, spine end], angle: 150 } ]`.
+
+## `pose`: set a folded sheet in place in space
+
+Models made of several sheets are put together in 3D: leaves stood in a pot, a lid set on a box.
+`pose` picks one sheet up, as folded and shaped as it is, and sets it down as one rigid piece.
+
+```yaml
+- text: Stand the pot upright.
+  pose: { sheet: pot, point: HB, along: HT, to: HB }
+- text: Stand a leaf in the pot, leaning out a little.
+  pose: { sheet: leaf1, point: leaf1.C, along: leaf1.A, to: CEN, height: 2.2, lean: 14, toward: 90, turn: 180 }
+```
+
+- `point` is a point of the sheet as it lies now; it ends above the table point `to`, `height` cm up.
+- `along` is a second point of the sheet. The direction from `point` to `along` is the sheet's "up".
+- `lean` is how far that "up" leans from straight up (0 upright, 90 lying level), and `toward` is the
+  compass direction it leans in, in degrees anticlockwise from the diagram's right.
+- With `turn: 0` the side of the sheet now facing you ends facing the middle and the sky. `turn` rolls
+  the sheet about its own "up": 180 shows its other side. For a sheet folded into a V, add half the
+  V's angle so it sits square.
+- `to` is best given as a pin (`pin:` on an earlier step), so it stays put whatever moves later.
+- Several `pose` ops in one step (under `ops:`) set several pieces, one after another.
+- From its first `pose` on, a sheet cannot be folded flat again. Fold and shape it first.
+
+A strip becomes a ring with `shape` (every crease to the same angle: 360 / sides) and stands up with
+`pose`. `tests/pose.test.ts` checks on the potted agave that the ring closes, that every piece lands
+where its step puts it, and that no sheet passes through another in the finished model. Nothing
+stops a script from posing one sheet through another, so check new models the same way.
+
+In the viewer, a step of a model with several sheets is framed on the sheets it is about: the sheet
+being folded, or, for a `pose`, the piece where it lands with the pieces already standing.
 
 ## `pattern`: crease a crease pattern, optionally fold it all at once
 

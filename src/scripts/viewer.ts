@@ -113,12 +113,13 @@ class FlatPhase {
     this.chain = this.faces.map((f, i) => (f.parent === undefined ? lift(f.a) : lift(f.a).multiply(local(i))));
   }
 
-  bounds(): THREE.Box3 {
+  bounds(only?: string[]): THREE.Box3 {
     const box = new THREE.Box3();
     const v = new THREE.Vector3();
     for (const t of [0, 0.5, 1]) {
       this.prepare(t);
       this.faces.forEach((f, i) => {
+        if (only && !only.includes(f.s)) return;
         for (let k = 0; k < f.p.length; k += 2) box.expandByPoint(toThree(this.pose(i, t, [f.p[k], f.p[k + 1]], v), v));
       });
     }
@@ -520,6 +521,8 @@ export class FoldViewer {
   sheets: SheetView[];
   /** Second copy of each sheet, shown only while dissolving across a span where paper would cross. */
   ghosts: SheetView[];
+  /** The model sets folded sheets in place in space (a `pose` step), so its flat diagram is not its shape. */
+  private posed = false;
   model3d = new THREE.Group();
   overlays = new THREE.Group();
   phases: FlatPhase[] = [];
@@ -627,6 +630,7 @@ export class FoldViewer {
       this.model3d.add(v.front, v.back, v.lines);
       return v;
     });
+    this.posed = model.steps.some((st) => st.phases.some((p) => p.pose));
     this.ghosts = this.sim.meshes.map((m) => {
       const sh = model.sheets.find((s) => s.id === m.sheet)!;
       const v = new SheetView(m, this.colors[m.sheet] ?? { front: sh.front, back: sh.back });
@@ -1039,13 +1043,34 @@ export class FoldViewer {
     this.dirty = true;
   }
 
+  /**
+   * What the camera has to show: the sheets this step is about (all of them for a one-sheet model and
+   * for the finished model), through the whole of the step. Sheets waiting their turn, or finished
+   * and set aside, may lie outside the picture.
+   */
   private framing(spec: CameraSpec) {
-    const box = new THREE.Box3();
-    for (const v of this.phases) box.union(v.bounds());
-    // Include the simulated paper as it is now (its folds rest a little open, so it can be bigger).
-    for (const sh of this.sheets) {
-      const P = sh.pos;
-      for (let i = 0; i < P.length; i += 3) box.expandByPoint(new THREE.Vector3(P[i], P[i + 1], P[i + 2]));
+    const box = new THREE.Box3(), v = new THREE.Vector3();
+    const finished = this.step >= this.stepCount;
+    // A step that names no sheet (turning the model, shaping it) stays with the sheets of the step before.
+    let only: string[] | undefined;
+    if (!finished && this.model.sheets.length > 1) {
+      for (let s = this.step; s >= 0 && !only; s--) if (this.model.steps[s].sheets?.length) only = this.model.steps[s].sheets;
+    }
+    // Flat diagram of the step. Not for models whose sheets are placed in space: there the flat
+    // diagram of a placed sheet is no longer where its paper is.
+    if (!this.posed) for (const ph of this.phases) box.union(ph.bounds(only));
+    // The solved paper at the start, middle and end of the step (its folds can rest a little open).
+    const n = this.phases.length, R = this.sheets.map((sh) => new Float32Array(sh.rpos.length));
+    // A piece being set in place is framed where it lands, with the pieces already standing there.
+    const placing = !finished && this.model.steps[this.step].phases.some((p) => p.pose);
+    for (const t of finished || !this.posed ? [this.t] : placing ? [1] : [0, 0.5, 1]) {
+      const x = Math.min(t * n, n - 1e-9), index = Math.floor(x);
+      this.layout(this.phases[index], t >= 1 ? 1 : x - index, t, R);
+      this.sheets.forEach((sh, si) => {
+        if (only && !only.includes(sh.mesh.sheet)) return;
+        const A = R[si];
+        for (let i = 0; i < A.length; i += 3) box.expandByPoint(v.set(A[i], A[i + 1], A[i + 2]));
+      });
     }
     // The simulated paper rests on the table, a little above the flat pose.
     const center = box.getCenter(new THREE.Vector3());

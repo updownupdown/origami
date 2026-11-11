@@ -70,6 +70,28 @@ export interface PlaceOp {
     layer?: 'above' | 'below';
   };
 }
+export interface PoseOp {
+  /**
+   * Pick a folded sheet up and set it down in 3D, as one rigid piece: standing in a pot, leaning
+   * against another sheet. The sheet must be lying flat where `point` is.
+   */
+  pose: {
+    sheet: string;
+    /** This point of the sheet (world, before moving) ... */
+    point: PointExpr;
+    /** ... goes above this point of the table (world), `height` cm up. */
+    to: PointExpr;
+    height?: number;
+    /** A second point of the sheet: the direction from `point` to it is the sheet's "up". */
+    along: PointExpr;
+    /** Degrees the sheet's "up" leans away from straight up (0 upright, 90 lying level). */
+    lean?: number;
+    /** Compass direction it leans towards, degrees anticlockwise from the diagram's right. */
+    toward?: number;
+    /** Extra turn about its own "up", degrees (0: the side now facing up ends facing the middle and the sky). */
+    turn?: number;
+  };
+}
 export interface MarkOp {
   /** Name a point (evaluated in world space, stored on the paper) for later steps. */
   mark: Record<string, PointExpr>;
@@ -118,7 +140,7 @@ export interface StandOp {
   stand: { on: [PointExpr, PointExpr]; angle?: number } | [PointExpr, PointExpr];
 }
 
-export type Op = FoldOp | TurnOverOp | RotateOp | GridOp | CollapseOp | PlaceOp | MarkOp | ShapeOp | StandOp | PatternOp;
+export type Op = FoldOp | TurnOverOp | RotateOp | GridOp | CollapseOp | PlaceOp | PoseOp | MarkOp | ShapeOp | StandOp | PatternOp;
 
 export type CameraPreset = 'top' | 'three-quarter' | 'front' | 'side' | 'bottom' | 'hero';
 export interface CameraSpec {
@@ -141,6 +163,7 @@ export interface StepSpec extends Partial<FoldOp> {
   grid?: GridOp['grid'];
   collapse?: CollapseOp['collapse'];
   place?: PlaceOp['place'];
+  pose?: PoseOp['pose'];
   mark?: MarkOp['mark'];
   shape?: ShapeOp['shape'];
   pattern?: PatternOp['pattern'];
@@ -224,7 +247,7 @@ export interface SheetInfo {
   note?: string;
 }
 
-export type MotionKind = 'hinge' | 'crease' | 'spin' | 'chain' | 'move' | 'none' | 'shape' | 'stand';
+export type MotionKind = 'hinge' | 'crease' | 'spin' | 'chain' | 'move' | 'none' | 'shape' | 'stand' | 'pose';
 
 /** A 3D fold angle for a set of creases, resolved by the simulation. */
 export interface PhaseShape {
@@ -295,6 +318,11 @@ export interface Phase {
   shape?: PhaseShape[];
   /** The model's tilt through this phase (absent when upright on the table, i.e. lying flat). */
   tilt?: Tilt;
+  /**
+   * For 'pose' phases: sheet `sheet` moves as one rigid piece, v -> R (v - from) + to (paper world,
+   * cm; R row-major). From then on that sheet is no longer where the flat diagram shows it.
+   */
+  pose?: { sheet: string; from: [number, number, number]; to: [number, number, number]; R: number[] };
 }
 
 export interface CompiledStep {

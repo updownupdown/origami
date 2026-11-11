@@ -64,6 +64,9 @@ picks a branch at random at flat states, which made symmetric models lopsided, s
 the exact flat-fold engine and the rigid solver. A soft step holds part of the model still and
 works the named creases firmly, which keeps it symmetric.
 
+Folded sheets can be set in place in space as rigid pieces (`pose`, see [3D shaping](3d-shaping.md)),
+which is enough for plants with straight leaves in a faceted pot (the potted agave).
+
 Still missing for models like curled leaves and round pots:
 
 - A finer mesh inside faces, so paper can curl smoothly instead of bending along a few lines.
@@ -85,7 +88,7 @@ never tears open. `tests/continuity.test.ts` checks every model for jumps betwee
 
 ## 6. How a step is drawn
 
-Status: built (src/scripts/viewer.ts). Four rules, each there to keep the picture honest:
+Status: built (src/scripts/viewer.ts). Five rules, each there to keep the picture honest:
 
 - **Each face in its own solved place.** While the paper is rigid, every crease-pattern face is
   placed whole from its own transform (`Kinematics.rigidAt`), so paper that a step does not move is
@@ -102,6 +105,9 @@ Status: built (src/scripts/viewer.ts). Four rules, each there to keep the pictur
   folded behind swings down through the grid and comes to rest under the model. The model rises only
   when it must end the step resting higher, or when the whole of it is picked up (turned over, stood
   up), and then by exactly what it needs at each moment, so its height is a smooth function of time.
+
+- **The camera follows the work.** With several sheets, a step is framed on the sheets it is about;
+  the others wait outside the picture or at its edge.
 
 ## Format guarantees
 
