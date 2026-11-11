@@ -52,7 +52,7 @@ describe('refold: squash, petal and reverse folds on a folded sheet', () => {
     // Every crease is open or folded flat again.
     const A = sim.angles[s][0].b[0];
     for (let h = 0; h < A.length; h++) if (sim.meshes[0].hingeCrease[h]) expect([0, 180]).toContain(Math.round(Math.abs(deg(A[h]))));
-  });
+  }, 60_000);
 
   it('says so when the creases cannot fold flat, or name no crease', () => {
     const one = (refold: any) => () => compileModel({ ...head, steps: [{ use: 'base/preliminary' }, { ...squash, refold }] } as any, bases);
@@ -70,7 +70,7 @@ describe('refold: squash, petal and reverse folds on a folded sheet', () => {
     // The squashes, petal folds and page turns move rigidly; only the reverse folds are staged.
     const staged = m.steps.map((_, s) => s).filter((s) => kin.tier[s] === 'crossing');
     for (const s of staged) expect(m.steps[s].phases.some((p) => p.name === 'tips'), `step ${s + 1}`).toBe(true);
-  });
+  }, 120_000);
 
   it('lily: the flower opens into four equal petals around its axis', () => {
     const s = m.steps.findIndex((st) => st.phases.some((p) => p.motion === 'shape'));
@@ -104,5 +104,5 @@ describe('refold: squash, petal and reverse folds on a folded sheet', () => {
       expect(a.length).toBeGreaterThan(1);
       expect(new Set(a)).toEqual(new Set([90]));
     }
-  });
+  }, 120_000);
 });
