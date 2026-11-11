@@ -1,0 +1,223 @@
+id: lily
+title: Lily
+family: lily
+aliases: [iris, traditional lily, lily flower, frog base flower]
+categories: [plants/flowers]
+tags: [lily, iris, flower, frog base, squash fold, petal fold, reverse fold, traditional, 3D]
+difficulty: 4
+description: The traditional lily. Four squash folds and four petal folds turn the preliminary base into the frog base, the sides are narrowed, and the four points open out as petals. Here the petals are set with reverse folds; curl them round a pencil for the classic look.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#f08a4b", back: "#fbf7ee" }
+steps:
+  - use: base/preliminary
+  - text: "Squash fold. Lift the right-hand flap so it stands straight up, open it from the bottom, and press it flat so its folded edge lies on the centre line."
+    points:
+      PbcB: bisect(O mid(B C) B)
+      PbcC: bisect(O mid(B C) C)
+      PabA: bisect(O mid(A B) A)
+      PabB: bisect(O mid(A B) B)
+      PdaD: bisect(O mid(D A) D)
+      PdaA: bisect(O mid(D A) A)
+      PcdC: bisect(O mid(C D) C)
+      PcdD: bisect(O mid(C D) D)
+      QbcB: bisect(B O PbcB)
+      QbcC: bisect(C O PbcC)
+      QabA: bisect(A O PabA)
+      QabB: bisect(B O PabB)
+      QdaD: bisect(D O PdaD)
+      QdaA: bisect(A O PdaA)
+      QcdC: bisect(C O PcdC)
+      QcdD: bisect(D O PcdD)
+      RbcB: bisect(O B QbcB)
+      RbcC: bisect(O C QbcC)
+      RabA: bisect(O A QabA)
+      RabB: bisect(O B QabB)
+      RdaD: bisect(O D QdaD)
+      RdaA: bisect(O A QdaA)
+      RcdC: bisect(O C QcdC)
+      RcdD: bisect(O D QcdD)
+    refold:
+      valley: [[O, C]]
+      mountain: [[O, PbcC]]
+      fold: [[O, PbcB]]
+      flatten: [[O, mid(B C)]]
+      arrow: [mid(B C), lerp(O C 0.70710678)]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Petal fold. Lift the open edge of the flap you just flattened and swing it down, while the two sides fold in to the centre line. A small triangle ends up pointing down."
+    refold:
+      valley: [[QbcB, QbcC]]
+      fold: [[QbcB, mid(B C)], [QbcC, mid(B C)], [B, QbcB], [C, QbcC]]
+      flatten: [[QbcB, PbcB], [QbcC, PbcC]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Fold the right half of this face over to the left, like turning a page."
+    refold:
+      valley: [[O, mid(B C)]]
+      flatten: [[O, B]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Squash fold the next flap the same way."
+    refold:
+      valley: [[O, B]]
+      mountain: [[O, PabB]]
+      fold: [[O, PabA]]
+      flatten: [[O, mid(A B)]]
+      arrow: [mid(A B), lerp(O B 0.70710678)]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Petal fold it the same way."
+    refold:
+      valley: [[QabA, QabB]]
+      fold: [[QabA, mid(A B)], [QabB, mid(A B)], [A, QabA], [B, QabB]]
+      flatten: [[QabA, PabA], [QabB, PabB]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: Turn the model over.
+    turn-over: vertical
+  - text: "Squash fold the right-hand flap on this side."
+    refold:
+      valley: [[O, A]]
+      mountain: [[O, PdaA]]
+      fold: [[O, PdaD]]
+      flatten: [[O, mid(D A)]]
+      arrow: [mid(D A), lerp(O A 0.70710678)]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Petal fold it."
+    refold:
+      valley: [[QdaD, QdaA]]
+      fold: [[QdaD, mid(D A)], [QdaA, mid(D A)], [D, QdaD], [A, QdaA]]
+      flatten: [[QdaD, PdaD], [QdaA, PdaA]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Fold the right half of this face over to the left."
+    refold:
+      valley: [[O, mid(D A)]]
+      flatten: [[O, D]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Squash fold the last flap."
+    refold:
+      valley: [[O, D]]
+      mountain: [[O, PcdD]]
+      fold: [[O, PcdC]]
+      flatten: [[O, mid(C D)]]
+      arrow: [mid(C D), lerp(O D 0.70710678)]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Petal fold it. This is the frog base."
+    refold:
+      valley: [[QcdC, QcdD]]
+      fold: [[QcdC, mid(C D)], [QcdD, mid(C D)], [C, QcdC], [D, QcdD]]
+      flatten: [[QcdC, PcdC], [QcdD, PcdD]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Now fold one half of the front face over, like turning a page, to show a smooth face."
+    refold:
+      valley: [[O, mid(C D)]]
+      flatten: [[O, D]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Fold the two lower edges of this smooth face in to the centre line. Then fold the top point down as far as it goes and unfold: this crease will be a petal."
+    ops:
+      - { fold: valley, line: [O, RcdD], move: lerp(mid(O RcdD) QcdD 0.5), layers: top }
+      - { fold: valley, line: [O, RdaD], move: lerp(mid(O RdaD) QdaD 0.5), layers: top }
+    camera: { azimuth: 0, elevation: 62 }
+  - text: Turn the model over.
+    turn-over: vertical
+  - text: "Turn a page on this side too, to show a smooth face."
+    refold:
+      valley: [[O, mid(A B)]]
+      flatten: [[O, B]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Fold its lower edges in to the centre line, then crease the petal as before."
+    ops:
+      - { fold: valley, line: [O, RabB], move: lerp(mid(O RabB) QabB 0.5), layers: top }
+      - { fold: valley, line: [O, RbcB], move: lerp(mid(O RbcB) QbcB 0.5), layers: top }
+    camera: { azimuth: 0, elevation: 62 }
+  - text: "Turn one page to show the next smooth face."
+    refold:
+      valley: [[O, B]]
+      flatten: [[O, C]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Fold the lower edges in and crease the petal."
+    ops:
+      - { fold: valley, line: [O, RbcC], move: lerp(mid(O RbcC) QbcC 0.5), layers: top }
+      - { fold: valley, line: [O, RcdC], move: lerp(mid(O RcdC) QcdC 0.5), layers: top }
+    camera: { azimuth: 0, elevation: 62 }
+  - text: Turn the model over.
+    turn-over: vertical
+  - text: "Turn one page to show the last smooth face."
+    refold:
+      valley: [[O, D]]
+      flatten: [[O, A]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Fold the lower edges in and crease the petal."
+    ops:
+      - { fold: valley, line: [O, RdaA], move: lerp(mid(O RdaA) QdaA 0.5), layers: top }
+      - { fold: valley, line: [O, RabA], move: lerp(mid(O RabA) QabA 0.5), layers: top }
+    camera: { azimuth: 0, elevation: 62 }
+  - text: "Fold one half of the front face over once more. Now a face with a small triangle is in front, and all four petals are folded in half."
+    refold:
+      valley: [[O, A]]
+      flatten: [[O, mid(A B)]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Inside reverse fold a petal. Open the long point on one side a little, push its tip down and outward between its two layers, and press it flat so it points out to the side."
+    points:
+      XA: lerp(O A 0.6)
+      HdaA: lerp(A QdaA 0.604403)
+      YdaA: reflect(XA A QdaA)
+      HabA: lerp(A QabA 0.604403)
+      YabA: reflect(XA A QabA)
+      XB: lerp(O B 0.6)
+      HabB: lerp(B QabB 0.604403)
+      YabB: reflect(XB B QabB)
+      HbcB: lerp(B QbcB 0.604403)
+      YbcB: reflect(XB B QbcB)
+      XC: lerp(O C 0.6)
+      HbcC: lerp(C QbcC 0.604403)
+      YbcC: reflect(XC C QbcC)
+      HcdC: lerp(C QcdC 0.604403)
+      YcdC: reflect(XC C QcdC)
+      XD: lerp(O D 0.6)
+      HcdD: lerp(D QcdD 0.604403)
+      YcdD: reflect(XD D QcdD)
+      HdaD: lerp(D QdaD 0.604403)
+      YdaD: reflect(XD D QdaD)
+    name: tips
+    refold:
+      flip: [[XA, A]]
+      fold: [[XA, HdaA], [HdaA, YdaA], [XA, HabA], [HabA, YabA]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Reverse fold the point on the other side to match."
+    name: tips
+    refold:
+      flip: [[XB, B]]
+      fold: [[XB, HabB], [HabB, YabB], [XB, HbcB], [HbcB, YbcB]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: Turn the model over.
+    turn-over: vertical
+  - text: "Fold one half of this face over as well, so the small triangle is in front here too."
+    refold:
+      valley: [[O, C]]
+      flatten: [[O, mid(C D)]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Reverse fold the two remaining points the same way."
+    name: tips
+    refold:
+      flip: [[XC, C], [XD, D]]
+      fold: [[XC, HbcC], [HbcC, YbcC], [XC, HcdC], [HcdC, YcdC], [XD, HcdD], [HcdD, YcdD], [XD, HdaD], [HdaD, YdaD]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Open the flower. Hold the bottom point and spread the four petals apart until the narrow sides stand at right angles, like a plus sign seen from above. The petals open out and their tips swing down."
+    shape:
+      creases:
+        - { creases: tips, angle: 116.7620 }
+        - { paper: [O, A], angle: 90 }
+        - { paper: [O, B], angle: 90 }
+        - { paper: [O, C], angle: 90 }
+        - { paper: [O, D], angle: 90 }
+        - { paper: [O, mid(A B)], angle: 180 }
+        - { paper: [O, mid(C D)], angle: 180 }
+    camera: { azimuth: -25, elevation: 30, zoom: 1 }
+  - text: "Hold the lily upright by its bottom point and look into the flower."
+    stand: { on: [shift(O O XA 1), shift(O O XA -1)], angle: 90 }
+    camera: { azimuth: -30, elevation: 35, zoom: 1.1 }
+finish:
+  camera: { azimuth: -30, elevation: 35, zoom: 1.2 }
+  text: Your lily is done. For a softer flower, curl each petal tip round a pencil.

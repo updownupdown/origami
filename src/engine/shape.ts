@@ -46,6 +46,17 @@ function hingesOnLine(mesh: SimMesh, ph: Phase, match: Int32Array, p: V2, q: V2)
   return out;
 }
 
+/** Hinges that lie on a segment of the sheet's unfolded paper. */
+function hingesOnPaper(mesh: SimMesh, p: V2, q: V2): number[] {
+  const out: number[] = [];
+  for (let h = 0; h < mesh.hingeCrease.length; h++) {
+    if (!mesh.hingeCrease[h]) continue;
+    const ia = mesh.hinges[4 * h], ib = mesh.hinges[4 * h + 1];
+    if (onSeg([mesh.paper[2 * ia], mesh.paper[2 * ia + 1]], p, q) && onSeg([mesh.paper[2 * ib], mesh.paper[2 * ib + 1]], p, q)) out.push(h);
+  }
+  return out;
+}
+
 /**
  * Rewrites `angles` in place so shape phases bend the paper and later phases keep the bend.
  * `angles[step][phase]` must already hold the flat targets.
@@ -68,6 +79,12 @@ export function applyShapes(model: CompiledModel, meshes: SimMesh[], angles: Sha
     named.set(ph.name, dirs);
   };
 
+  // The way each crease was last folded: a crease that lies open folds that way again unless told otherwise.
+  const last = meshes.map((m) => new Float64Array(m.hingeLen.length));
+  const remember = (A: ShapeAngles) => meshes.forEach((_, i) => {
+    const b = A.b[i], mid = A.mid?.[i];
+    for (let h = 0; h < b.length; h++) { const v = b[h] || mid?.[h] || 0; if (v) last[i][h] = Math.sign(v); }
+  });
   const cur = meshes.map((m) => new Float64Array(m.hingeLen.length).fill(NaN));
   const flags = () => cur.map((c) => Uint8Array.from(c, (v) => (Number.isNaN(v) ? 0 : 1)));
   model.steps.forEach((s, si) => s.phases.forEach((ph, pi) => {
@@ -78,13 +95,15 @@ export function applyShapes(model: CompiledModel, meshes: SimMesh[], angles: Sha
         for (let h = 0; h < a.length; h++) if (!Number.isNaN(cur[i][h])) a[h] = cur[i][h];
       });
       A.exA = flags();
-      for (const sh of ph.shape) setShape(sh, ph, A, meshes, named, cur);
+      for (const sh of ph.shape) setShape(sh, ph, A, meshes, named, cur, last);
       A.b = meshes.map((_, i) => Float64Array.from(A.a[i], (v, h) => (Number.isNaN(cur[i][h]) ? v : cur[i][h])));
       A.exB = flags();
       record(ph, A);
+      remember(A);
       return;
     }
     record(ph, A);
+    remember(A);
     meshes.forEach((_, i) => {
       const a = A.a[i], b = A.b[i], mid = A.mid?.[i];
       for (let h = 0; h < a.length; h++) {
@@ -96,7 +115,7 @@ export function applyShapes(model: CompiledModel, meshes: SimMesh[], angles: Sha
   }));
 }
 
-function setShape(sh: PhaseShape, ph: Phase, A: ShapeAngles, meshes: SimMesh[], named: Map<string, Float64Array[]>, cur: Float64Array[]) {
+function setShape(sh: PhaseShape, ph: Phase, A: ShapeAngles, meshes: SimMesh[], named: Map<string, Float64Array[]>, cur: Float64Array[], last: Float64Array[]) {
   const rad = (sh.angle * Math.PI) / 180;
   meshes.forEach((mesh, i) => {
     let hs: number[];
@@ -108,8 +127,8 @@ function setShape(sh: PhaseShape, ph: Phase, A: ShapeAngles, meshes: SimMesh[], 
       for (let h = 0; h < d[i].length; h++) if (d[i][h]) hs.push(h);
       dirOf = (h) => d[i][h];
     } else {
-      hs = hingesOnLine(mesh, ph, A.match[i], sh.p!, sh.q!);
-      dirOf = () => 0;
+      hs = sh.paper ? (mesh.sheet === sh.paper ? hingesOnPaper(mesh, sh.p!, sh.q!) : []) : hingesOnLine(mesh, ph, A.match[i], sh.p!, sh.q!);
+      dirOf = (h) => last[i][h];
     }
     for (const h of hs) {
       const now = A.a[i][h];

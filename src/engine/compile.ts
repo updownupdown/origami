@@ -183,6 +183,8 @@ function evalAst(st: State, a: Ast): V2 | number {
       const p = pt(1), u = norm(sub(pt(2), p));
       return add(p, mul(u, dot(sub(pt(0), p), u)));
     }
+    case 'bisect':
+      return bisectPoint(pt(0), pt(1), pt(2));
     case 'shift': {
       // shift(X, A, B, d): X moved distance d to the left of the direction A -> B.
       const a = pt(1), b = pt(2), n = perp(norm(sub(b, a)));
@@ -201,6 +203,66 @@ function evalAst(st: State, a: Ast): V2 | number {
     default:
       throw new Error(`Unknown function ${a.f}()`);
   }
+}
+
+/**
+ * A point expression read on the unfolded sheet: names are points of the paper, and the functions
+ * work in the crease pattern's own coordinates (see `refold`).
+ */
+function evalPaper(st: State, sheet: string, a: Ast): V2 | number {
+  if (a.k === 'num') return a.v;
+  const sh = st.sheets.get(sheet)!;
+  if (a.k === 'name') {
+    if (st.pins.has(a.v)) throw new Error(`"${a.v}" is a pin (a point in space); a point of the paper is needed here`);
+    const hit = lookupName(st, a.v);
+    if (hit.sheet !== sheet) throw new Error(`"${a.v}" is on sheet "${hit.sheet}", not "${sheet}"`);
+    return hit.p;
+  }
+  const args = a.args.map((x) => evalPaper(st, sheet, x));
+  const pt = (i: number): V2 => {
+    const v = args[i];
+    if (!Array.isArray(v)) throw new Error(`${a.f}() argument ${i + 1} must be a point`);
+    return v;
+  };
+  const num = (i: number): number => {
+    const v = args[i];
+    if (typeof v !== 'number') throw new Error(`${a.f}() argument ${i + 1} must be a number`);
+    return v;
+  };
+  switch (a.f) {
+    case 'mid': return lerp(pt(0), pt(1), 0.5);
+    case 'lerp': return lerp(pt(0), pt(1), num(2));
+    case 'intersect': {
+      const x = lineIntersection(pt(0), pt(1), pt(2), pt(3));
+      if (!x) throw new Error('intersect(): lines are parallel');
+      return x;
+    }
+    case 'reflect': return apply(reflection(pt(1), pt(2)), pt(0));
+    case 'project': { const p = pt(1), u = norm(sub(pt(2), p)); return add(p, mul(u, dot(sub(pt(0), p), u))); }
+    case 'bisect': return bisectPoint(pt(0), pt(1), pt(2));
+    case 'paper': {
+      const origin: V2 = bbox(cornerWorld0(sh)).min;
+      return apply(invert(sh.m0), add(origin, [num(0), num(1)]));
+    }
+    default: throw new Error(`${a.f}() can't be used for a point of the unfolded sheet`);
+  }
+}
+
+function resolvePaper(st: State, sheet: string, e: PointExpr): V2 {
+  if (Array.isArray(e)) {
+    const sh = st.sheets.get(sheet)!;
+    return apply(invert(sh.m0), add(bbox(cornerWorld0(sh)).min, e as V2));
+  }
+  const v = evalPaper(st, sheet, parseExpr(String(e)));
+  if (!Array.isArray(v)) throw new Error(`"${e}" is a number, not a point`);
+  return v;
+}
+
+/** bisect(V, P, Q): where the line halving the angle P-V-Q meets the segment P-Q. */
+function bisectPoint(v: V2, p: V2, q: V2): V2 {
+  const a = dist(v, p), b = dist(v, q);
+  if (a + b < 1e-9) throw new Error('bisect(): the three points coincide');
+  return lerp(p, q, a / (a + b));
 }
 
 /** A literal [x, y] means "the point of the sheet that was at (x, y) in its starting view". */
@@ -845,6 +907,154 @@ function opCollapse(st: State, c: NonNullable<StepSpec['collapse']>, sheet: stri
   return phase;
 }
 
+/**
+ * Changes several creases of an already folded sheet at once and folds it flat again (a squash, a
+ * petal fold, a sink). The crease pattern is the state: creases are added, opened flat or turned the
+ * other way, the folded shape follows by reflecting across every folded crease out from the face
+ * that stays still, and the layer solver finds the order that keeps paper from passing through
+ * paper, keeping every untouched crease and as much of the old order as it can.
+ */
+function opRefold(st: State, c: NonNullable<StepSpec['refold']>, sheet: string): Phase {
+  const sh = st.sheets.get(sheet);
+  if (!sh) throw new Error(`Unknown sheet "${sheet}"`);
+  const P = (e: PointExpr) => resolvePaper(st, sheet, e);
+  const segs = (list: [PointExpr, PointExpr][] | undefined) => (list ?? []).map(fixList).map(([a, b]) => ({ a: P(a), b: P(b) }));
+  const added = [
+    ...segs(c.valley).map((x) => ({ ...x, kind: 'valley' as const })),
+    ...segs(c.mountain).map((x) => ({ ...x, kind: 'mountain' as const })),
+    ...segs(c.fold).map((x) => ({ ...x, kind: 'either' as const })),
+  ];
+  const flatten = segs(c.flatten), flip = segs(c.flip);
+  const before = sheetFaces(st, sheet);
+  const faces = splitBySegments(st, before, added);
+  const n = faces.length;
+  const on = <T extends { a: V2; b: V2 }>(list: T[], e: [V2, V2]) => list.find((cr) => distToLine(e[0], cr.a, cr.b) < 1e-5 && distToLine(e[1], cr.a, cr.b) < 1e-5
+    && segmentsOverlap(e[0], e[1], cr.a, cr.b, 1e-5));
+  const same = (x: Mat, y: Mat) => x.every((v, k) => Math.abs(v - y[k]) < 1e-5);
+  const adj = faces.map((f, i) => faces.map((g, j) => (i !== j ? adjacent(f, g) : null)));
+  // What each crease does: 0 stays flat, 1 stays folded, 2 newly folded, 3 opens flat, 4 turns over.
+  const used = new Set<object>();
+  const role = (i: number, j: number): number => {
+    const e = adj[i][j]!;
+    const was = !same(faces[i].m, faces[j].m);
+    const add = on(added, e), fl = on(flatten, e), tv = on(flip, e);
+    for (const x of [add, fl, tv]) if (x) used.add(x);
+    if (was) {
+      if (add) throw new Error('refold: a crease listed as new is already folded; list it under "flip" to turn it the other way');
+      return fl ? 3 : tv ? 4 : 1;
+    }
+    if (fl || tv) throw new Error('refold: a crease listed under "flatten" or "flip" is not folded');
+    return add ? 2 : 0;
+  };
+  // The face to fold out from: under the fixed point if one is given (settled below otherwise).
+  let root = 0;
+  if (c.fixed !== undefined) {
+    const fp = P(c.fixed);
+    root = faces.findIndex((f) => containsPoint(f.poly, fp, 1e-4));
+    if (root < 0) throw new Error('refold: there is no paper at the "fixed" point');
+  }
+  const M: (Mat | null)[] = faces.map(() => null);
+  M[root] = faces[root].m;
+  const queue = [root];
+  while (queue.length) {
+    const i = queue.shift()!;
+    for (let j = 0; j < n; j++) {
+      const e = adj[i][j];
+      if (!e) continue;
+      const r = role(i, j);
+      const Mj = r === 0 || r === 3 ? M[i]! : compose(M[i]!, reflection(e[0], e[1]));
+      if (M[j]) {
+        if (!M[j]!.every((v, k) => Math.abs(v - Mj[k]) < 1e-4)) {
+          const x = centroid(faces[j].poly);
+          throw new Error(`refold: these creases do not fold flat (conflict near ${x[0].toFixed(1)}, ${x[1].toFixed(1)} on the unfolded sheet)`);
+        }
+        continue;
+      }
+      M[j] = Mj;
+      queue.push(j);
+    }
+  }
+  if (M.some((m) => !m)) throw new Error('refold: some parts of the sheet are not connected');
+  if (c.fixed === undefined) {
+    // No fixed point: hold still whatever leaves the most paper where it is (the lowest such face).
+    let best = Infinity, bestLayer = Infinity, G: Mat = IDENTITY;
+    for (let r = 0; r < n; r++) {
+      const Gr = compose(faces[r].m, invert(M[r]!));
+      let area = 0;
+      for (let i = 0; i < n; i++) if (!same(faces[i].m, compose(Gr, M[i]!))) area += Math.abs(signedArea(faces[i].poly));
+      if (area < best - 1e-9 || (area < best + 1e-9 && faces[r].layer < bestLayer)) { best = area; bestLayer = faces[r].layer; G = Gr; }
+    }
+    for (let i = 0; i < n; i++) M[i] = compose(G, M[i]!);
+  }
+  for (const x of [...added, ...flatten, ...flip]) {
+    if (!used.has(x)) throw new Error(`refold: no crease of the sheet lies on the segment (${x.a[0].toFixed(2)}, ${x.a[1].toFixed(2)}) to (${x.b[0].toFixed(2)}, ${x.b[1].toFixed(2)})`);
+  }
+  // Creases: each keeps the side of the paper it folds towards, unless it is new or turned over.
+  const up = (m: Mat) => det(m) > 0;
+  const lc: LayerCrease[] = [];
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    const e = adj[i][j];
+    if (!e) continue;
+    const r = role(i, j);
+    if (r === 0 || r === 3) continue;
+    let above = 0;
+    if (r === 1 || r === 4) {
+      // j lay on this side of i's paper; it still does (or the other side, if turned over).
+      const was = faces[j].layer > faces[i].layer ? 1 : -1;
+      above = (up(M[i]!) === up(faces[i].m) ? was : -was) * (r === 4 ? -1 : 1);
+    } else {
+      const kind = on(added, e)!.kind;
+      // A valley brings together the sides of the paper that face up now.
+      if (kind !== 'either') above = (up(M[i]!) === up(faces[i].m)) === (kind === 'valley') ? 1 : -1;
+    }
+    lc.push({ f: i, g: j, a: e[0], b: e[1], above });
+  }
+  const moved = faces.map((f, i) => !same(f.m, M[i]!));
+  const prefer = (i: number, j: number): number => {
+    const was = faces[i].layer > faces[j].layer ? 1 : -1;
+    if (!moved[i] && !moved[j]) return was;
+    // Paper that moves lands on top of paper that stays.
+    if (moved[i] !== moved[j]) return moved[i] ? 1 : -1;
+    // Two faces carried along together keep their order, seen from their own side.
+    return up(M[i]!) === up(faces[i].m) ? was : -was;
+  };
+  const solved = solveLayers(faces.map((f, i) => ({ poly: f.poly, T: M[i]! })), lc, Math.max(sh.w, sh.h), prefer);
+  if (!solved) throw new Error('refold: these creases fold flat, but no layer order keeps the paper from passing through itself');
+  // The sheet keeps its place among the other sheets.
+  const lo = Math.min(...before.map((f) => f.layer)), hi = Math.max(...before.map((f) => f.layer));
+  const span = Math.max(1, ...solved.layer) + 1;
+  const mine = new Map(faces.map((f, i) => [f, i]));
+  const items = [...st.faces.filter((f) => f.sheet !== sheet), ...faces].map((f) => {
+    const i = mine.get(f);
+    if (i === undefined) return { f, a: f.m, b: f.m, la: f.layer, lb: f.layer, d: 0 };
+    return { f, a: f.m, b: M[i]!, la: f.layer, lb: lo + ((hi - lo + 0.5) * solved.layer[i]) / span, d: moved[i] ? 1 : 0 };
+  });
+  rerank(items);
+  const phase = makePhase('refold', items);
+  // Diagram lines: the new creases that can be seen, where they lie now.
+  const topAt = (w: V2) => {
+    let best: Face | null = null;
+    for (const f of st.faces) if (containsPoint(worldPoly(f), w, 1e-4) && (!best || f.layer > best.layer)) best = f;
+    return best;
+  };
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    const e = adj[i][j];
+    if (!e || role(i, j) !== 2) continue;
+    const parent = before.find((f) => containsPoint(f.poly, centroid(faces[i].poly), 1e-6));
+    const mid = apply(faces[i].m, lerp(e[0], e[1], 0.5));
+    if (!parent || topAt(apply(faces[i].m, centroid(faces[i].poly))) !== parent || topAt(mid)?.layer !== parent.layer) continue;
+    const jAbove = items[st.faces.length - before.length + j].lb > items[st.faces.length - before.length + i].lb;
+    const valley = (up(M[i]!) === up(faces[i].m)) === jAbove;
+    phase.lines.push({ kind: valley ? 'valley' : 'mountain', p: apply(faces[i].m, e[0]), q: apply(faces[i].m, e[1]) });
+  }
+  if (c.arrow) {
+    const [from, to] = fixList(c.arrow);
+    phase.arrows.push({ kind: 'valley', from: resolvePoint(st, from), to: resolvePoint(st, to) });
+  }
+  st.faces = items.map((x) => ({ ...x.f, m: x.b, layer: x.lb }));
+  return phase;
+}
+
 function opPlace(st: State, pl: NonNullable<StepSpec['place']>): Phase {
   const sh = st.sheets.get(pl.sheet);
   if (!sh) throw new Error(`Unknown sheet "${pl.sheet}"`);
@@ -924,7 +1134,12 @@ function opShape(st: State, spec: NonNullable<StepSpec['shape']>): Phase {
   ph.shape = list.map((c) => {
     if (typeof c.angle !== 'number' || c.angle < 0 || c.angle > 180) throw new Error('shape: angle must be 0 to 180 degrees');
     if (c.creases) return { name: c.creases, angle: c.angle, ...(c.kind ? { kind: c.kind } : {}) };
-    if (!c.line) throw new Error('shape: give "creases: <name>" or "line: [P, Q]"');
+    if (c.paper) {
+      const [p, q] = fixList(c.paper).map((e) => resolvePaper(st, st.active, e));
+      if (dist(p, q) < 1e-6) throw new Error('shape: the line needs two different points');
+      return { p, q, paper: st.active, angle: c.angle, ...(c.kind ? { kind: c.kind } : {}) };
+    }
+    if (!c.line) throw new Error('shape: give "creases: <name>", "line: [P, Q]" or "paper: [P, Q]"');
     const [p, q] = fixList(c.line).map((e) => resolvePoint(st, e));
     if (dist(p, q) < 1e-6) throw new Error('shape: the line needs two different points');
     return { p, q, angle: c.angle, ...(c.kind ? { kind: c.kind } : {}) };
@@ -969,6 +1184,7 @@ function opsOf(step: StepSpec): Op[] {
   // Marks and pins are taken first, before the step's folds move anything.
   const ops: Op[] = step.mark ? [{ mark: step.mark }] : [];
   if (step.pin) ops.unshift({ pin: step.pin } as unknown as Op);
+  if (step.points) ops.unshift({ points: step.points } as unknown as Op);
   ops.push(...(step.ops ?? []));
   if (step.fold || step.crease || step.unfold || step.reverse) {
     const { fold, crease, unfold, reverse, line, move, layers, sheet, name } = step;
@@ -978,6 +1194,7 @@ function opsOf(step: StepSpec): Op[] {
   if (step.rotate !== undefined) ops.push({ rotate: step.rotate });
   if (step.grid) ops.push({ grid: step.grid, sheet: step.sheet });
   if (step.collapse) ops.push({ collapse: step.collapse, sheet: step.sheet });
+  if (step.refold) ops.push({ refold: step.refold, sheet: step.sheet, ...(step.name ? { name: step.name } : {}) });
   if (step.place) ops.push({ place: step.place });
   if (step.pose) ops.push({ pose: step.pose });
   if (step.pattern) ops.push({ pattern: step.pattern, sheet: step.sheet });
@@ -987,12 +1204,13 @@ function opsOf(step: StepSpec): Op[] {
 }
 
 function defaultText(ops: Op[]): string {
-  const op = ops.find((o) => !('mark' in o));
+  const op = ops.find((o) => !('mark' in o) && !('pin' in o) && !('points' in o));
   if (!op) return '';
   if ('turn-over' in op) return 'Turn the model over.';
   if ('rotate' in op) return `Rotate the model ${Math.abs(op.rotate)}°.`;
   if ('grid' in op) return `Crease a ${op.grid.n} × ${op.grid.m ?? op.grid.n} grid.`;
   if ('collapse' in op) return 'Collapse along the creases.';
+  if ('refold' in op) return 'Fold along the creases and flatten.';
   if ('place' in op) return 'Put the pieces together.';
   if ('pose' in op) return 'Set the piece in place.';
   if ('shape' in op) return 'Open the model into shape.';
@@ -1105,11 +1323,17 @@ export function compileModel(script: ModelScript, bases: BaseLibrary = {}): Comp
       };
       for (const op of ops) {
         if ('mark' in op) { opMark(st, op.mark); continue; }
+        if ('points' in op) {
+          const sh = st.sheets.get(st.active)!;
+          for (const [k, e] of Object.entries((op as { points: Record<string, PointExpr> }).points)) sh.names.set(k, resolvePaper(st, st.active, e));
+          continue;
+        }
         if ('pin' in op) { for (const [k, e] of Object.entries((op as { pin: Record<string, PointExpr> }).pin)) st.pins.set(k, resolvePoint(st, e)); continue; }
         if ('turn-over' in op) { push(opTurnOver(st, op['turn-over'] === 'horizontal' ? 'horizontal' : 'vertical')); continue; }
         if ('rotate' in op) { push(opRotate(st, op.rotate)); continue; }
         if ('grid' in op) { push(opGrid(st, op.grid, op.sheet ?? st.active)); continue; }
         if ('collapse' in op) { push(opCollapse(st, op.collapse, op.sheet ?? st.active)); continue; }
+        if ('refold' in op) { const ph = opRefold(st, op.refold, op.sheet ?? st.active); if (op.name) ph.name = op.name; push(ph); continue; }
         if ('place' in op) { push(opPlace(st, op.place)); continue; }
         if ('pose' in op) { push(opPose(st, op.pose)); continue; }
         if ('shape' in op) { push(opShape(st, op.shape)); continue; }

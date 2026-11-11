@@ -20,12 +20,17 @@ the next one instead of showing the crossing. All of this is solved when the sit
       - { creases: walls, angle: 90 }                  # every crease made by folds named "walls"
       - { line: [P, Q], angle: 90 }                     # creases on this segment (world, now)
       - { line: [P, Q], kind: valley, angle: 120 }      # an open (flat) crease needs a direction
+      - { paper: [O, A], angle: 90 }                    # creases on this segment of the unfolded sheet
 ```
 
 - `angle` is how far the crease is folded: 0 is flat open, 180 is folded flat.
 - `line:` takes every crease lying on that segment as the paper lies now, including creases of
   layers folded onto it. To shape one crease of a folded-up sheet, name it when it is made and use
   `creases:`. Add `kind: valley` or `kind: mountain` to bend a named crease the other way.
+- `paper:` takes the creases on a segment of the unfolded sheet instead (points are read on the
+  paper, as in [`refold`](refold.md)). Use it on models with many layers, where one spot of the
+  folded model holds many creases.
+- An open crease without `kind` folds the way it was last folded.
 - Name the folds you want to shape later with `name:` on the fold (`fold: valley, name: walls, ...`).
   Creases made with `crease:` (fold and unfold) can be named too; they keep their direction.
 - A list without `fixed` is fine too: `shape: [ { creases: walls, angle: 90 } ]`.
