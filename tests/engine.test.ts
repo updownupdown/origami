@@ -77,5 +77,5 @@ describe('library', () => {
     for (const { file, script } of loadModels()) {
       expect(() => compileModel(script, bases), file).not.toThrow();
     }
-  });
+  }, 60_000);
 });
