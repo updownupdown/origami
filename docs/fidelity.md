@@ -83,6 +83,26 @@ faces that meet in 3D keep the side they approached from. Levels are worked out 
 the same thickness, and a thin strip along each crease joins faces at different levels so the paper
 never tears open. `tests/continuity.test.ts` checks every model for jumps between steps.
 
+## 6. How a step is drawn
+
+Status: built (src/scripts/viewer.ts). Four rules, each there to keep the picture honest:
+
+- **Each face in its own solved place.** While the paper is rigid, every crease-pattern face is
+  placed whole from its own transform (`Kinematics.rigidAt`), so paper that a step does not move is
+  drawn exactly still. Bent paper follows its solved vertices (`posAt`).
+- **Lines belong to the paper.** The paper's own shader draws its edges and creases, a fixed number
+  of screen pixels wide: a line is hidden exactly when its paper is, and stacked layers of one colour
+  stay apart to the eye. A crease lying flat is a faint mark; folded over, it is an edge of the model
+  and is drawn like one. Lines are not separate objects, so they cannot show through a layer above
+  or drift off the paper.
+- **Diagram marks sit on the paper.** The fold line and arrow of a step are given on the flat
+  diagram; each point is carried onto the 3D paper under it (the top layer there) as the paper lies
+  at the start of the step, tilt and thickness included.
+- **The mat is a drawing, not a table.** The paper that a step does not fold never moves. A flap
+  folded behind swings down through the grid and comes to rest under the model. The model rises only
+  when it must end the step resting higher, or when the whole of it is picked up (turned over, stood
+  up), and then by exactly what it needs at each moment, so its height is a smooth function of time.
+
 ## Format guarantees
 
 - Scripts stay **declarative**: folds are described by points and lines, not by

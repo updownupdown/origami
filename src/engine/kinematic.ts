@@ -1005,6 +1005,17 @@ export class Kinematics {
     this.softStart[s + 1] = Ps[Ps.length - 1];
   }
 
+  /**
+   * Face transforms at time t through step s when every face of the paper is rigid there (so each
+   * can be placed exactly, on its own), or null where the paper is bent: then only `posAt` knows it.
+   */
+  rigidAt(s: number, t: number): Float64Array[] | null {
+    const n = this.model.steps.length;
+    if (s >= n) { const X = this.stateAt(n); return this.softStart[n] ? null : X; }
+    this.ensureStep(s);
+    return this.soft[s] ? null : this.frameAt(s, t);
+  }
+
   /** Positions (cm, 3 per mesh vertex) of every sheet at time t through step s. */
   posAt(s: number, t: number): Float64Array[] {
     const n = this.model.steps.length;

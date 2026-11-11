@@ -32,6 +32,25 @@ describe('soft steps', () => {
     expect(d).toBeLessThan(1e-9);
   });
 
+  it('crane: faces are placed one by one while rigid, by vertex once the paper bends', () => {
+    const { m, kin } = build();
+    const s = m.steps.findIndex((st) => st.phases.some((p) => p.soft));
+    // Before the bend every face has its own exact place, and a face that the step does not move
+    // has the same place all the way through it (the viewer rests the model on those).
+    const X0 = kin.rigidAt(s - 1, 0)!, Xm = kin.rigidAt(s - 1, 0.5)!, X1 = kin.rigidAt(s - 1, 1)!;
+    expect(X0).not.toBeNull();
+    let still = 0;
+    for (let f = 0; f < X0[0].length / 12; f++) {
+      let d = 0;
+      for (let k = 12 * f; k < 12 * f + 12; k++) d = Math.max(d, Math.abs(Xm[0][k] - X0[0][k]), Math.abs(X1[0][k] - X0[0][k]));
+      if (d < 1e-6) still++;
+    }
+    expect(still).toBeGreaterThan(0);
+    // From the bend on (through the finished model) only the solved vertices describe the paper.
+    expect(kin.rigidAt(s, 0.5)).toBeNull();
+    expect(kin.rigidAt(m.steps.length, 1)).toBeNull();
+  });
+
   it('crane: the bent shape replays from the build-time record', () => {
     const a = build();
     const rec = JSON.parse(JSON.stringify(a.kin.record()));
