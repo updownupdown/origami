@@ -9,6 +9,7 @@ import { loadBases, loadModels } from '../scripts/lib.ts';
 // them: four squashes and four petal folds make the frog base, and four reverse folds the petals.
 const bases = loadBases();
 const lily = loadModels().find((m) => m.script.id === 'lily')!.script;
+const frog = loadModels().find((m) => m.script.id === 'frog')!.script;
 const build = (script: any) => {
   const m = compileModel(script, bases);
   const sim = new FoldSim(m);
@@ -105,4 +106,28 @@ describe('refold: squash, petal and reverse folds on a folded sheet', () => {
       expect(new Set(a)).toEqual(new Set([90]));
     }
   }, 120_000);
+
+  it('frog: the same base, and four legs that end as two mirrored pairs', () => {
+    const fm = compileModel(frog, bases);
+    // The frog and the lily share the frog base step for step.
+    const lm = compileModel(lily, bases);
+    for (let s = 0; s < 14; s++) expect(fm.steps[s].text).toBe(lm.steps[s].text);
+    const faces = fm.steps.at(-1)!.phases.at(-1)!.faces;
+    const world = (x: number, y: number): [number, number] => {
+      for (const f of faces) {
+        for (let k = 0; k < f.p.length; k += 2) {
+          if (Math.hypot(f.p[k] - x, f.p[k + 1] - y) < 1e-6) return [f.b[0] * x + f.b[2] * y + f.b[4], f.b[1] * x + f.b[3] * y + f.b[5]];
+        }
+      }
+      throw new Error(`no corner at ${x}, ${y}`);
+    };
+    const O = world(7.5, 7.5), tips = [world(0, 0), world(15, 0), world(15, 15), world(0, 15)].map(([x, y]) => [x - O[0], y - O[1]]);
+    // Each foot has a partner mirrored in the frog's centre line, and no foot is on that line.
+    for (const t of tips) {
+      expect(Math.abs(t[0])).toBeGreaterThan(1);
+      expect(tips.some((u) => Math.abs(u[0] + t[0]) < 1e-3 && Math.abs(u[1] - t[1]) < 1e-3)).toBe(true);
+    }
+    // Front feet and back feet are different pairs.
+    expect(new Set(tips.map((t) => t[1].toFixed(2))).size).toBe(2);
+  });
 });

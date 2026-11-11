@@ -1,0 +1,162 @@
+id: frog
+title: Frog
+family: frog
+aliases: [traditional frog, inflatable frog, blow-up frog]
+categories: [animals]
+tags: [frog, frog base, squash fold, petal fold, reverse fold, traditional]
+difficulty: 5
+description: The traditional frog from the frog base. The four long points are folded thin and reverse folded into legs.
+credits:
+  designer: Traditional
+  script: Origami project
+materials:
+  - id: paper
+    size: 15
+    diamond: true
+    colors: { front: "#5c9a4a", back: "#fbf7ee" }
+steps:
+  - use: base/frog-base
+  - text: "Fold one half of the front face over, like turning a page, to show a smooth face."
+    refold:
+      valley: [[O, mid(C D)]]
+      flatten: [[O, D]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Fold the two upper edges of this smooth face in to the centre line, to make the long point thinner. This point will be a leg."
+    points:
+      SdaA: bisect(A O QdaA)
+      SabA: bisect(A O QabA)
+      SabB: bisect(B O QabB)
+      SbcB: bisect(B O QbcB)
+      SbcC: bisect(C O QbcC)
+      ScdC: bisect(C O QcdC)
+      ScdD: bisect(D O QcdD)
+      SdaD: bisect(D O QdaD)
+    ops:
+      - { fold: valley, line: [D, ScdD], move: lerp(mid(D ScdD) QcdD 0.5), layers: top }
+      - { fold: valley, line: [D, SdaD], move: lerp(mid(D SdaD) QdaD 0.5), layers: top }
+    camera: { azimuth: 0, elevation: 62 }
+  - text: Turn the model over.
+    turn-over: vertical
+  - text: "Turn a page on this side too, to show a smooth face."
+    refold:
+      valley: [[O, mid(A B)]]
+      flatten: [[O, B]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Fold its upper edges in to the centre line."
+    ops:
+      - { fold: valley, line: [B, SabB], move: lerp(mid(B SabB) QabB 0.5), layers: top }
+      - { fold: valley, line: [B, SbcB], move: lerp(mid(B SbcB) QbcB 0.5), layers: top }
+    camera: { azimuth: 0, elevation: 62 }
+  - text: "Turn one page to show the next smooth face."
+    refold:
+      valley: [[O, B]]
+      flatten: [[O, C]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Fold the upper edges in to the centre line."
+    ops:
+      - { fold: valley, line: [C, SbcC], move: lerp(mid(C SbcC) QbcC 0.5), layers: top }
+      - { fold: valley, line: [C, ScdC], move: lerp(mid(C ScdC) QcdC 0.5), layers: top }
+    camera: { azimuth: 0, elevation: 62 }
+  - text: Turn the model over.
+    turn-over: vertical
+  - text: "Turn one page to show the last smooth face."
+    refold:
+      valley: [[O, D]]
+      flatten: [[O, A]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: "Fold the upper edges in to the centre line. All four points are thin now."
+    ops:
+      - { fold: valley, line: [A, SdaA], move: lerp(mid(A SdaA) QdaA 0.5), layers: top }
+      - { fold: valley, line: [A, SabA], move: lerp(mid(A SabA) QabA 0.5), layers: top }
+    camera: { azimuth: 0, elevation: 62 }
+  - text: "Fold one half of the front face over once more, so a face with a small triangle is in front."
+    refold:
+      valley: [[O, A]]
+      flatten: [[O, mid(A B)]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: Turn the model over.
+    turn-over: vertical
+  - text: "Do the same on this side. The four thin points lie two on the left and two on the right."
+    refold:
+      valley: [[O, C]]
+      flatten: [[O, mid(C D)]]
+    camera: { azimuth: -18, elevation: 52 }
+  - text: Turn the model round so the four thin points are at the bottom. The closed point at the top is the head.
+    rotate: 180
+  - text: "Front legs. Inside reverse fold the top point on the left: open it a little, swing it up and out to the side between its layers, and press it flat."
+    pin: { Jfl1: lerp(O C 0.63), Yfl1: shift(lerp(Jfl1 C 0.10364) O C -0.91355), Tfl1: reflect(C Jfl1 Yfl1) }
+    reverse: inside
+    line: [Jfl1, Yfl1]
+    move: lerp(Jfl1 C 0.9)
+    layers: top
+    camera: { azimuth: 0, elevation: 62 }
+  - text: "Reverse fold the top point on the right to match."
+    pin: { Jfr1: lerp(O D 0.63), Yfr1: shift(lerp(Jfr1 D 0.10364) O D 0.91355), Tfr1: reflect(D Jfr1 Yfr1) }
+    reverse: inside
+    line: [Jfr1, Yfr1]
+    move: lerp(Jfr1 D 0.9)
+    layers: top
+    camera: { azimuth: 0, elevation: 62 }
+  - text: "Reverse fold the left front leg down at its middle to make the elbow."
+    pin: { Jfl2: lerp(Jfl1 Tfl1 0.5), Yfl2: shift(lerp(Jfl2 Tfl1 0.31024) Jfl1 Tfl1 0.79335), Tfl2: reflect(Tfl1 Jfl2 Yfl2) }
+    reverse: inside
+    line: [Jfl2, Yfl2]
+    move: lerp(Jfl2 Tfl1 0.9)
+    layers: top
+    camera: { azimuth: 0, elevation: 62 }
+  - text: "Do the same with the right front leg."
+    pin: { Jfr2: lerp(Jfr1 Tfr1 0.5), Yfr2: shift(lerp(Jfr2 Tfr1 0.31024) Jfr1 Tfr1 -0.79335), Tfr2: reflect(Tfr1 Jfr2 Yfr2) }
+    reverse: inside
+    line: [Jfr2, Yfr2]
+    move: lerp(Jfr2 Tfr1 0.9)
+    layers: top
+    camera: { azimuth: 0, elevation: 62 }
+  - text: Turn the model over.
+    turn-over: vertical
+  - text: "Back legs. Reverse fold the point on the left straight out to the side."
+    pin: { Jbl1: lerp(O A 0.63), Ybl1: shift(lerp(Jbl1 A 0.17215) O A -0.73728), Tbl1: reflect(A Jbl1 Ybl1) }
+    reverse: inside
+    line: [Jbl1, Ybl1]
+    move: lerp(Jbl1 A 0.9)
+    layers: top
+    camera: { azimuth: 0, elevation: 62 }
+  - text: "Reverse fold the last point out to the right."
+    pin: { Jbr1: lerp(O B 0.63), Ybr1: shift(lerp(Jbr1 B 0.17215) O B 0.73728), Tbr1: reflect(B Jbr1 Ybr1) }
+    reverse: inside
+    line: [Jbr1, Ybr1]
+    move: lerp(Jbr1 B 0.9)
+    layers: top
+    camera: { azimuth: 0, elevation: 62 }
+  - text: "Reverse fold the left back leg down at the knee."
+    pin: { Jbl2: lerp(Jbl1 Tbl1 0.42), Ybl2: shift(lerp(Jbl2 Tbl1 0.30519) Jbl1 Tbl1 0.71934), Tbl2: reflect(Tbl1 Jbl2 Ybl2) }
+    reverse: inside
+    line: [Jbl2, Ybl2]
+    move: lerp(Jbl2 Tbl1 0.9)
+    layers: top
+    camera: { azimuth: 0, elevation: 62 }
+  - text: "Fold the right knee the same way."
+    pin: { Jbr2: lerp(Jbr1 Tbr1 0.42), Ybr2: shift(lerp(Jbr2 Tbr1 0.30519) Jbr1 Tbr1 -0.71934), Tbr2: reflect(Tbr1 Jbr2 Ybr2) }
+    reverse: inside
+    line: [Jbr2, Ybr2]
+    move: lerp(Jbr2 Tbr1 0.9)
+    layers: top
+    camera: { azimuth: 0, elevation: 62 }
+  - text: "Reverse fold the tip of the left back leg outward to make the foot."
+    pin: { Jbl3: lerp(Jbl2 Tbl2 0.55), Ybl3: shift(lerp(Jbl3 Tbl2 0.74789) Jbl2 Tbl2 -0.64279), Tbl3: reflect(Tbl2 Jbl3 Ybl3) }
+    reverse: inside
+    line: [Jbl3, Ybl3]
+    move: lerp(Jbl3 Tbl2 0.9)
+    layers: top
+    camera: { azimuth: 0, elevation: 62 }
+  - text: "Make the right foot the same way."
+    pin: { Jbr3: lerp(Jbr2 Tbr2 0.55), Ybr3: shift(lerp(Jbr3 Tbr2 0.74789) Jbr2 Tbr2 0.64279), Tbr3: reflect(Tbr2 Jbr3 Ybr3) }
+    reverse: inside
+    line: [Jbr3, Ybr3]
+    move: lerp(Jbr3 Tbr2 0.9)
+    layers: top
+    camera: { azimuth: 0, elevation: 62 }
+  - text: Turn the frog over.
+    turn-over: vertical
+finish:
+  camera: { azimuth: 0, elevation: 55, zoom: 1.1 }
+  text: Your frog is done. To round out its body, blow gently into the small hole at the tail end.
