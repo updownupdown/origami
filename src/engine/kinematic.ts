@@ -856,7 +856,7 @@ export class Kinematics {
       if (flat) {
         // Paper not shaped yet: start from the exact flat-fold pose of this phase.
         X = this.flatPose(ph, A, 'a');
-        if (ph.motion !== 'chain' && ph.motion !== 'shape') {
+        if (ph.motion !== 'chain' && ph.motion !== 'refold' && ph.motion !== 'shape') {
           // A plain fold: flaps turn rigidly about their hinge, exactly as the flat-fold engine says.
           const K = ph.motion === 'none' || ph.motion === 'stand' ? 1 : this.samples;
           for (let k = 1; k <= K; k++) {
@@ -869,8 +869,8 @@ export class Kinematics {
       }
       if (ph.motion === 'shape') flat = false;
       const X0 = X;
-      const run = (order: number[][] | null) => {
-        const sheets = this.graphs.map((G, si) => this.setupPhase(G, si, ph, A, now, X0[si], order?.[si]));
+      const run = (order: number[][] | null, firm = false) => {
+        const sheets = this.graphs.map((G, si) => this.setupPhase(G, si, ph, A, now, X0[si], order?.[si], firm));
         const changes = sheets.some((sh) => sh.changes);
         const moves = sheets.some((sh) => sh.moves);
         // Big tessellations take fewer samples (each solve is costlier); frames are blended in between.
@@ -907,9 +907,16 @@ export class Kinematics {
           }
         }
       }
+      if (best.bad && ph.motion === 'shape') {
+        // Shaping lets the creases it does not name give a little. If that lets layers slip through
+        // each other, try again with the flat-folded layers held together; keep it if the shape is
+        // still reached.
+        const alt = run(null, true);
+        if (alt.bad < best.bad && alt.miss <= best.miss + MISS_LIMIT) best = alt;
+      }
       if (best.bad) { crossed += best.bad; badTimes.push(...best.badT); }
       worst = Math.max(worst, best.gap);
-      if (flat && ph.motion === 'chain' && best.miss > MISS_LIMIT && best.out.length) {
+      if (flat && (ph.motion === 'chain' || ph.motion === 'refold') && best.miss > MISS_LIMIT && best.out.length) {
         // A collapse the rigid solver can't finish (a bird base needs its paper to flex). Keep the
         // solved motion for the start, then dissolve into the exact folded pose.
         const end = this.flatPose(ph, A, 'b');
@@ -1073,7 +1080,7 @@ export class Kinematics {
     return S[j].map((a, si) => { const b = S[k][si], o = new Float64Array(a.length); for (let i = 0; i < o.length; i++) o[i] = a[i] + (b[i] - a[i]) * w; return o; });
   }
 
-  private setupPhase(G: SheetGraph, si: number, ph: Phase, A: PhaseAnglesLike, now: number, X0: Float64Array, order?: number[]) {
+  private setupPhase(G: SheetGraph, si: number, ph: Phase, A: PhaseAnglesLike, now: number, X0: Float64Array, order?: number[], firm = false) {
     const mesh = G.mesh, ne = G.edges.length, nf = mesh.faces.length;
     const match = A.match[si];
     const born = this.born[si];
@@ -1101,7 +1108,11 @@ export class Kinematics {
       if (!made) { rigid[k] = 1; return; }
       const moving = ra[k] !== rb[k] || (A.kind === 'crease' && rm[k] !== 0);
       if (moving) changes = true;
-      w[k] = moving ? 1 : 0.35;
+      // In a refold (a squash, a petal fold) the creases that are not named keep the paper folded
+      // flat, as fingers do: they hold firm, and only the named creases give. With `firm`, layers
+      // folded flat on each other are held together the same way while a model is shaped.
+      const hold = ph.motion === 'refold' || (firm && Math.abs(Math.abs(ra[k]) - Math.PI) < 1e-6);
+      w[k] = moving ? 1 : hold ? 20 : 0.35;
     });
     const T = buildTree(G, root, rigid);
     // Flaps that move independently, so they can be folded one after another if they would collide:
@@ -1252,7 +1263,7 @@ export class Kinematics {
 
   /** True for steps that need the solver (not plain folds of flat paper), which are recorded in full. */
   private solved(s: number): boolean {
-    return this.shapedBefore(s) || this.model.steps[s].phases.some((p) => p.motion === 'chain' || p.motion === 'shape' || p.motion === 'pose');
+    return this.shapedBefore(s) || this.model.steps[s].phases.some((p) => p.motion === 'chain' || p.motion === 'refold' || p.motion === 'shape' || p.motion === 'pose');
   }
 
   private recLevels(s: number): Float32Array[][] {
@@ -1324,7 +1335,7 @@ export class Kinematics {
   private stackStep(s: number, frames: KinFrame[]) {
     const phases = this.model.steps[s].phases, np = Math.max(1, phases.length);
     const sides = this.graphs.map((_, si) => new Map(this.sides[s]?.[si] ?? []));
-    const watch = this.shapedBefore(s) || phases.some((p) => p.motion === 'shape' || p.motion === 'chain');
+    const watch = this.shapedBefore(s) || phases.some((p) => p.motion === 'shape' || p.motion === 'chain' || p.motion === 'refold');
     const out: Float32Array[][] = [];
     let j = 0;
     for (let r = 0; r <= np; r++) {

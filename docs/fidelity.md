@@ -8,17 +8,12 @@ paper thickness, or curved folds.
 
 Nothing in the format blocks those. Here is what each would need, roughly in order of value.
 
-## 1. Squash, petal and rabbit-ear folds as single ops
+## 1. Squash, petal and rabbit-ear folds as single ops (done)
 
-These are compound moves that diagrams treat as one step. Under the hood each is two or
-more flat folds that happen together, which the `collapse` op can already express (a set
-of creases folded at once, checked with Maekawa's theorem). The work is sugar:
-
-- `squash: { flap: P, line: [...] }` would work out the creases and call `collapse`.
-- `petal`, `rabbit-ear` and `sink` would follow the same pattern.
-
-A **closed sink** is the hard one, because layers swap their order. It needs a better
-layer solver than today's (see 3).
+`refold` changes several creases of a folded model at once and folds it flat again: squash folds,
+petal folds, page turns and reverse folds through many layers. Its points are read on the unfolded
+sheet, so the creases are easy to name. See [refold.md](refold.md); the traditional lily
+(`models/plants/lily.yaml`) is built with it. A **closed sink** is still untested.
 
 ## 2. 3D shaping poses (non-flat end states)
 

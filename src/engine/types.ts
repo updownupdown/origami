@@ -57,6 +57,31 @@ export interface CollapseOp {
   };
   sheet?: string;
 }
+export interface RefoldOp {
+  /**
+   * Change several creases of an already folded sheet at once and fold it flat again: a squash fold,
+   * a petal fold, a sink. Every point here is read on the unfolded sheet (the crease pattern), so a
+   * named point means that point of the paper wherever it lies now.
+   */
+  refold: {
+    /** New creases, valley or mountain as seen on the paper as it lies now, from above. */
+    valley?: [PointExpr, PointExpr][];
+    mountain?: [PointExpr, PointExpr][];
+    /** New creases whose direction follows from the rest (the layer solver picks it). */
+    fold?: [PointExpr, PointExpr][];
+    /** Folded creases that open flat. */
+    flatten?: [PointExpr, PointExpr][];
+    /** Folded creases that turn the other way (a valley becomes a mountain). */
+    flip?: [PointExpr, PointExpr][];
+    /** A point of the paper on the face that stays still (default: the lowest face). */
+    fixed?: PointExpr;
+    /** An arrow for the diagram, from and to, as ordinary points of the model as it lies now. */
+    arrow?: [PointExpr, PointExpr];
+  };
+  sheet?: string;
+  /** Name for a later `shape: [{ creases: <name>, angle }]`. */
+  name?: string;
+}
 export interface PlaceOp {
   /** Move a whole sheet: translate / rotate / flip, and stack it above or below another sheet. */
   place: {
@@ -103,7 +128,9 @@ export interface ShapeCrease {
   creases?: string;
   /** Or: creases lying on this segment (world, current state), with their fold direction... */
   line?: [PointExpr, PointExpr];
-  /** ...needed when the crease is open (flat) at this point. Seen from above. */
+  /** Or: creases lying on this segment of the unfolded sheet (points read on the paper, as in `refold`). */
+  paper?: [PointExpr, PointExpr];
+  /** Direction, needed when the crease is open (flat) at this point. Seen from above. */
   kind?: 'valley' | 'mountain';
   /** How far the crease is folded, in degrees: 0 is flat open, 180 is folded flat. */
   angle: number;
@@ -140,7 +167,7 @@ export interface StandOp {
   stand: { on: [PointExpr, PointExpr]; angle?: number } | [PointExpr, PointExpr];
 }
 
-export type Op = FoldOp | TurnOverOp | RotateOp | GridOp | CollapseOp | PlaceOp | PoseOp | MarkOp | ShapeOp | StandOp | PatternOp;
+export type Op = FoldOp | TurnOverOp | RotateOp | GridOp | CollapseOp | RefoldOp | PlaceOp | PoseOp | MarkOp | ShapeOp | StandOp | PatternOp;
 
 export type CameraPreset = 'top' | 'three-quarter' | 'front' | 'side' | 'bottom' | 'hero';
 export interface CameraSpec {
@@ -162,12 +189,15 @@ export interface StepSpec extends Partial<FoldOp> {
   rotate?: number;
   grid?: GridOp['grid'];
   collapse?: CollapseOp['collapse'];
+  refold?: RefoldOp['refold'];
   place?: PlaceOp['place'];
   pose?: PoseOp['pose'];
   mark?: MarkOp['mark'];
   shape?: ShapeOp['shape'];
   pattern?: PatternOp['pattern'];
   stand?: StandOp['stand'];
+  /** Name points of the paper, each read on the unfolded sheet (see `refold`). */
+  points?: Record<string, PointExpr>;
   /** Name fixed points in space (they stay put when the paper moves). */
   pin?: Record<string, PointExpr>;
   /** Tip shown under the step text. */
@@ -247,15 +277,17 @@ export interface SheetInfo {
   note?: string;
 }
 
-export type MotionKind = 'hinge' | 'crease' | 'spin' | 'chain' | 'move' | 'none' | 'shape' | 'stand' | 'pose';
+export type MotionKind = 'hinge' | 'crease' | 'spin' | 'chain' | 'refold' | 'move' | 'none' | 'shape' | 'stand' | 'pose';
 
 /** A 3D fold angle for a set of creases, resolved by the simulation. */
 export interface PhaseShape {
   /** Creases made by phases with this name... */
   name?: string;
-  /** ...or creases on this world segment (in the phase's flat state). */
+  /** ...or creases on this world segment (in the phase's flat state)... */
   p?: V2;
   q?: V2;
+  /** ...or, when set, on this segment of that sheet's unfolded paper. */
+  paper?: string;
   /** Direction for open creases: valley or mountain seen from above. */
   kind?: 'valley' | 'mountain';
   /** Degrees: 0 flat open, 180 folded flat. */

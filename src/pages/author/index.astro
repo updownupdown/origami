@@ -31,7 +31,7 @@ const models = (index as any[]).filter((e) => e.kind === 'foldable').sort((a, b)
           <li><b>Corners</b> A B C D clockwise from top-left (top corner with <code>diamond: true</code>), centre <code>O</code>.</li>
           <li><b>Points</b> <code>mid(A B)</code>, <code>lerp(A B 0.25)</code>, <code>intersect(P Q R S)</code>, <code>reflect(X P Q)</code>, <code>shift(X P Q d)</code>, <code>at(x y)</code>, <code>paper(x y)</code>.</li>
           <li><b>Lines</b> <code>[P, Q]</code>; <code>{'{'} bring: P, to: Q {'}'}</code>; <code>{'{'} bring: [P, Q], onto: [R, S] {'}'}</code>; <code>{'{'} through: P, perpendicular: [Q, R] {'}'}</code>.</li>
-          <li><b>Steps</b> <code>fold</code>/<code>crease</code>: valley or mountain, <code>reverse</code>: inside or outside, <code>unfold</code>, <code>turn-over</code>, <code>rotate</code>, <code>grid</code>, <code>collapse</code>, <code>place</code>, <code>use: base/kite</code>.</li>
+          <li><b>Steps</b> <code>fold</code>/<code>crease</code>: valley or mountain, <code>reverse</code>: inside or outside, <code>unfold</code>, <code>turn-over</code>, <code>rotate</code>, <code>grid</code>, <code>collapse</code>, <code>refold</code> (squash, petal and reverse folds), <code>place</code>, <code>use: base/kite</code>.</li>
           <li><b>Names</b> <code>mark</code> names a point on the paper (it moves with it); <code>pin</code> names a fixed spot.</li>
           <li><b>Which part moves</b> <code>move: P</code> picks the side; <code>layers: top</code> or <code>bottom</code> folds one layer.</li>
         </ul>
