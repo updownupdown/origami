@@ -53,6 +53,11 @@ With `K1`, `K2` the corners either side of a flap, `M` the middle of the edge be
 | Turn a page | `valley: [[O, X]]`, `flatten: [[O, Y]]` |
 | Inside reverse fold | `flip: [[X, K]]`, `fold: [[X, H1], [H1, Y1], [X, H2], [H2, Y2]]` |
 
+`use: base/frog-base` gives the frog base (preliminary base, four squashes, four petal folds) with
+the points `P`, `Q` and `R` already named; the lily and the frog both start from it. On a narrow
+point of many layers, such as a frog's leg, the ordinary `reverse: inside` fold is simpler than
+listing every layer's crease here.
+
 A reverse fold through a point with two layers each side needs the crease on every layer: `H` is
 where it meets the folded edge, and `Y` is `X` mirrored in that edge (`reflect(X K Q)`).
 
