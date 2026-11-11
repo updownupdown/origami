@@ -8,6 +8,9 @@
 // replays them; the editor solves live.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import type { CameraSpec, CompiledModel, Phase, PhaseFace } from '../engine/types';
 import { stateBefore } from '../engine/svg';
 import { FoldSim, type SimMesh } from '../engine/sim';
@@ -49,16 +52,6 @@ class FlatPhase {
     return out.sub(new THREE.Vector3(tl.p[0], tl.p[1], 0))
       .applyAxisAngle(new THREE.Vector3(tl.q[0] - tl.p[0], tl.q[1] - tl.p[1], 0).normalize(), ang)
       .add(new THREE.Vector3(tl.p[0], tl.p[1], 0));
-  }
-
-  /** Tilt at the end of the phase as a three.js matrix (for the diagram overlay). */
-  tiltMatrix(): THREE.Matrix4 | null {
-    const tl = this.phase.tilt;
-    if (!tl || Math.abs(tl.a1) < 1e-9) return null;
-    const P = toThree(new THREE.Vector3(tl.p[0], tl.p[1], 0)), Q = toThree(new THREE.Vector3(tl.q[0], tl.q[1], 0));
-    return new THREE.Matrix4().makeTranslation(P.x, P.y, P.z)
-      .multiply(new THREE.Matrix4().makeRotationAxis(Q.clone().sub(P).normalize(), (tl.a1 * Math.PI) / 180))
-      .multiply(new THREE.Matrix4().makeTranslation(-P.x, -P.y, -P.z));
   }
 
   private poseFlat(i: number, t: number, p: V2, out: THREE.Vector3): THREE.Vector3 {
@@ -144,33 +137,108 @@ class FlatPhase {
 /** Paper world (x right, y up the diagram, z towards the viewer) -> three.js (y up). */
 const toThree = (v: THREE.Vector3, out = new THREE.Vector3()) => out.set(v.x, v.z, -v.y);
 
+/** Line segments with a width in screen pixels (plain GL lines are one pixel wide: too faint to read). */
+class FatLines {
+  obj: LineSegments2;
+  mat: LineMaterial;
+  count = 0;
+  private cap = 0;
+  constructor(color: number, width: number, public base: number, depthTest = true) {
+    this.mat = new LineMaterial({ color, linewidth: width, transparent: true, opacity: base, depthTest, depthWrite: false });
+    this.obj = new LineSegments2(new LineSegmentsGeometry(), this.mat);
+    this.obj.frustumCulled = false;
+    this.obj.visible = false;
+  }
+  /** Sets the segments: six numbers each (start x y z, end x y z). */
+  set(data: ArrayLike<number>) {
+    const n = Math.floor(data.length / 6), g = this.obj.geometry;
+    if (n > this.cap) {
+      this.cap = Math.max(n, this.cap * 2, 16);
+      const arr = new Float32Array(this.cap * 6);
+      arr.set(data);
+      g.setPositions(arr);
+    } else if (n) {
+      const buf = (g.attributes.instanceStart as THREE.InterleavedBufferAttribute).data;
+      (buf.array as Float32Array).set(data);
+      buf.needsUpdate = true;
+    }
+    g.instanceCount = n;
+    this.count = n;
+    this.obj.visible = n > 0;
+  }
+  dispose() { this.obj.geometry.dispose(); this.mat.dispose(); }
+}
+
+/**
+ * Edges drawn by the paper's own shader: a dark line just inside every paper edge and along every
+ * crease, a fixed number of screen pixels wide whatever the angle. Being part of the surface, a line
+ * is hidden exactly when its paper is, and layers of the same colour stay apart to the eye.
+ */
+const EDGE_PARS = `
+uniform vec3 uInk;
+uniform float uPx;
+varying vec3 vBary; varying vec3 vEdge; varying vec3 vRayA; varying vec3 vRayB; varying vec3 vRayEA; varying vec3 vRayEB;
+// f: three functions that fall to 0 on a line each; e: how strongly each line is drawn (-1: not at all).
+float inkOf(vec3 f, vec3 e) {
+  vec3 px = f / max(sqrt(dFdx(f) * dFdx(f) + dFdy(f) * dFdy(f)), vec3(1e-6)) / uPx;
+  vec3 wd = 0.7 + 0.95 * e;
+  vec3 ln = (1.0 - smoothstep(wd - 0.55, wd + 0.55, px)) * step(-0.5, e) * (0.26 + 0.6 * e);
+  return max(ln.x, max(ln.y, ln.z));
+}
+`;
+const EDGE_GLSL = `outgoingLight = mix(outgoingLight, uInk, max(inkOf(vBary, vEdge), max(inkOf(vRayA, vRayEA), inkOf(vRayB, vRayEB))));`;
+const INK_DARK = new THREE.Color(0x2b2a28), INK_LIGHT = new THREE.Color(0xf6f1e7);
+/** Ink that shows on a paper colour: dark, or light on very dark paper. */
+const inkFor = (c: THREE.Color) => (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b < 0.035 ? INK_LIGHT : INK_DARK);
+
 /** One sheet's simulated mesh in the scene. */
 class SheetView {
   geo = new THREE.BufferGeometry();
   front: THREE.Mesh;
   back: THREE.Mesh;
-  lines: THREE.LineSegments;
+  /** Coloured creases (the folds of this step). */
+  lines = new THREE.Group();
   /** Positions of the mesh vertices (used for the crease lines and framing). */
   pos: Float32Array;
-  posAttr: THREE.BufferAttribute;
   /**
-   * The drawn surface has its own copy of each vertex per crease-pattern face, so every face can be
-   * lifted off the layers below it as one rigid piece (no kinks inside a face).
+   * The drawn surface has its own copy of each vertex per triangle, so every face can be lifted off
+   * the layers below it as one rigid piece (no kinks inside a face) and each triangle knows which of
+   * its sides are edges of the paper.
    */
   rpos: Float32Array;
   /** For each drawn vertex: its mesh vertex, and its crease-pattern face. */
   rvert: Int32Array;
   rface: Int32Array;
+  /** Per triangle side (opposite each corner): -2 nothing to draw, -1 an edge of the paper, else the crease's hinge. */
+  private triEdge: Int32Array;
+  private edge: Float32Array;
+  private edgeAttr: THREE.BufferAttribute;
+  /** Creases made so far (and not being shown in colour), per hinge; and all made so far. */
+  private creaseOn: Uint8Array;
+  private bornNow: Uint8Array;
+  private around: { ang: number; code: number }[][];
+  /**
+   * Lines that end at a corner of a triangle without being one of its sides (see `aimRays`): per
+   * triangle, six of them (two per corner): which line, then per drawn vertex how far it is from each
+   * line, and how strongly each is drawn.
+   */
+  private rayCode: Int32Array;
+  private ray: Float32Array;
+  private rayE: Float32Array;
+  private rayBuf!: THREE.InterleavedBuffer;
+  private rayEBuf!: THREE.InterleavedBuffer;
+  private rayKey = '';
+  private inks = [{ value: INK_DARK.clone() }, { value: INK_DARK.clone() }];
+  /** Device pixels per CSS pixel, so lines are as wide on every screen. */
+  px = { value: 1 };
   constructor(public mesh: SimMesh, colors: { front: string; back: string }) {
     this.pos = new Float32Array(mesh.n * 3);
-    this.posAttr = new THREE.BufferAttribute(this.pos, 3);
     const key = new Map<number, number>(), rv: number[] = [], rf: number[] = [], idx: number[] = [];
-    const nf = Math.max(1, ...Array.from(mesh.triFace)) + 1;
+    const nf = Math.max(1, ...Array.from(mesh.triFace)) + 1, nt = mesh.tris.length / 3;
     for (let k = 0; k < mesh.tris.length; k++) {
       const v = mesh.tris[k], f = mesh.triFace[Math.floor(k / 3)], kk = v * nf + f;
-      let r = key.get(kk);
-      if (r === undefined) { r = rv.length; key.set(kk, r); rv.push(v); rf.push(f); }
-      idx.push(r);
+      if (!key.has(kk)) key.set(kk, k);
+      rv.push(v); rf.push(f); idx.push(k);
     }
     // Paper is continuous: where the faces either side of a crease sit at different layers, a thin
     // strip joins them (the rounded edge of a fold in real paper). It is wound like the face on its
@@ -179,52 +247,90 @@ class SheetView {
       if (!mesh.hingeCrease[h]) continue;
       const a = mesh.hinges[4 * h], b = mesh.hinges[4 * h + 1], fl = mesh.hingeFaces[2 * h], fr = mesh.hingeFaces[2 * h + 1];
       if (fl < 0 || fr < 0 || fl === fr) continue;
-      const al = key.get(a * nf + fl), bl = key.get(b * nf + fl), ar = key.get(a * nf + fr), br = key.get(b * nf + fr);
-      if (al === undefined || bl === undefined || ar === undefined || br === undefined) continue;
-      idx.push(bl, al, ar, bl, ar, br);
+      if (![a * nf + fl, b * nf + fl, a * nf + fr, b * nf + fr].every((q) => key.has(q))) continue;
+      const o = rv.length;
+      rv.push(a, b, a, b); rf.push(fl, fl, fr, fr);
+      idx.push(o + 1, o, o + 2, o + 1, o + 2, o + 3);
     }
     this.rvert = Int32Array.from(rv);
     this.rface = Int32Array.from(rf);
     this.rpos = new Float32Array(rv.length * 3);
+    // Which sides of each triangle are lines of the paper.
+    const kind = new Map<number, number>();
+    for (let k = 0; k < mesh.lineKind.length; k++) {
+      const a = mesh.lines[2 * k], b = mesh.lines[2 * k + 1];
+      kind.set(Math.min(a, b) * mesh.n + Math.max(a, b), mesh.lineKind[k] === 2 ? -1 : mesh.lineKind[k] === 1 ? mesh.lineHinge[k] : -2);
+    }
+    this.triEdge = new Int32Array(3 * nt);
+    for (let k = 0; k < nt; k++) for (let j = 0; j < 3; j++) {
+      const a = mesh.tris[3 * k + (j + 1) % 3], b = mesh.tris[3 * k + (j + 2) % 3];
+      this.triEdge[3 * k + j] = kind.get(Math.min(a, b) * mesh.n + Math.max(a, b)) ?? -2;
+    }
+    // The lines of the paper that meet at each vertex, by direction on the flat sheet.
+    this.around = Array.from({ length: mesh.n }, () => []);
+    for (let k = 0; k < mesh.lineKind.length; k++) {
+      const a = mesh.lines[2 * k], b = mesh.lines[2 * k + 1], code = mesh.lineKind[k] === 2 ? -1 : mesh.lineHinge[k];
+      const dx = mesh.paper[2 * b] - mesh.paper[2 * a], dy = mesh.paper[2 * b + 1] - mesh.paper[2 * a + 1];
+      this.around[a].push({ ang: Math.atan2(dy, dx), code });
+      this.around[b].push({ ang: Math.atan2(-dy, -dx), code });
+    }
+    this.rayCode = new Int32Array(6 * nt).fill(-2);
+    this.ray = new Float32Array(rv.length * 6).fill(1);
+    this.rayE = new Float32Array(rv.length * 6).fill(-1);
+    this.bornNow = new Uint8Array(mesh.hingeCrease.length);
+    this.creaseOn = new Uint8Array(mesh.hingeCrease.length);
+    // Each corner of a triangle is 1 on its own coordinate and 0 on the others, so a coordinate
+    // falls to 0 on the side opposite its corner. (Strips have no lines: they stay at 1.)
+    const bary = new Float32Array(rv.length * 3).fill(1);
+    for (let k = 0; k < 3 * nt; k++) for (let j = 0; j < 3; j++) bary[3 * k + j] = k % 3 === j ? 1 : 0;
+    this.edge = new Float32Array(rv.length * 3).fill(-1);
+    this.edgeAttr = new THREE.BufferAttribute(this.edge, 3);
     this.geo.setAttribute('position', new THREE.BufferAttribute(this.rpos, 3));
+    this.geo.setAttribute('aBary', new THREE.BufferAttribute(bary, 3));
+    this.geo.setAttribute('aEdge', this.edgeAttr);
+    const ray = new THREE.InterleavedBuffer(this.ray, 6), rayE = new THREE.InterleavedBuffer(this.rayE, 6);
+    this.geo.setAttribute('aRayA', new THREE.InterleavedBufferAttribute(ray, 3, 0));
+    this.geo.setAttribute('aRayB', new THREE.InterleavedBufferAttribute(ray, 3, 3));
+    this.geo.setAttribute('aRayEA', new THREE.InterleavedBufferAttribute(rayE, 3, 0));
+    this.geo.setAttribute('aRayEB', new THREE.InterleavedBufferAttribute(rayE, 3, 3));
+    this.rayBuf = ray; this.rayEBuf = rayE;
     this.geo.setIndex(new THREE.BufferAttribute(new Uint32Array(idx), 1));
-    const mk = (color: string, side: THREE.Side) => new THREE.MeshStandardMaterial({
-      color, side, flatShading: true, roughness: 0.92, metalness: 0,
-      polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
-    });
-    this.front = new THREE.Mesh(this.geo, mk(colors.front, THREE.FrontSide));
-    this.back = new THREE.Mesh(this.geo, mk(colors.back, THREE.BackSide));
+    const mk = (color: string, side: THREE.Side, ink: { value: THREE.Color }) => {
+      const m = new THREE.MeshStandardMaterial({
+        color, side, flatShading: true, roughness: 0.92, metalness: 0,
+        polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
+      });
+      ink.value = inkFor(m.color);
+      m.onBeforeCompile = (sh) => {
+        sh.uniforms.uInk = ink;
+        sh.uniforms.uPx = this.px;
+        sh.vertexShader = 'attribute vec3 aBary; attribute vec3 aEdge; attribute vec3 aRayA; attribute vec3 aRayB; attribute vec3 aRayEA; attribute vec3 aRayEB;\n' +
+          'varying vec3 vBary; varying vec3 vEdge; varying vec3 vRayA; varying vec3 vRayB; varying vec3 vRayEA; varying vec3 vRayEB;\n' +
+          sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvBary = aBary; vEdge = aEdge; vRayA = aRayA; vRayB = aRayB; vRayEA = aRayEA; vRayEB = aRayEB;');
+        sh.fragmentShader = EDGE_PARS + sh.fragmentShader.replace('#include <opaque_fragment>', EDGE_GLSL + '\n#include <opaque_fragment>');
+      };
+      return m;
+    };
+    this.front = new THREE.Mesh(this.geo, mk(colors.front, THREE.FrontSide, this.inks[0]));
+    this.back = new THREE.Mesh(this.geo, mk(colors.back, THREE.BackSide, this.inks[1]));
     // Paper casts onto the table only: self-shadowing between layers a hair apart shows as acne.
     for (const m of [this.front, this.back]) { m.castShadow = true; m.receiveShadow = false; }
-    // Cartoon-style lines (as in Origami Simulator): a clear outline round the paper's edges and
-    // faint creases, so the shape reads at a glance.
-    const pick = (kind: number) => {
-      const out: number[] = [];
-      for (let k = 0; k < mesh.lineKind.length; k++) if (mesh.lineKind[k] === kind) out.push(mesh.lines[2 * k], mesh.lines[2 * k + 1]);
-      const g = new THREE.BufferGeometry();
-      g.setAttribute('position', this.posAttr);
-      g.setIndex(new THREE.BufferAttribute(new Uint32Array(out), 1));
-      return g;
-    };
-    this.lines = new THREE.LineSegments(pick(1), new THREE.LineBasicMaterial({ color: 0x2b2a28, transparent: true, opacity: 0.22 }));
-    this.lines.add(new THREE.LineSegments(pick(2), new THREE.LineBasicMaterial({ color: 0x2b2a28, transparent: true, opacity: 0.55 })));
     // Creases made in this step are drawn dashed in their colour (valley, mountain, or crease-and-unfold)
     // until the next step, where they quickly fade back into plain creases.
     this.fresh = [...CREASE_STYLE, ...CREASE_STYLE].map((st) => {
-      const g = new THREE.BufferGeometry();
-      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(0), 3));
-      const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: st.color, transparent: true, opacity: 0.95, depthFunc: THREE.LessEqualDepth }));
-      l.renderOrder = 2;
-      this.lines.add(l);
+      const l = new FatLines(st.color, 2.6, 0.95);
+      l.mat.depthFunc = THREE.LessEqualDepth;
+      l.obj.renderOrder = 2;
+      this.lines.add(l.obj);
       return l;
     });
-    this.lines.traverse((o) => (o.frustumCulled = false));
   }
   /** Coloured creases: valley, mountain, crease made this step, then the same made last step (fading). */
-  private fresh: THREE.LineSegments[];
+  private fresh: FatLines[];
   private freshSegs: number[][] = [[], [], [], [], [], []];
   private freshKey = '';
-  private shownKey = '';
+  private freshFade = 1;
+  private opacity = 1;
   /**
    * Shows only the creases that have been made by now: those folded earlier, plus the ones the
    * current phase is folding once it has started. `born` is each hinge's first step * 64 + phase.
@@ -232,13 +338,15 @@ class SheetView {
    */
   showCreases(born: Int32Array, step: number, phase: number, local: number, kinds?: Int8Array, fadeIn = 1) {
     const now = step * 64 + Math.min(phase, 63);
-    const m = this.mesh, out: number[] = [];
+    const m = this.mesh;
     const fresh: number[][] = [[], [], [], [], [], []];
-    let key = '';
+    this.creaseOn.fill(0);
+    this.bornNow.fill(0);
     for (let k = 0; k < m.lineKind.length; k++) {
       if (m.lineKind[k] !== 1) continue;
       const b = born[m.lineHinge[k]];
       const on = b < now || (b === now && local > 0.04);
+      if (on) this.bornNow[m.lineHinge[k]] = 1;
       const kind = on && kinds ? kinds[m.lineHinge[k]] : 0;
       let slot = -1;
       if (kind) {
@@ -247,22 +355,82 @@ class SheetView {
         if (slot >= 0) slot += kind === 1 ? 0 : kind === -1 ? 1 : 2;
       }
       // This step's creases are drawn only in colour; plain lines show through last step's as they fade.
-      const plain = on && !(slot >= 0 && slot < 3);
-      key += plain ? '1' : '0';
-      if (plain) out.push(m.lines[2 * k], m.lines[2 * k + 1]);
+      if (on && !(slot >= 0 && slot < 3)) this.creaseOn[m.lineHinge[k]] = 1;
       if (slot >= 0) fresh[slot].push(m.lines[2 * k], m.lines[2 * k + 1]);
     }
     const fk = fresh.map((f) => f.join(',')).join('|');
     if (fk !== this.freshKey) { this.freshKey = fk; this.freshSegs = fresh; }
-    for (const i of [3, 4, 5]) {
-      const mat = this.fresh[i].material as THREE.LineBasicMaterial;
-      mat.userData.base = 0.95 * (1 - fadeIn);
-      mat.opacity = mat.userData.base;
+    this.freshFade = fadeIn;
+    const rk = this.creaseOn.join('') + this.bornNow.join('');
+    if (rk !== this.rayKey) { this.rayKey = rk; this.aimRays(); }
+  }
+
+  /**
+   * A line of the paper is drawn by the triangles it is a side of. A triangle that only touches the
+   * line's end with a corner would leave a nick in it, so each corner also looks along the sheet
+   * either way, across creases not made yet (the paper is still flat there), for the first line that
+   * is drawn. How far a point is from that line is then known all over the triangle.
+   */
+  private aimRays() {
+    const m = this.mesh, T = m.tris, P = m.paper, nt = T.length / 3, TAU = 2 * Math.PI;
+    const norm = (a: number) => ((a % TAU) + TAU) % TAU;
+    this.rayCode.fill(-2);
+    for (let k = 0; k < nt; k++) for (let j = 0; j < 3; j++) {
+      const J = T[3 * k + j], N = T[3 * k + (j + 1) % 3], Q = T[3 * k + (j + 2) % 3], L = this.around[J];
+      const a0 = Math.atan2(P[2 * N + 1] - P[2 * J + 1], P[2 * N] - P[2 * J]), a1 = Math.atan2(P[2 * Q + 1] - P[2 * J + 1], P[2 * Q] - P[2 * J]);
+      const reach = Math.PI - norm(a1 - a0) + 1e-6;
+      for (const turn of [0, 1]) {
+        // Clockwise from the triangle's first side, then anticlockwise from its second.
+        let best = -1, bestD = Infinity, stop = Infinity;
+        for (let i = 0; i < L.length; i++) {
+          let d = turn ? norm(L[i].ang - a1) : norm(a0 - L[i].ang);
+          if (d > TAU - 1e-6) d = 0;
+          if (d > reach) continue;
+          const c = L[i].code, made = c === -1 || !!this.bornNow[c], drawn = c === -1 || !!this.creaseOn[c];
+          // The triangle's own side, or a fold in the way, ends the search; a drawn line is the find.
+          if (made && (d < 1e-6 || !drawn)) stop = Math.min(stop, d);
+          else if (drawn && d < bestD) { best = i; bestD = d; }
+        }
+        const s = 2 * j + turn;
+        if (best < 0 || bestD >= stop) { for (let c = 0; c < 3; c++) this.ray[(3 * k + c) * 6 + s] = 1; continue; }
+        this.rayCode[6 * k + s] = L[best].code;
+        const ux = Math.cos(L[best].ang), uy = Math.sin(L[best].ang), sg = turn ? -1 : 1;
+        for (let c = 0; c < 3; c++) {
+          const V = T[3 * k + c];
+          this.ray[(3 * k + c) * 6 + s] = Math.max(0, sg * (ux * (P[2 * V + 1] - P[2 * J + 1]) - uy * (P[2 * V] - P[2 * J])));
+        }
+      }
     }
-    this.fresh.forEach((l, i) => (l.visible = this.freshSegs[i].length > 0 && (i < 3 || fadeIn < 0.999)));
-    if (key === this.shownKey) return;
-    this.shownKey = key;
-    this.lines.geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(out), 1));
+    this.rayBuf.needsUpdate = true;
+  }
+
+  /**
+   * Sets how strongly each line of the paper is drawn, from the faces' normals `fN` (three numbers per
+   * crease-pattern face): edges of the paper at full strength, creases from faint (lying flat, a mark
+   * on the paper) to full (folded right over, where the fold is an edge of the model).
+   */
+  drawEdges(fN: Float32Array) {
+    const m = this.mesh, nh = m.hingeCrease.length, E = this.edge, te = this.triEdge;
+    const hs = new Float32Array(nh).fill(-1);
+    for (let h = 0; h < nh; h++) {
+      if (!this.creaseOn[h]) continue;
+      const a = 3 * m.hingeFaces[2 * h], b = 3 * m.hingeFaces[2 * h + 1];
+      const cos = a < 0 || b < 0 ? 1 : fN[a] * fN[b] + fN[a + 1] * fN[b + 1] + fN[a + 2] * fN[b + 2];
+      hs[h] = smooth(0, 0.7, (1 - cos) / 2);
+    }
+    for (let k = 0; k < te.length; k += 3) {
+      for (let j = 0; j < 3; j++) {
+        const c = te[k + j], v = c === -2 ? -1 : c === -1 ? 1 : hs[c];
+        E[3 * k + j] = v; E[3 * (k + 1) + j] = v; E[3 * (k + 2) + j] = v;
+      }
+    }
+    this.edgeAttr.needsUpdate = true;
+    const R = this.rayE, rc = this.rayCode;
+    for (let q = 0; q < rc.length; q++) {
+      const c = rc[q], v = c === -2 ? -1 : c === -1 ? 1 : hs[c], k = Math.floor(q / 6), s = q % 6;
+      R[(3 * k) * 6 + s] = v; R[(3 * k + 1) * 6 + s] = v; R[(3 * k + 2) * 6 + s] = v;
+    }
+    this.rayEBuf.needsUpdate = true;
   }
 
   /** Lays the coloured creases out as dashes along the paper as it is now (`size`: the model's extent). */
@@ -270,7 +438,9 @@ class SheetView {
     const P = this.pos;
     this.fresh.forEach((l, i) => {
       const segs = this.freshSegs[i];
-      if (!segs.length) return;
+      l.base = i < 3 ? 0.95 : 0.95 * (1 - this.freshFade);
+      l.mat.opacity = l.base * this.opacity;
+      if (!segs.length || (i >= 3 && this.freshFade >= 0.999)) { if (l.count) l.set([]); return; }
       const pattern = CREASE_STYLE[i % 3].dash;
       const out: number[] = [];
       for (let k = 0; k < segs.length; k += 2) {
@@ -288,10 +458,7 @@ class SheetView {
           j++;
         }
       }
-      const g = l.geometry, attr = g.getAttribute('position') as THREE.BufferAttribute;
-      if (attr.array.length !== out.length) g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(out), 3));
-      else { (attr.array as Float32Array).set(out); attr.needsUpdate = true; }
-      g.computeBoundingSphere();
+      l.set(out);
     });
   }
   /** Fades the sheet (1 = solid). Used to dissolve across a step where paper would pass through paper. */
@@ -302,21 +469,21 @@ class SheetView {
       m.opacity = o;
       m.depthWrite = solid;
     }
-    for (const l of [this.lines, ...this.lines.children] as THREE.LineSegments[]) {
-      const lm = l.material as THREE.LineBasicMaterial;
-      lm.userData.base ??= lm.opacity;
-      lm.opacity = lm.userData.base * o;
-    }
+    this.opacity = o;
+    for (const l of this.fresh) l.mat.opacity = l.base * o;
     this.front.visible = this.back.visible = this.lines.visible = o > 0.001;
     this.front.castShadow = this.back.castShadow = solid;
   }
   setColors(c: { front: string; back: string }) {
-    (this.front.material as THREE.MeshStandardMaterial).color.set(c.front);
-    (this.back.material as THREE.MeshStandardMaterial).color.set(c.back);
+    [this.front, this.back].forEach((m, i) => {
+      const mat = m.material as THREE.MeshStandardMaterial;
+      mat.color.set(i ? c.back : c.front);
+      this.inks[i].value = inkFor(mat.color);
+    });
   }
   dispose() {
     this.geo.dispose();
-    this.lines.traverse((o) => { const l = o as THREE.LineSegments; l.geometry?.dispose(); (l.material as THREE.Material | undefined)?.dispose(); });
+    for (const l of this.fresh) l.dispose();
     (this.front.material as THREE.Material).dispose();
     (this.back.material as THREE.Material).dispose();
   }
@@ -382,8 +549,10 @@ export class FoldViewer {
   /** Solver iterations still wanted before the paper is at rest. */
   private simBudget = 0;
   private lift = 0;
-  /** Lowest the lift may go during this step: keeps the paper clear of the table without bobbing. */
-  private floors = new Map<number, number>();
+  /** Per sheet, the faces that stay where they are for the whole of this step (null: the whole model moves). */
+  private still: Uint8Array[] | null = null;
+  /** How far the resting model reaches below its own zero at the start and the end of this step. */
+  private rest: [number, number] = [0, 0];
   /** First step that folds each crease, per sheet (creases appear only once they are made). */
   private born: Int32Array[] = [];
   /** Per sheet, per hinge: 1 valley, -1 mountain (as seen in the step that makes it), 0 none. */
@@ -478,6 +647,7 @@ export class FoldViewer {
   resize() {
     const w = this.el.clientWidth || 1, h = this.el.clientHeight || 1;
     this.renderer.setSize(w, h, false);
+    for (const sv of [...(this.sheets ?? []), ...(this.ghosts ?? [])]) sv.px.value = this.renderer.getPixelRatio();
     this.renderer.domElement.style.width = '100%';
     this.renderer.domElement.style.height = '100%';
     this.camera.aspect = w / h;
@@ -505,8 +675,10 @@ export class FoldViewer {
       if (lastTilt) ph.tilt = { ...lastTilt, a0: lastTilt.a1 };
       this.phases = [new FlatPhase(ph, this.thick)];
     }
-    this.phases.forEach((v, k) => this.buildOverlay(v, k));
     this.kin.ensureStep(this.step);
+    this.phases.forEach((v, k) => this.buildOverlay(v, k));
+    this.still = this.findStill();
+    this.rest = [-Math.min(0, this.lowestAt(0)), -Math.min(0, this.lowestAt(1))];
 
     if (camera) this.userCamera = false;
     this.t = play ? 0 : finished || !phases.length ? 1 : 0;
@@ -517,60 +689,108 @@ export class FoldViewer {
     this.dirty = true;
   }
 
+  /**
+   * The diagram marks of a phase (fold lines and arrows), drawn on the paper as it really lies at the
+   * start of the phase: each point of the flat diagram is carried onto the 3D paper under it.
+   */
   private buildOverlay(v: FlatPhase, k: number) {
-    if (k > 0 && !v.phase.lines.length && !v.phase.arrows.length) return;
-    const topZ = (Math.max(0, ...v.phase.faces.map((f) => f.la)) + 3) * this.thick;
-    const S = this.model.extent;
-    const ribbon = (a: THREE.Vector3, b: THREE.Vector3, width: number, mat: THREE.Material) => {
-      const len = a.distanceTo(b);
-      if (len < 1e-6) return;
-      const g = new THREE.PlaneGeometry(len, width);
-      g.rotateX(-Math.PI / 2);
-      const m = new THREE.Mesh(g, mat);
-      m.position.copy(a).add(b).multiplyScalar(0.5);
-      m.rotation.y = -Math.atan2(b.z - a.z, b.x - a.x);
-      m.renderOrder = 10;
-      v.overlay.add(m);
+    const ph = v.phase, A = this.sim.angles[this.step]?.[k];
+    if ((!ph.lines.length && !ph.arrows.length) || !A) return;
+    const S = this.model.extent, t = k / this.phases.length;
+    const pos = this.kin.posAt(this.step, t), levels = this.kin.levelsAt(this.step, t);
+    // Every triangle of the paper where the diagram shows it.
+    interface Tri { si: number; cf: number; v: number[]; la: number; up: number; d: number[] }
+    const tris: Tri[] = [];
+    this.sim.meshes.forEach((mesh, si) => {
+      for (let q = 0; q < mesh.tris.length; q += 3) {
+        const cf = mesh.triFace[q / 3], pf = ph.faces[A.match[si][cf]];
+        if (!pf) continue;
+        const vs = [mesh.tris[q], mesh.tris[q + 1], mesh.tris[q + 2]];
+        const d = vs.flatMap((i) => apply(pf.a, [mesh.paper[2 * i], mesh.paper[2 * i + 1]]));
+        tris.push({ si, cf, v: vs, la: pf.la, up: det(pf.a) > 0 ? 1 : -1, d });
+      }
+    });
+    if (!tris.length) return;
+    const bary = (T: Tri, p: V2): [number, number, number] => {
+      const [x0, y0, x1, y1, x2, y2] = T.d;
+      const den = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2) || 1e-12;
+      const a = ((y1 - y2) * (p[0] - x2) + (x2 - x1) * (p[1] - y2)) / den;
+      const b = ((y2 - y0) * (p[0] - x2) + (x0 - x2) * (p[1] - y2)) / den;
+      return [a, b, 1 - a - b];
     };
-    for (const l of v.phase.lines) {
+    /** The top layer of paper under a point of the diagram (the nearest paper for a point off it). */
+    const locate = (p: V2): Tri => {
+      let best = tris[0], score = -Infinity;
+      for (const T of tris) {
+        const w = bary(T, p), m = Math.min(w[0], w[1], w[2]);
+        const sc = m >= -1e-6 ? 1e6 + T.la : m;
+        if (sc > score) { score = sc; best = T; }
+      }
+      return best;
+    };
+    const A3 = new THREE.Vector3(), B3 = new THREE.Vector3(), C3 = new THREE.Vector3();
+    /** Where a point of the diagram is on triangle T, `raise` clear of the paper on the side the diagram shows; and that side's normal. */
+    const place = (p: V2, T: Tri, raise: number): { at: THREE.Vector3; up: THREE.Vector3 } => {
+      const P = pos[T.si], w = bary(T, p);
+      A3.fromArray(P, 3 * T.v[0]); B3.fromArray(P, 3 * T.v[1]); C3.fromArray(P, 3 * T.v[2]);
+      const n = B3.clone().sub(A3).cross(C3.clone().sub(A3)).normalize();
+      const at = new THREE.Vector3().addScaledVector(A3, w[0]).addScaledVector(B3, w[1]).addScaledVector(C3, w[2]);
+      at.addScaledVector(n, levels[T.si][T.cf] * this.layerGap + T.up * raise);
+      // Tilt (a standing model) as at the start of the phase, then into the scene's axes.
+      const tip = v.tilt(0, at.clone().addScaledVector(n, T.up));
+      v.tilt(0, at);
+      return { at: toThree(at), up: toThree(tip).sub(toThree(at.clone())).normalize() };
+    };
+    const group = v.overlay;
+    for (const l of ph.lines) {
       // Valley (blue dashes), mountain (orange dash-dot), or a crease made and unfolded (purple dots).
-      const st = CREASE_STYLE[v.phase.motion === 'crease' ? 2 : l.kind === 'mountain' ? 1 : 0];
-      const mat = new THREE.MeshBasicMaterial({ color: st.color, transparent: true, depthTest: false, side: THREE.DoubleSide });
-      const a = toThree(new THREE.Vector3(l.p[0], l.p[1], topZ)), b = toThree(new THREE.Vector3(l.q[0], l.q[1], topZ));
-      const len = a.distanceTo(b), dir = b.clone().sub(a).normalize();
-      const pattern = st.dash;
-      const w = S * 0.007;
-      let pos = 0, i = 0;
-      while (pos < len) {
-        const seg = pattern[i % pattern.length] * S;
-        if (i % 2 === 0) ribbon(a.clone().addScaledVector(dir, pos), a.clone().addScaledVector(dir, Math.min(len, pos + seg)), w, mat);
-        pos += seg;
+      const st = CREASE_STYLE[ph.motion === 'crease' ? 2 : l.kind === 'mountain' ? 1 : 0];
+      const len = Math.hypot(l.q[0] - l.p[0], l.q[1] - l.p[1]);
+      if (len < 1e-6) continue;
+      const at = (u: number): V2 => [l.p[0] + (l.q[0] - l.p[0]) * u, l.p[1] + (l.q[1] - l.p[1]) * u];
+      const out: number[] = [];
+      let d = 0, i = 0;
+      while (d < len) {
+        const seg = st.dash[i % st.dash.length] * S;
+        if (i % 2 === 0) {
+          const u0 = d / len, u1 = Math.min(len, d + seg) / len;
+          // Both ends on the paper under the middle of the dash, so a dash never bridges a gap.
+          const T = locate(at((u0 + u1) / 2));
+          const a = place(at(u0), T, S * 0.001).at, b = place(at(u1), T, S * 0.001).at;
+          out.push(a.x, a.y, a.z, b.x, b.y, b.z);
+        }
+        d += seg;
         i++;
       }
+      const fl = new FatLines(st.color, 3.2, 1, false);
+      fl.set(out);
+      fl.obj.renderOrder = 10;
+      group.add(fl.obj);
     }
-    for (const ar of v.phase.arrows) {
+    for (const ar of ph.arrows) {
       if (ar.kind === 'rotate') continue; // shown as a flat arrow on the screen instead
-      const a = new THREE.Vector3(ar.from[0], ar.from[1], topZ), b = new THREE.Vector3(ar.to[0], ar.to[1], topZ);
-      const d = a.distanceTo(b);
-      const mid = a.clone().add(b).multiplyScalar(0.5);
+      const a = place(ar.from, locate(ar.from), S * 0.004), b = place(ar.to, locate(ar.to), S * 0.004);
+      const d = a.at.distanceTo(b.at);
+      if (d < 1e-6) continue;
+      const up = a.up.clone().add(b.up);
+      if (up.lengthSq() < 1e-6) up.copy(a.up);
+      up.normalize();
       // Bow the arrow sideways (as on a paper diagram) and lift it off the paper.
-      const side = new THREE.Vector3(-(b.y - a.y), b.x - a.x, 0).normalize().multiplyScalar(d * 0.28);
-      mid.add(side);
-      if (ar.kind !== 'turn-over') mid.z += d * 0.3;
-      const curve = new THREE.QuadraticBezierCurve3(toThree(a), toThree(mid), toThree(b));
+      const mid = a.at.clone().add(b.at).multiplyScalar(0.5);
+      mid.addScaledVector(up.clone().cross(b.at.clone().sub(a.at)).normalize(), d * 0.28);
+      if (ar.kind !== 'turn-over') mid.addScaledVector(up, d * 0.3);
+      const curve = new THREE.QuadraticBezierCurve3(a.at, mid, b.at);
       const mat = new THREE.MeshBasicMaterial({ color: 0x2b2a28, transparent: true, depthTest: false });
       const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, S * 0.0045, 6), mat);
       tube.renderOrder = 11;
-      v.overlay.add(tube);
+      group.add(tube);
       const head = new THREE.Mesh(new THREE.ConeGeometry(S * 0.018, S * 0.045, 14), mat);
       head.position.copy(curve.getPoint(1));
       head.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), curve.getTangent(1).normalize());
       head.renderOrder = 11;
-      v.overlay.add(head);
+      group.add(head);
     }
-    const tm = v.tiltMatrix();
-    if (tm) v.overlay.applyMatrix4(tm);
-    this.overlays.add(v.overlay);
+    this.overlays.add(group);
   }
 
   private current(): { index: number; local: number } {
@@ -610,21 +830,12 @@ export class FoldViewer {
     // Where no rigid motion keeps the paper apart, dissolve from the last clean pose to the next one
     // instead of letting paper pass through paper.
     const span = this.step < this.stepCount && !this.rewinding ? this.kin.spans[this.step]?.find(([a, b]) => this.t > a && this.t < b) : undefined;
-    const v = new THREE.Vector3(), w = new THREE.Vector3();
-    let minY = Infinity;
+    const low: [number, number] = [Infinity, Infinity];
     const pose = (t: number, views: SheetView[]) => {
-      const X = this.kin.frameAt(this.step, t);
-      const levels = this.kin.levelsAt(this.step, t);
-      const pos = this.kin.posAt(this.step, t);
-      X.forEach((_, si) => {
-        const raw = pos[si];
-        const P = views[si].pos;
-        for (let i = 0; i < raw.length / 3; i++) {
-          fp.tilt(local, v.set(raw[3 * i], raw[3 * i + 1], raw[3 * i + 2]));
-          toThree(v, w);
-          P[3 * i] = w.x; P[3 * i + 1] = w.y; P[3 * i + 2] = w.z;
-        }
-        minY = Math.min(minY, this.finishSheet(si, views[si], levels[si]));
+      const lay = this.layout(fp, local, t, views.map((sv) => sv.rpos));
+      views.forEach((sv, si) => {
+        const l = this.finishSheet(si, sv, lay[si]);
+        low[0] = Math.min(low[0], l[0]); low[1] = Math.min(low[1], l[1]);
       });
     };
     if (span) {
@@ -638,56 +849,135 @@ export class FoldViewer {
       this.sheets.forEach((sv) => sv.setOpacity(1));
       this.ghosts.forEach((sv) => sv.setOpacity(0));
     }
-    this.placeOnTable(minY);
+    this.placeOnMat(low[0], low[1]);
   }
 
   /**
-   * Adds paper thickness to sheet si's placed positions, updates its creases, and returns its lowest
-   * point. `levels` gives each crease-pattern face's layer along its own front normal (stack.ts).
+   * Where every drawn vertex of every sheet is at time t of this step (`local`: the time through its
+   * phase fp), written to R per sheet; returns each sheet's face normals. Each crease-pattern face is
+   * placed whole by its own solved position, so a face that does not move is drawn exactly still
+   * whatever its neighbours do (bent paper has no such position: it follows its solved vertices).
+   * The model's tilt is applied, and each face sits its level of paper thicknesses off the paper along
+   * its own front normal (stack.ts); the strips along the creases (SheetView) keep the paper joined.
    */
-  private finishSheet(si: number, sh: SheetView, levels: Float32Array): number {
-    const mesh = this.sim.meshes[si], n = mesh.n, T = mesh.tris, nt = T.length / 3;
-    const P = sh.pos;
+  private layout(fp: FlatPhase, local: number, t: number, R: Float32Array[]): Float32Array[] {
+    const X = this.kin.rigidAt(this.step, t), raw = X ? null : this.kin.posAt(this.step, t);
+    const levels = this.kin.levelsAt(this.step, t), off = this.layerGap;
+    const v = new THREE.Vector3(), w = new THREE.Vector3();
+    return this.sheets.map((sh, si) => {
+      const mesh = this.sim.meshes[si], rv = sh.rvert, rf = sh.rface, out = R[si], nf = mesh.faces.length;
+      for (let r = 0; r < rv.length; r++) {
+        const i = rv[r], x = mesh.paper[2 * i], y = mesh.paper[2 * i + 1];
+        if (X) {
+          const T = X[si], o = 12 * rf[r];
+          v.set(T[o] * x + T[o + 1] * y + T[o + 9], T[o + 3] * x + T[o + 4] * y + T[o + 10], T[o + 6] * x + T[o + 7] * y + T[o + 11]);
+        } else v.fromArray(raw![si], 3 * i);
+        toThree(fp.tilt(local, v), w).toArray(out, 3 * r);
+      }
+      // Front normal of each face, from its first triangle (drawn vertices come three to a triangle).
+      const N = new Float32Array(3 * nf), set = new Uint8Array(nf);
+      for (let k = 0; k < mesh.triFace.length; k++) {
+        const cf = mesh.triFace[k], a = 9 * k;
+        if (set[cf]) continue;
+        const ux = out[a + 3] - out[a], uy = out[a + 4] - out[a + 1], uz = out[a + 5] - out[a + 2];
+        const qx = out[a + 6] - out[a], qy = out[a + 7] - out[a + 1], qz = out[a + 8] - out[a + 2];
+        const nx = uy * qz - uz * qy, ny = uz * qx - ux * qz, nz = ux * qy - uy * qx, nl = Math.hypot(nx, ny, nz);
+        if (nl < 1e-12) continue;
+        N[3 * cf] = nx / nl; N[3 * cf + 1] = ny / nl; N[3 * cf + 2] = nz / nl;
+        set[cf] = 1;
+      }
+      for (let r = 0; r < rv.length; r++) {
+        const cf = rf[r], d = levels[si][cf] * off;
+        out[3 * r] += N[3 * cf] * d; out[3 * r + 1] += N[3 * cf + 1] * d; out[3 * r + 2] += N[3 * cf + 2] * d;
+      }
+      return N;
+    });
+  }
+
+  /**
+   * Finishes sheet si once it is laid out: where its creases run, which lines are drawn and how
+   * strongly. Returns the lowest point of the paper that stays still in this step, and of all of it
+   * (see `placeOnMat`).
+   */
+  private finishSheet(si: number, sh: SheetView, N: Float32Array): [number, number] {
+    const n = this.sim.meshes[si].n, P = sh.pos, R = sh.rpos, rv = sh.rvert, rf = sh.rface;
     const { index, local } = this.current();
-    // Each crease-pattern face sits its level of paper thicknesses off the paper, as one rigid piece
-    // along its own front normal. The strips along the creases (SheetView) keep the paper joined.
-    const off = this.layerGap;
-    const nf = mesh.faces.length;
-    const fOff = new Float32Array(3 * nf), fSet = new Uint8Array(nf);
-    for (let k = 0; k < nt; k++) {
-      const cf = mesh.triFace[k];
-      if (fSet[cf]) continue;
-      const a = T[3 * k], b = T[3 * k + 1], c = T[3 * k + 2];
-      const ux = P[3 * b] - P[3 * a], uy = P[3 * b + 1] - P[3 * a + 1], uz = P[3 * b + 2] - P[3 * a + 2];
-      const qx = P[3 * c] - P[3 * a], qy = P[3 * c + 1] - P[3 * a + 1], qz = P[3 * c + 2] - P[3 * a + 2];
-      const nx = uy * qz - uz * qy, ny = uz * qx - ux * qz, nz = ux * qy - uy * qx;
-      const nl = Math.hypot(nx, ny, nz);
-      if (nl < 1e-12) continue;
-      const sc = (levels[cf] * off) / nl;
-      fOff[3 * cf] = nx * sc; fOff[3 * cf + 1] = ny * sc; fOff[3 * cf + 2] = nz * sc;
-      fSet[cf] = 1;
-    }
-    let minY = Infinity;
-    const R = sh.rpos, rv = sh.rvert, rf = sh.rface;
-    const acc = new Float32Array(3 * n), cnt = new Float32Array(n);
-    for (let r = 0; r < rv.length; r++) {
-      const v = rv[r], cf = rf[r];
-      const x = P[3 * v] + fOff[3 * cf], y = P[3 * v + 1] + fOff[3 * cf + 1], z = P[3 * v + 2] + fOff[3 * cf + 2];
-      R[3 * r] = x; R[3 * r + 1] = y; R[3 * r + 2] = z;
-      acc[3 * v] += x; acc[3 * v + 1] += y; acc[3 * v + 2] += z; cnt[v]++;
-      if (y < minY) minY = y;
-    }
+    const still = this.still?.[si];
+    let low = Infinity, lowAll = Infinity;
     // Crease lines sit where the faces beside them meet.
-    for (let i = 0; i < n; i++) if (cnt[i]) { P[3 * i] = acc[3 * i] / cnt[i]; P[3 * i + 1] = acc[3 * i + 1] / cnt[i]; P[3 * i + 2] = acc[3 * i + 2] / cnt[i]; }
+    const cnt = new Float32Array(n);
+    P.fill(0);
+    for (let r = 0; r < rv.length; r++) {
+      const v = rv[r], y = R[3 * r + 1];
+      P[3 * v] += R[3 * r]; P[3 * v + 1] += y; P[3 * v + 2] += R[3 * r + 2]; cnt[v]++;
+      if (y < lowAll) lowAll = y;
+      if (y < low && (!still || still[rf[r]])) low = y;
+    }
+    for (let i = 0; i < n; i++) if (cnt[i]) { P[3 * i] /= cnt[i]; P[3 * i + 1] /= cnt[i]; P[3 * i + 2] /= cnt[i]; }
     // Coloured creases: none while unfolding back; last step's fade out within 0.1 s of a new step.
     const fadeIn = this.step >= this.stepCount ? 1 : Math.min(1, (performance.now() - this.shownAt) / 100);
     sh.showCreases(this.born[si], this.step, this.step >= this.stepCount ? 0 : index, this.step >= this.stepCount ? 1 : local,
       this.rewinding ? undefined : this.kinds[si], fadeIn);
+    sh.drawEdges(N);
     sh.drawFresh(this.model.extent);
     sh.geo.attributes.position.needsUpdate = true;
-    sh.posAttr.needsUpdate = true;
     sh.geo.computeBoundingSphere();
-    return minY;
+    return [low, lowAll];
+  }
+
+  /** Lowest point of the whole model, with its thickness, as it is drawn at time t of this step (before any lift). */
+  private lowestAt(t: number): number {
+    const n = this.phases.length, x = Math.min(t * n, n - 1e-9), index = Math.floor(x), local = t >= 1 ? 1 : x - index;
+    const R = this.sheets.map((sh) => new Float32Array(sh.rpos.length));
+    this.layout(this.phases[index], local, t, R);
+    let low = Infinity;
+    for (const A of R) for (let i = 1; i < A.length; i += 3) low = Math.min(low, A[i]);
+    return isFinite(low) ? low : 0;
+  }
+
+  /**
+   * The faces that do not move at all during this step, per sheet: the paper a folder would leave
+   * lying on the table while folding the rest. Null when the whole model is picked up (turned over,
+   * turned round, stood up) or when nothing stays still.
+   */
+  private findStill(): Uint8Array[] | null {
+    if (this.step >= this.stepCount) return null;
+    const phases = this.model.steps[this.step].phases, F = this.kin.frames[this.step];
+    if (!phases.length || !F?.length) return null;
+    if (phases.some((p) => p.motion === 'spin' || (p.tilt && Math.abs(p.tilt.a1 - p.tilt.a0) > 1e-6))) return null;
+    const tol = 1e-4 * Math.max(1, this.model.extent);
+    let any = false;
+    const out = F[0].X.map((X0, si) => {
+      const nf = X0.length / 12, st = new Uint8Array(nf).fill(1);
+      for (const fr of F) {
+        const X = fr.X[si];
+        for (let f = 0; f < nf; f++) {
+          if (!st[f]) continue;
+          for (let k = 12 * f; k < 12 * f + 12; k++) if (Math.abs(X[k] - X0[k]) > tol) { st[f] = 0; break; }
+        }
+      }
+      if (st.some((x) => x)) any = true;
+      return st;
+    });
+    return any ? out : null;
+  }
+
+  /**
+   * Rests the model on the mat. The paper that is not being folded never moves: a flap folded behind
+   * swings down through the mat (it is a drawn grid, not a solid table) and comes to rest under the
+   * model, as it would if you held the paper up to fold it. The model rises only when it has to end
+   * up higher anyway (a wing opened downwards, the model stood up) or when the whole of it is picked
+   * up (turned over): then by exactly what it needs at each moment. `still` is the lowest point of the
+   * paper that stays still, `all` of the whole model.
+   */
+  private placeOnMat(still: number, all: number) {
+    const [r0, r1] = this.rest, rest = r0 + (r1 - r0) * ease(this.t);
+    const need = isFinite(all) ? -all : 0;
+    const held = this.still ? Math.max(isFinite(still) ? -still : 0, Math.min(need, Math.max(r0, r1))) : need;
+    this.lift = Math.max(rest, held) + this.model.extent * 0.012;
+    this.model3d.position.y = this.lift;
+    this.overlays.position.y = this.lift;
+    this.dirty = true;
   }
 
   /**
@@ -713,19 +1003,6 @@ export class FoldViewer {
       out[h] = ph.motion === 'crease' ? 2 : ang * up < 0 ? 1 : -1;
     }
     return out;
-  }
-
-  /** Keeps the paper clear of the table. */
-  private placeOnTable(minY: number) {
-    // The height is a smooth function of the time through the model (each step's need, blended
-    // across the step), never below what the paper needs right now, so scrubbing back and forth
-    // gives exactly the same picture every time.
-    const need = isFinite(minY) ? -minY + this.model.extent * 0.012 : 0;
-    const a = this.stepFloor(this.step), b = this.stepFloor(Math.min(this.stepCount, this.step + 1));
-    this.lift = Math.max(a + (b - a) * ease(this.t), need);
-    this.model3d.position.y = this.lift;
-    this.overlays.position.y = this.lift;
-    this.dirty = true;
   }
 
   setT(t: number) {
@@ -809,35 +1086,6 @@ export class FoldViewer {
     const to = sph.clone();
     to.theta = cur.theta + dTheta;
     this.camTween = { from: cur, to, tf: this.controls.target.clone(), tt: center, t: 0 };
-  }
-
-  /** Height the paper needs above the table at the start of step i, from the exact pose over the step before it and itself. */
-  private stepFloor(i: number): number {
-    const hit = this.floors.get(i);
-    if (hit !== undefined) return hit;
-    let minY = 0;
-    for (const k of [i - 1, i]) {
-      const st = this.model.steps[k];
-      if (!st) continue;
-      this.kin.ensureStep(k);
-      const bent = !!this.kin.soft[k];
-      st.phases.forEach((ph, p) => {
-        const fp = new FlatPhase(ph, this.thick);
-        if (bent) {
-          // Bent paper is not where the flat diagram says: take its solved shape.
-          const v = new THREE.Vector3(), w = new THREE.Vector3();
-          // (Only where this step meets its neighbour: in between, the paper's own need lifts it.)
-          const at = k < i ? (p === st.phases.length - 1 ? [1] : []) : p === 0 ? [0] : [];
-          for (const local of at) for (const P of this.kin.posAt(k, (p + local) / st.phases.length)) {
-            for (let j = 0; j < P.length; j += 3) { fp.tilt(local, v.set(P[j], P[j + 1], P[j + 2])); minY = Math.min(minY, toThree(v, w).y); }
-          }
-        } else minY = Math.min(minY, fp.bounds().min.y);
-        fp.dispose();
-      });
-    }
-    const v = -minY + this.model.extent * 0.012;
-    this.floors.set(i, v);
-    return v;
   }
 
   /**
@@ -953,13 +1201,17 @@ export class FoldViewer {
   }
 }
 
-/** A soft table: a shadow catcher and a faint grid that fades out with distance. */
+/**
+ * The mat: a faint grid that fades out with distance and catches the model's shadow. It is a drawing,
+ * not a solid: paper folded behind the model passes down through it and is seen under the grid.
+ */
 function makeTable(S: number, el: HTMLElement): THREE.Group {
   const g = new THREE.Group();
   const size = S * 8;
-  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.ShadowMaterial({ opacity: 0.16 }));
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.ShadowMaterial({ opacity: 0.16, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2;
   shadow.receiveShadow = true;
+  shadow.renderOrder = -2;
   g.add(shadow);
   const ink = getComputedStyle(el).getPropertyValue('--ink').trim() || '#2b2a28';
   const gridMat = new THREE.ShaderMaterial({
@@ -988,6 +1240,7 @@ function makeTable(S: number, el: HTMLElement): THREE.Group {
   const grid = new THREE.Mesh(new THREE.PlaneGeometry(size, size), gridMat);
   grid.rotation.x = -Math.PI / 2;
   grid.position.y = -S * 0.0005;
+  grid.renderOrder = -3;
   grid.onBeforeRender = () => {
     const p = new THREE.Vector3();
     g.getWorldPosition(p);
